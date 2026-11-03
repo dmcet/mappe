@@ -15,6 +15,7 @@
   <h2>Summary</h2>
   <ul class="facts">
     <li><strong>{{ summary.name }}</strong>{% if summary.current_role %} · {{ summary.current_role }}{% endif %}</li>
+    {% if parsed.headline %}<li class="muted">{{ parsed.headline }}</li>{% endif %}
     <li>{{ summary.years_of_experience }} years of experience across {{ summary.positions }} positions</li>
     <li>{{ summary.skills }} skills · {{ summary.certifications }} certifications · {{ summary.education }} education entries</li>
     <li>Languages: {{ summary.languages | join(", ") or "none" }}</li>
@@ -67,7 +68,7 @@
   <h2>Experience</h2>
   {% for p in parsed.positions %}
     <article class="position">
-      <h3>{{ p.role }} · {{ p.company }}</h3>
+      <h3>{{ p.role }} · {{ p.company }}{% if p.client %} <span class="muted">· client: {{ p.client }}</span>{% endif %}</h3>
       <p class="muted">{{ p.start or "?" }} – {{ p.end or "present" }}{% if p.location %} · {{ p.location }}{% endif %} <code>{{ p.id }}</code></p>
       {% if p.responsibilities %}<h4>Responsibilities</h4>
         <ul>{% for f in p.responsibilities %}<li>{{ f.text }}</li>{% endfor %}</ul>{% endif %}
@@ -81,7 +82,13 @@
 <section class="grid">
   <div class="card">
     <h2>Skills</h2>
-    <p class="tags">{% for s in parsed.skills %}<span>{{ s }}</span>{% endfor %}</p>
+    {% for level, label in [("advanced", "Advanced"), ("intermediate", "Intermediate"), ("basic", "Basic"), (none, "No level stated")] %}
+      {% set group = parsed.skills | selectattr("level", "equalto", level) | list %}
+      {% if group %}
+        <h4 class="muted">{{ label }}</h4>
+        <p class="tags">{% for s in group %}<span{% if s.level_text and not s.level %} title="{{ s.level_text }}"{% endif %}>{{ s.name }}{% if s.level_text and not s.level %} ({{ s.level_text }}){% endif %}</span>{% endfor %}</p>
+      {% endif %}
+    {% endfor %}
     {% if parsed.soft_skills %}<h3>Soft skills</h3>
       <p class="tags">{% for s in parsed.soft_skills %}<span>{{ s }}</span>{% endfor %}</p>{% endif %}
     <h3>Languages</h3>

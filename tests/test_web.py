@@ -35,7 +35,7 @@ def test_health_and_index(client):
 
 
 def test_cv_parse_fix_and_confirm_flow(client, fake_llm):
-    fake_llm.result.phone = None
+    fake_llm.result.phone = ""
     resp = client.post("/cvs", data={"label": "Main CV", "markdown": "# Jane Doe"})
     assert resp.status_code == 200  # followed redirect to the CV page
     cv_url = str(resp.url.path)

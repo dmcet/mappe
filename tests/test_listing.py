@@ -96,6 +96,40 @@ def test_onsite_requirement():
     assert outcomes([req("max_onsite_days", "2")], listing(remote=None))[0][0] == "unknown"
 
 
+def test_location_matching_normalises_umlauts_and_english_names():
+    from application_crew.checks.requirements import normalize_place
+
+    assert normalize_place("Nürnberg") == normalize_place("Nuernberg") == "nuernberg"
+    assert normalize_place("Nuremberg, Germany") == "nuernberg, germany"
+    assert outcomes([req("location", "Nürnberg, Fürth")], listing(location="Nuremberg"))[0][0] == (
+        "passed"
+    )
+    assert outcomes([req("location", "Fuerth")], listing(location="Fürth (Bayern)"))[0][0] == (
+        "passed"
+    )
+    assert outcomes([req("location", "Erlangen")], listing(location="Erlangenstadt"))[0][0] == (
+        "failed"
+    )
+
+
+def test_sentence_like_skills_move_to_qualifications():
+    extracted = demo_listing().model_copy(
+        update={
+            "required_skills": ["Kotlin", "5+ years of software engineering experience in teams"],
+            "nice_to_have_skills": ["Some comfort with asking people to change how they work"],
+            "qualifications": ["Excellent communication skills"],
+        }
+    )
+    merged = merge_listing(extracted, None, "en")
+    assert merged.required_skills == ["Kotlin"]
+    assert merged.nice_to_have_skills == []
+    assert merged.qualifications == [
+        "Excellent communication skills",
+        "5+ years of software engineering experience in teams",
+        "Some comfort with asking people to change how they work",
+    ]
+
+
 def test_location_requirement():
     assert outcomes([req("location", "Berlin, München")])[0][0] == "passed"
     assert outcomes([req("location", "Berlin")])[0][0] == "failed"
@@ -108,7 +142,7 @@ def test_fuzzy_requirements_need_a_verifiable_quote():
     checks = [
         FuzzyCheck(index=0, outcome="met", evidence="30  Urlaubstage"),  # whitespace differs
         FuzzyCheck(index=1, outcome="met", evidence="Firmenwagen inklusive"),  # not in text
-        FuzzyCheck(index=2, outcome="not_mentioned", evidence=None),
+        FuzzyCheck(index=2, outcome="not_mentioned", evidence=""),
     ]
     results = outcomes(reqs, checks=checks)
     assert results[0] == ("passed", "Mentioned in the listing")

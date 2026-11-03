@@ -67,6 +67,8 @@
     <p class="tags">{% for s in listing.required_skills %}<span>{{ s }}</span>{% else %}—{% endfor %}</p>
     <h2>Nice to have</h2>
     <p class="tags">{% for s in listing.nice_to_have_skills %}<span>{{ s }}</span>{% else %}—{% endfor %}</p>
+    <h2>Qualifications</h2>
+    <ul>{% for q in listing.qualifications %}<li>{{ q }}</li>{% else %}<li>—</li>{% endfor %}</ul>
   </div>
   <div class="card">
     <h2>Responsibilities</h2>

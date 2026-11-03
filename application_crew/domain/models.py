@@ -6,9 +6,9 @@ gets a stable ID (e.g. ``pos2.ach3``) so author output can be traced back to it.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Fact(BaseModel):
@@ -38,9 +38,25 @@ class Education(BaseModel):
     end: str | None = None
 
 
+SkillLevel = Literal["advanced", "intermediate", "basic"]
+
+
+class Skill(BaseModel):
+    name: str
+    level: SkillLevel | None = None  # normalised by Python from level_text
+    level_text: str | None = None  # as written in the CV, e.g. "Fortgeschritten"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_plain_name(cls, value: Any) -> Any:
+        # CVs parsed before skill levels existed stored skills as plain strings.
+        return {"name": value} if isinstance(value, str) else value
+
+
 class Position(BaseModel):
     id: str
-    company: str
+    company: str  # the employer
+    client: str | None = None  # client of a consulting assignment, if any
     role: str
     location: str | None = None
     start: str  # "YYYY-MM"
@@ -61,8 +77,9 @@ class Contact(BaseModel):
 
 class ParsedCV(BaseModel):
     contact: Contact
+    headline: str | None = None  # the CV's own title line, e.g. "Software Architect | ..."
     languages: list[Language] = Field(default_factory=list)
-    skills: list[str] = Field(default_factory=list)
+    skills: list[Skill] = Field(default_factory=list)
     soft_skills: list[str] = Field(default_factory=list)
     certifications: list[Certification] = Field(default_factory=list)
     education: list[Education] = Field(default_factory=list)
@@ -86,8 +103,9 @@ class ParsedListing(BaseModel):
     domain: str | None = None
     language: str = "en"  # set by Python, not Claude
     responsibilities: list[str] = Field(default_factory=list)
-    required_skills: list[str] = Field(default_factory=list)
+    required_skills: list[str] = Field(default_factory=list)  # short names only
     nice_to_have_skills: list[str] = Field(default_factory=list)
+    qualifications: list[str] = Field(default_factory=list)  # experience, soft skills, ...
     location: str | None = None
     remote: RemoteMode | None = None
     onsite_days_per_week: int | None = None

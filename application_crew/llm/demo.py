@@ -14,6 +14,7 @@ from application_crew.domain.extraction import (
     ExtractedEducation,
     ExtractedLanguage,
     ExtractedPosition,
+    ExtractedSkill,
 )
 from application_crew.domain.listing import ExtractedListing
 
@@ -23,7 +24,7 @@ def sample_cv(**overrides) -> ExtractedCV:
     data = dict(
         name="Jane Doe",
         city="Berlin",
-        address=None,
+        address="",
         email="jane@example.com",
         phone="+49 30 1234567",
         links=["https://github.com/janedoe"],
@@ -31,14 +32,20 @@ def sample_cv(**overrides) -> ExtractedCV:
             ExtractedLanguage(name="German", level="native"),
             ExtractedLanguage(name="English", level="C1"),
         ],
-        skills=["Python", "Kubernetes", "python", "PostgreSQL"],
+        headline="Senior Backend Engineer | Python & Cloud",
+        skills=[
+            ExtractedSkill(name="Python", level="Fortgeschritten"),
+            ExtractedSkill(name="Kubernetes", level="Grundlagen"),
+            ExtractedSkill(name="python", level=""),
+            ExtractedSkill(name="PostgreSQL", level=""),
+        ],
         soft_skills=[],
         certifications=[
             ExtractedCertification(
                 name="Certified Kubernetes Administrator",
                 abbreviation="CKA",
                 issuer="CNCF",
-                year=2023,
+                year="2023",
             )
         ],
         education=[
@@ -53,6 +60,7 @@ def sample_cv(**overrides) -> ExtractedCV:
         positions=[
             ExtractedPosition(
                 company="Acme GmbH",
+                client="",
                 role="Senior Backend Engineer",
                 location="Berlin",
                 start="2021-04",
@@ -64,6 +72,7 @@ def sample_cv(**overrides) -> ExtractedCV:
             ),
             ExtractedPosition(
                 company="Beta AG",
+                client="Gamma Bank",
                 role="Backend Engineer",
                 location="Hamburg",
                 start="2017-04",
@@ -78,9 +87,9 @@ def sample_cv(**overrides) -> ExtractedCV:
         publications=[],
         volunteering=[],
         notice_period="3 months",
-        earliest_start=None,
-        salary_expectation=None,
-        work_permit=None,
+        earliest_start="",
+        salary_expectation="",
+        work_permit="",
     )
     data.update(overrides)
     return ExtractedCV(**data)
@@ -89,13 +98,13 @@ def sample_cv(**overrides) -> ExtractedCV:
 def demo_cv() -> ExtractedCV:
     """The sample CV with a few gaps, so the demo shows warnings and quick fixes."""
     cv = sample_cv(
-        phone=None,
+        phone="",
         languages=[
             ExtractedLanguage(name="German", level="native"),
             ExtractedLanguage(name="English", level="fluent"),
         ],
     )
-    cv.positions[1].location = None
+    cv.positions[1].location = ""
     return cv
 
 
@@ -111,6 +120,7 @@ def demo_listing() -> ExtractedListing:
         ],
         required_skills=["Python", "FastAPI", "PostgreSQL", "Kubernetes"],
         nice_to_have_skills=["Kafka", "Terraform"],
+        qualifications=["5+ Jahre Erfahrung in der Backend-Entwicklung", "Sehr gutes Deutsch"],
         location="München",
         remote="hybrid",
         onsite_days_per_week=2,

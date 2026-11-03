@@ -50,3 +50,14 @@ async def test_failed_must_have_stops_the_run(tmp_path, fake_llm):
 
     with Session(db) as session:
         assert session.get(Run, run_id).status == RunStatus.STOPPED_BY_REQUIREMENTS
+
+
+async def test_text_without_listing_content_waits_for_pasted_text(tmp_path, fake_llm):
+    fake_llm.results["parse_listing"] = fake_llm.results["parse_listing"].model_copy(
+        update={"responsibilities": [], "required_skills": [], "nice_to_have_skills": []}
+    )
+    db, run_id = make_run(tmp_path)
+    await Engine(load_settings(DEFAULT_CONFIG_PATH)).drive(run_id)
+
+    with Session(db) as session:
+        assert session.get(Run, run_id).status == RunStatus.WAITING_FOR_LISTING_TEXT

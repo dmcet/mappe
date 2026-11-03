@@ -62,7 +62,9 @@ TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
         {RunStatus.PARSING_LISTING, RunStatus.WAITING_FOR_LISTING_TEXT}
     ),
     RunStatus.WAITING_FOR_LISTING_TEXT: frozenset({RunStatus.PARSING_LISTING}),
-    RunStatus.PARSING_LISTING: frozenset({RunStatus.CHECKING_REQUIREMENTS}),
+    RunStatus.PARSING_LISTING: frozenset(
+        {RunStatus.CHECKING_REQUIREMENTS, RunStatus.WAITING_FOR_LISTING_TEXT}
+    ),
     RunStatus.CHECKING_REQUIREMENTS: frozenset(
         {RunStatus.MATCHING, RunStatus.STOPPED_BY_REQUIREMENTS}
     ),

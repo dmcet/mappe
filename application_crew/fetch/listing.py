@@ -48,6 +48,12 @@ def detect_language(text: str) -> str:
     return "de" if lang == Language.GERMAN else "en"
 
 
+def _is_parent_path(candidate: str, path: str) -> bool:
+    """True if ``candidate`` is a strict parent of ``path`` (e.g. a redirect to the job index)."""
+    candidate, path = candidate.rstrip("/"), path.rstrip("/")
+    return candidate != path and path.startswith(candidate + "/")
+
+
 async def fetch_listing(url: str, timeout: float = 20.0) -> FetchResult:
     try:
         async with httpx.AsyncClient(
@@ -57,6 +63,13 @@ async def fetch_listing(url: str, timeout: float = 20.0) -> FetchResult:
             response.raise_for_status()
     except httpx.HTTPError as exc:
         return FetchResult(ok=False, error=f"fetch failed: {exc}")
+
+    original, final = httpx.URL(url), response.url
+    if final.host == original.host and _is_parent_path(final.path, original.path):
+        return FetchResult(
+            ok=False,
+            error=f"redirected to {final}; the listing has probably been taken down",
+        )
 
     html = response.text
     posting = extract_job_posting(html, str(response.url))

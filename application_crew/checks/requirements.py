@@ -89,15 +89,34 @@ def _onsite(req: Requirement, listing: ParsedListing) -> RequirementResult:
     return _result(req, "unknown", "Work mode not stated")
 
 
+# English and other exonyms of German cities -> the normalised German name.
+_CITY_ALIASES = {
+    "nuremberg": "nuernberg",
+    "munich": "muenchen",
+    "cologne": "koeln",
+    "brunswick": "braunschweig",
+    "hanover": "hannover",
+}
+_UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
+
+
+def normalize_place(text: str) -> str:
+    """'Nürnberg', 'Nuernberg' and 'Nuremberg' -> 'nuernberg'."""
+    text = re.sub(r"\s+", " ", text.casefold().translate(_UMLAUTS)).strip()
+    for alias, name in _CITY_ALIASES.items():
+        text = re.sub(rf"\b{alias}\b", name, text)
+    return text
+
+
 def _location(req: Requirement, listing: ParsedListing) -> RequirementResult:
     if listing.remote == "remote":
         return _result(req, "passed", "Fully remote")
     if not listing.location:
         return _result(req, "unknown", "No location stated")
-    wanted = [c.strip() for c in req.value.split(",") if c.strip()]
-    where = listing.location.casefold()
+    wanted = [normalize_place(c) for c in req.value.split(",") if c.strip()]
+    where = normalize_place(listing.location)
     for city in wanted:
-        if city.casefold() in where:
+        if re.search(rf"\b{re.escape(city)}\b", where):
             return _result(req, "passed", f"Located in {listing.location}")
     return _result(req, "failed", f"Located in {listing.location}")
 
@@ -105,7 +124,7 @@ def _location(req: Requirement, listing: ParsedListing) -> RequirementResult:
 def _fuzzy(req: Requirement, check: FuzzyCheck | None, listing_text: str) -> RequirementResult:
     if check is None or check.outcome == "not_mentioned":
         return _result(req, "unknown", "Not mentioned in the listing")
-    if not check.evidence or not _quote_in_text(check.evidence, listing_text):
+    if not check.evidence.strip() or not _quote_in_text(check.evidence, listing_text):
         return _result(req, "unknown", "No verifiable quote in the listing")
     outcome = "passed" if check.outcome == "met" else "failed"
     note = "Mentioned in the listing" if outcome == "passed" else "Contradicted by the listing"

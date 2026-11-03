@@ -29,7 +29,37 @@ def test_current_position_has_no_end_and_lists_are_deduplicated():
     cv = to_parsed_cv(make_extracted())
     assert cv.positions[0].end is None  # is_current wins over a bogus end date
     assert cv.positions[0].technologies == ["Python", "FastAPI"]
-    assert cv.skills == ["Python", "Kubernetes", "PostgreSQL"]
+    assert [(sk.name, sk.level) for sk in cv.skills] == [
+        ("Python", "advanced"),
+        ("Kubernetes", "basic"),
+        ("PostgreSQL", None),
+    ]
+
+
+def test_skill_levels_headline_and_client():
+    from application_crew.domain.extraction import ExtractedSkill, normalize_level
+
+    extracted = make_extracted(
+        skills=[
+            ExtractedSkill(name="Kotlin", level=""),
+            ExtractedSkill(name="kotlin", level="Fortgeschritten"),  # duplicate fills the level
+            ExtractedSkill(name="VHAL", level="Grundlagen:"),
+            ExtractedSkill(name="Python", level="Mittel"),
+            ExtractedSkill(name="Rust", level="3 Jahre"),  # unknown wording is kept as text
+        ]
+    )
+    cv = to_parsed_cv(extracted)
+    assert [(sk.name, sk.level, sk.level_text) for sk in cv.skills] == [
+        ("Kotlin", "advanced", "Fortgeschritten"),
+        ("VHAL", "basic", "Grundlagen:"),
+        ("Python", "intermediate", "Mittel"),
+        ("Rust", None, "3 Jahre"),
+    ]
+    assert cv.headline == "Senior Backend Engineer | Python & Cloud"
+    assert cv.positions[0].client is None
+    assert cv.positions[1].client == "Gamma Bank"
+    assert normalize_level("Sehr gute Kenntnisse") == "advanced"
+    assert normalize_level("") is None
 
 
 def test_complete_cv_has_no_warnings():
@@ -38,12 +68,12 @@ def test_complete_cv_has_no_warnings():
 
 def test_missing_and_invalid_data_is_reported():
     extracted = make_extracted(
-        email=None,
-        phone=None,
+        email="",
+        phone="",
         languages=[ExtractedLanguage(name="Spanish", level="good")],
     )
     extracted.positions[1].start = "April 2017"
-    extracted.positions[1].location = None
+    extracted.positions[1].location = ""
     warnings = check_cv(to_parsed_cv(extracted), today=TODAY)
 
     assert "Contact: no email found." in warnings
@@ -107,3 +137,11 @@ async def test_parse_cv_job_failure_is_stored(tmp_path, fake_llm):
         cv = session.get(CV, cv_id)
         assert cv.status == CVStatus.FAILED
         assert cv.error == "API unavailable"
+
+
+def test_cvs_stored_before_skill_levels_still_load():
+    from application_crew.domain.models import ParsedCV
+
+    old = to_parsed_cv(make_extracted()).model_dump(mode="json")
+    old["skills"] = ["Python", "Kubernetes"]
+    assert [s.name for s in ParsedCV.model_validate(old).skills] == ["Python", "Kubernetes"]

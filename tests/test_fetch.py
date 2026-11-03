@@ -35,3 +35,12 @@ def test_no_job_posting():
 def test_detect_language():
     assert detect_language("Wir suchen ab sofort eine Softwareentwicklerin für unser Team.") == "de"
     assert detect_language("We are looking for a software engineer to join our team.") == "en"
+
+
+def test_redirect_to_parent_path_is_detected():
+    from application_crew.fetch.listing import _is_parent_path
+
+    assert _is_parent_path("/karriere/stellenangebote", "/karriere/stellenangebote/job/x-71096")
+    assert _is_parent_path("/karriere/stellenangebote/", "/karriere/stellenangebote/job/x")
+    assert not _is_parent_path("/jobs/123", "/jobs/123/")
+    assert not _is_parent_path("/de/jobs/123", "/jobs/123")

@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from application_crew.domain.models import ParsedListing, RemoteMode, SalaryPeriod
+from application_crew.domain.models import ParsedListing, SalaryPeriod
 
 
 class FuzzyCheck(BaseModel):
@@ -19,29 +19,41 @@ class FuzzyCheck(BaseModel):
 
     index: int = Field(description="Index of the requirement in the given list")
     outcome: Literal["met", "not_met", "not_mentioned"]
-    evidence: str | None = Field(
-        description="Verbatim quote from the listing supporting the outcome; null if not mentioned"
+    evidence: str = Field(
+        description="Verbatim quote from the listing supporting the outcome. Empty string if not "
+        "mentioned."
     )
 
 
+# No optional fields (see extraction.py): "not stated" is "", 0 or "not_stated".
 class ExtractedListing(BaseModel):
-    title: str | None
-    company: str | None
-    domain: str | None = Field(
+    """Every string field: empty string if not stated."""
+
+    title: str
+    company: str
+    domain: str = Field(
         description="Industry of the company (automotive, banking, ...) if stated or obvious"
     )
     responsibilities: list[str]
-    required_skills: list[str]
-    nice_to_have_skills: list[str]
-    location: str | None = Field(description="City or cities of the workplace")
-    remote: RemoteMode | None
-    onsite_days_per_week: int | None = Field(
-        description="For hybrid: maximum onsite days per week stated; null if not stated"
+    required_skills: list[str] = Field(
+        description="Required technologies, tools and methods as short names (e.g. 'Kotlin')"
     )
-    salary_min: int | None
-    salary_max: int | None
-    salary_currency: str | None = Field(description="ISO code, e.g. EUR")
-    salary_period: SalaryPeriod | None
+    nice_to_have_skills: list[str] = Field(
+        description="Optional technologies, tools and methods as short names"
+    )
+    qualifications: list[str] = Field(
+        description="Everything else asked of the candidate: years of experience, "
+        "responsibilities held, soft skills, degrees, languages"
+    )
+    location: str = Field(description="City or cities of the workplace")
+    remote: Literal["remote", "hybrid", "onsite", "not_stated"]
+    onsite_days_per_week: int = Field(
+        description="For hybrid: maximum onsite days per week stated. 0 if not stated."
+    )
+    salary_min: int = Field(description="0 if not stated")
+    salary_max: int = Field(description="0 if not stated")
+    salary_currency: str = Field(description="ISO code, e.g. EUR")
+    salary_period: Literal["year", "month", "hour", "not_stated"]
     benefits: list[str]
     cover_letter_requested: bool = Field(
         description="True only if the listing explicitly asks for a cover letter / Anschreiben"
@@ -105,8 +117,39 @@ def _to_int(value: Any) -> int | None:
         return None
 
 
-def merge_listing(extracted: ExtractedListing, job_posting: dict[str, Any] | None, language: str):
+def _clean(extracted: ExtractedListing) -> dict[str, Any]:
+    """Map Claude's "not stated" markers ("", 0, "not_stated") to None."""
     data = extracted.model_dump(exclude={"requirement_checks"})
+    for key, value in data.items():
+        if isinstance(value, str):
+            data[key] = None if value.strip() in {"", "not_stated"} else value.strip()
+        elif isinstance(value, int) and not isinstance(value, bool) and value <= 0:
+            data[key] = None
+    data["cover_letter_requested"] = extracted.cover_letter_requested
+    return data
+
+
+MAX_SKILL_WORDS = 5
+
+
+def _split_skills(data: dict[str, Any]) -> None:
+    """Safety net: move sentence-like "skills" into qualifications, keeping their order."""
+    moved = []
+    for key in ("required_skills", "nice_to_have_skills"):
+        keep = []
+        for item in data[key]:
+            (moved if len(item.split()) > MAX_SKILL_WORDS else keep).append(item)
+        data[key] = keep
+    data["qualifications"] = data["qualifications"] + [
+        m for m in moved if m not in data["qualifications"]
+    ]
+
+
+def merge_listing(
+    extracted: ExtractedListing, job_posting: dict[str, Any] | None, language: str
+) -> ParsedListing:
+    data = _clean(extracted)
+    _split_skills(data)
     for key, value in from_job_posting(job_posting).items():
         if value is not None:
             data[key] = value

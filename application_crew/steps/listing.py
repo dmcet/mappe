@@ -91,6 +91,13 @@ async def parse(ctx: StepContext) -> RunStatus:
     ctx.session.add(run)
     ctx.session.commit()
     ctx.emit("usage", f"parse_listing ≈ ${cost:.4f}", **usage.__dict__)
+    if not listing.responsibilities and not listing.required_skills:
+        ctx.emit(
+            "step_progress",
+            "the text contains no responsibilities or skills, so it's probably not the listing "
+            "(cookie banner, job index or login page); waiting for pasted text",
+        )
+        return RunStatus.WAITING_FOR_LISTING_TEXT
     title = " · ".join(x for x in (listing.title, listing.company) if x) or "listing"
     ctx.emit("step_progress", f"parsed {title} ({listing.language})")
     return RunStatus.CHECKING_REQUIREMENTS
