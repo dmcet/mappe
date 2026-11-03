@@ -11,6 +11,18 @@ stop_after_no_improvement = 2
 recruiter_pass_score = 3.5  # average rubric score (1-5); the recruiter must also invite
 cost_limit_usd = 2.0        # per run; 0 = no limit
 
+# Job search (no Claude calls). See docs/job-search-plan.md.
+[search]
+# Also available: "remoteok" (mostly US jobs). "adzuna" needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
+sources = ["ba", "arbeitnow", "remotive", "jobicy", "adzuna"]
+max_results_per_source = 100
+max_age_days = 30
+radius_km = 30
+timeout_seconds = 20
+cache_minutes = 60        # for sources without server-side search
+list_pages = 3            # Arbeitnow: newest 3 x 300 jobs
+min_score = 30            # lower scores are hidden behind "show low matches"
+
 # Per-step model and effort. See docs/architecture.md, section 4.
 [llm.default]
 model = "claude-opus-5-5"

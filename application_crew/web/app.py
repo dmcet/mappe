@@ -17,7 +17,7 @@ from application_crew.config import PROJECT_ROOT, get_settings
 from application_crew.db import init_engine
 from application_crew.render.typst import typst_available
 from application_crew.runner.engine import Engine
-from application_crew.web import cvs, live, runs
+from application_crew.web import cvs, live, runs, search
 
 log = logging.getLogger(__name__)
 FRONTEND_DIR = Path(os.environ.get("APP_FRONTEND_DIR", PROJECT_ROOT / "frontend" / "dist"))
@@ -44,6 +44,7 @@ app = FastAPI(title="Application Crew", lifespan=lifespan)
 app.include_router(cvs.router)
 app.include_router(runs.router)
 app.include_router(live.router)
+app.include_router(search.router)
 
 
 @app.get("/health")

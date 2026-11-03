@@ -1,0 +1,90 @@
+[
+ {
+  "last_updated": 1793721625,
+  "legal": "API Terms of Service: Please link back (with follow, and without nofollow!) to the URL on Remote OK and mention Remote OK as a source, so we get traffic back from your site. If you do not we'll have to suspend API access.\n\nPlease don't use the Remote OK logo without written permission as it's a registered trademark, please DO use our name Remote OK though."
+ },
+ {
+  "slug": "remote-ai-ml-engineer-docusketch-1137619",
+  "id": "1137619",
+  "epoch": 1793616215,
+  "date": "2026-11-02T10:43:35+00:00",
+  "company": "Docusketch",
+  "company_logo": "",
+  "position": "AI ML Engineer",
+  "tags": [
+   "dev",
+   "ai",
+   "machine learning",
+   "deep learning",
+   "artificial intelligence",
+   "neural networks",
+   "3D",
+   "exec",
+   "PyTorch",
+   "product"
+  ],
+  "description": "<p>The fastest-growing European SaaS company is searching for anÂ <strong>AI/ML Engineer</strong><strong>!</strong><br />You can be our perfect match!<br /><br /><strong>About DocuSketch:</strong><br />DocuSketch, with its European Headquarters in Potsdam, Germany, is a leading European software technology provider for the digital real estate economy. With our product brands Immoviewer and DocuSketch, we have become one of the most successful and fastest-growing software vendors in the rapidly expanding property tech sector. Our enthusiastic customer base is located across Europe and North America. DocuSketch's groundbreaking digital technology greatly facilitates real estate companies and building restoration companies to digitize, visualize, and virtualize real estate properties. Our solutions help our clients realize tremendous cost-saving potentials, process optimization, and revenue growth.Â <br />Youâll be working in a team that drives the company's AI development to developÂ algorithms for a variety of different use cases. This includes e.g. working withÂ equirectangular, phone, or satellite images to detect doors, windows, or other objects insideÂ of buildings or finding facets on the roof. Youâll be challenged by solving complex 3DÂ geometry problems and working closely with our labeling team to ensure the best possibleÂ data quality.<br /><br /><strong>Responsibilities and Duties:</strong><br />Â·Â Research, train and deploy state-of-the-art machine learning models for objectÂ detection and 3D perception on equirectangular images<br />Â·Â Quickly prototype new ideas/technologies to create proof of concept and demos<br /><br /><strong>Qualifications:</strong><br />Â·Â Bachelorâs Degree in Computer Science or equivalent experience<br />Â·Â Excellent math skills<br />Â·Â Experience with 3D computer vision algorithms<br />Â·Â Preferably 5+ years of experience developing and training machine learning models<br />Â·Â StrongÂ Experience with Deep ML frameworks (PyTorch)<br />Â·Â Strong Experience in Python<br />Â·Â Self-motivated and energetic team player with a strong work ethic and cooperativeÂ attitude<br />Â·Â Excellent communication and organizational skills<br /><br /><strong>Plus:</strong><br />Â·Â Familiarity with building big data systems<br />Â·Â Training very large models using multiple GPUs in the cloud<br />Â·Â Experience with training machine learning models on equirectangular images<br /><br />We are seeking a performance-driven, hi",
+  "location": "",
+  "salary_min": 10000,
+  "salary_max": 120000,
+  "apply_url": "https://remoteOK.com/remote-jobs/remote-ai-ml-engineer-docusketch-1137619",
+  "original": true,
+  "verified": true,
+  "logo": "",
+  "url": "https://remoteOK.com/remote-jobs/remote-ai-ml-engineer-docusketch-1137619"
+ },
+ {
+  "slug": "remote-software-engineer-infrastructure-sodalis-inc-1137614",
+  "id": "1137614",
+  "epoch": 1793577613,
+  "date": "2026-11-02T00:00:13+00:00",
+  "company": "Sodalis, Inc.",
+  "company_logo": "",
+  "position": "Software Engineer Infrastructure",
+  "tags": [
+   "dev",
+   "design",
+   "embedded",
+   "sys admin",
+   "cloud",
+   "ruby",
+   "exec",
+   "ops",
+   "golang",
+   "medical",
+   "engineer",
+   "digital nomad"
+  ],
+  "description": "<h1>Software Engineer, Infrastructure</h1><p style=\"min-height:1.5em\"><strong>Hybrid in Palo Alto (Mon / Wed / Thurs) Â· $185Kâ$215K base + meaningful early-stage equity + full benefits</strong></p><div style=\"min-height:1.2em;margin-top:0px;margin-bottom:0px\">Â </div><h2>About Sodalis</h2><p style=\"min-height:1.5em\">Specialty pharmacy is where the most complex and expensive drugs reach the most in-need patients, and it still runs on faxes, phone tag, and manual data entry. Patients wait weeks for therapies that can't wait.</p><p style=\"min-height:1.5em\">Sodalis is building AI agents that run those operations end to end: reading and validating prescriptions, handling phone calls, and moving prescriptions through eligibility and fulfillment. The ambition goes beyond that. We want to be the rails every specialty prescription runs on, and the first system to perform clinical review at the standard of a pharmacist.</p><p style=\"min-height:1.5em\">We're already in production, processing tens of thousands of prescriptions a week. Backed by Gradient Ventures (Google's AI fund), and founded by veterans of Apple's Applied ML, Included Health, and Avella Specialty Pharmacy (scaled to $1.5B+ before its acquisition by OptumRx).</p><div style=\"min-height:1.2em;margin-top:0px;margin-bottom:0px\">Â </div><h2>The Opportunity</h2><p style=\"min-height:1.5em\">Everything we run today is cloud-based, and so are the pharmacy management systems we integrate with. But most of the specialty pharmacy market runs on-prem. To reach it, our system has to run on the pharmacy's systems instead of ours. Whether that's the full stack on-site or a hybrid split with our cloud is one of the first decisions you'd make. That's the problem you'd own.<br />We've never shipped an on-prem deployment, so there's no pattern to follow. You'll decide how our architecture gets packaged and deployed into environments we don't control, what has to change in our current infrastructure to make that possible, and how we maintain and see into those deployments once they're live.</p><p style=\"min-height:1.5em\">We don't yet know what these environments look like in detail. Some pharmacies may have restricted outbound access, legacy hardware, or IT teams that can't give us a login; others may be more open. Part of the job is going in with our customer, finding out what's actually there, and designing something that works across the range.<br />You'll start with our AI pharmacy tech product, rolling out with a c",
+  "location": "Palo Alto",
+  "salary_min": 185000,
+  "salary_max": 215000,
+  "apply_url": "https://remoteOK.com/remote-jobs/remote-software-engineer-infrastructure-sodalis-inc-1137614",
+  "logo": "",
+  "url": "https://remoteOK.com/remote-jobs/remote-software-engineer-infrastructure-sodalis-inc-1137614"
+ },
+ {
+  "slug": "remote-team-lead-account-executive-capmo-1137613",
+  "id": "1137613",
+  "epoch": 1793577607,
+  "date": "2026-11-02T00:00:07+00:00",
+  "company": "Capmo",
+  "company_logo": "",
+  "position": "Team Lead Account Executive",
+  "tags": [
+   "saas",
+   "exec",
+   "junior",
+   "marketing",
+   "sales"
+  ],
+  "description": "<h1>Deine Rolle</h1><p>Unser Account Executive Team ist der Wachstumsmotor von Capmo â und du sorgst dafÃ¼r, dass er noch schneller und effizienter lÃ¤uft. Als Team Lead Account Executive (m/w/*) fÃ¼hrst du unser bestehendes AE-Team im Daily Business, Ã¼bersetzt unsere Sales-Strategie in konkrete MaÃnahmen und entwickelst unsere Prozesse kontinuierlich weiter. Du bist Sparringspartner, Coach und erste Anlaufstelle fÃ¼r dein Team â mit klarem Fokus auf Performance, Entwicklung und nachhaltiges Wachstum.<br><h3><br></h3><h3>Deine Aufgaben</h3><ul><li><strong>Team fÃ¼hren &amp; entwickeln</strong>: Du fÃ¼hrst ein Team an Account Executives operativ und entwickelst insbesondere unsere Junior AEs gezielt weiter â von erfolgreicher Discovery bis zum Aufbau starker Champions.</li><li><strong>Deals coachen &amp; Performance steigern</strong>: Du bist nah am Deal-Geschehen, challengst Strategien und PrioritÃ¤ten und hilfst deinem Team, komplexe Opportunities erfolgreich voranzutreiben.</li><li><strong>Forecast &amp; Pipeline im Griff haben</strong>: Du stellst gemeinsam mit deinem Team eine saubere, belastbare Pipeline sicher und verantwortest prÃ¤zise Forecasts gegenÃ¼ber dem Sales-Lead.</li><li><strong>KPIs verantworten</strong>: Du behÃ¤ltst die zentralen SaaS-KPIs im Blick â darunter Pipeline Coverage, Win Rate, Sales Cycle und Quota Attainment â und leitest daraus konkrete MaÃnahmen fÃ¼r dein Team ab.</li><li><strong>Sales Skills weiterentwickeln</strong>: Du nutzt echte Deals, Calls und CRM-Daten, um dein Team gezielt in Bereichen wie Discovery, Champion Development und VerhandlungsfÃ¼hrung zu coachen.</li><li><strong>Sales-Prozess weiterentwickeln</strong>: Du erkennst frÃ¼h, wo Prozesse im Sales-Alltag nicht funktionieren, bringst VerbesserungsvorschlÃ¤ge ein und setzt diese gemeinsam mit der Sales-Leitung um.</li><li><strong>Kollaboration</strong>: Du arbeitest eng mit Marketing, Customer Success und Product zusammen und sorgst dafÃ¼r, dass relevantes Feedback aus dem Markt im Unternehmen ankommt.</li></ul></p><br><h1>Das bieten wir dir</h1><p><ul><li><strong>Be rewarded for your work</strong>: Provision Ã¼ber 100 % mÃ¶glich â schieÃe Ã¼ber deine Ziele hinaus und profitiere davon.</li><li><strong>Become a shareholder!</strong> Partizipiere mit unserem Mitarbeiterbeteiligungsprogramm (VSOP) direkt an unserem Erfolg.</li><li><strong>Become an AI pro!&nbsp;</strong>Werde Experte im B2B-Vertrieb, indem du tÃ¤glich mit modernsten KI-Tools arbeite",
+  "location": "",
+  "apply_url": "https://remoteOK.com/remote-jobs/remote-team-lead-account-executive-capmo-1137613",
+  "verified": true,
+  "salary_min": 0,
+  "salary_max": 0,
+  "logo": "",
+  "url": "https://remoteOK.com/remote-jobs/remote-team-lead-account-executive-capmo-1137613"
+ }
+]

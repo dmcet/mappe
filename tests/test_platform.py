@@ -40,7 +40,7 @@ def test_fresh_database_is_migrated_to_head(tmp_path):
     con = sqlite3.connect(db)
     tables = {r[0] for r in con.execute("select name from sqlite_master where type='table'")}
     assert {"cv", "run", "event", "usage", "alembic_version"} <= tables
-    assert con.execute("select version_num from alembic_version").fetchone()[0] == "0002"
+    assert con.execute("select version_num from alembic_version").fetchone()[0] == "0003"
 
 
 def test_database_from_before_migrations_is_adopted_and_keeps_its_data(tmp_path):
@@ -52,7 +52,7 @@ def test_database_from_before_migrations_is_adopted_and_keeps_its_data(tmp_path)
 
     engine = init_engine(f"sqlite:///{db}")
     con = sqlite3.connect(db)
-    assert con.execute("select version_num from alembic_version").fetchone()[0] == "0002"
+    assert con.execute("select version_num from alembic_version").fetchone()[0] == "0003"
     assert con.execute("select count(*) from run").fetchone()[0] == 1
     with Session(engine) as session:
         rows = session.exec(select(Usage).order_by(Usage.cost_usd)).all()

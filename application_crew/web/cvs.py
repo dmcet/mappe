@@ -10,10 +10,11 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from application_crew.checks.completeness import check_cv
-from application_crew.db import CV, Run
+from application_crew.db import CV, Run, Search
 from application_crew.domain.models import ParsedCV
 from application_crew.domain.summary import summarize
 from application_crew.runner.states import WORKING, CVStatus
+from application_crew.search.service import delete_search
 from application_crew.web.deps import SessionDep, engine_of, remove_run
 
 router = APIRouter(prefix="/api/cvs")
@@ -180,5 +181,7 @@ def delete_cv(
         raise HTTPException(409, f"Applications {busy} are still working; wait until they pause")
     for run in runs:
         remove_run(session, run)
+    for search in session.exec(select(Search).where(Search.cv_id == cv_id)).all():
+        delete_search(session, search)
     session.delete(cv)
     session.commit()

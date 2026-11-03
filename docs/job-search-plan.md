@@ -224,5 +224,5 @@ cache_minutes = 60            # for sources without server-side search (Arbeitno
    republishing; this app is local and single-user, so that doesn't apply.
 4. **Rate limits.** Make at most ~5 queries per source per search, cache list-only sources,
    send a descriptive User-Agent (the one in `fetch/listing.py`).
-5. **Ranking quality.** Check against ~5 real searches with the user's CV before phase 4
+5. **Ranking quality.** Check against ~5 real searches with the user's CV before phase 3
    decides on embeddings.

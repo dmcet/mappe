@@ -28,12 +28,25 @@ class ReviewConfig:
 
 
 @dataclass(frozen=True)
+class SearchConfig:
+    sources: tuple[str, ...] = ("ba", "arbeitnow", "remotive", "jobicy", "adzuna")
+    max_results_per_source: int = 100
+    max_age_days: int = 30
+    radius_km: int = 30
+    timeout_seconds: float = 20.0
+    cache_minutes: int = 60
+    list_pages: int = 3  # for sources without search (Arbeitnow): newest N pages
+    min_score: float = 30.0  # hits below are hidden behind "show low matches"
+
+
+@dataclass(frozen=True)
 class Settings:
     data_dir: Path
     max_concurrent_runs: int
     review: ReviewConfig
     llm_default: StepLLMConfig
     llm_steps: dict[str, StepLLMConfig] = field(default_factory=dict)
+    search: SearchConfig = field(default_factory=SearchConfig)
     demo: bool = False  # canned Claude responses, no API calls (APP_DEMO=1)
     demo_delay_s: float = 0.0  # pause per demo "Claude call" (APP_DEMO_DELAY), to see the status
 
@@ -65,12 +78,17 @@ def load_settings(path: Path | None = None) -> Settings:
         for name, overrides in llm.get("steps", {}).items()
     }
 
+    search_raw = dict(raw.get("search", {}))
+    if "sources" in search_raw:
+        search_raw["sources"] = tuple(search_raw["sources"])
+
     return Settings(
         data_dir=data_dir,
         max_concurrent_runs=int(app.get("max_concurrent_runs", 2)),
         review=ReviewConfig(**raw.get("review", {})),
         llm_default=llm_default,
         llm_steps=llm_steps,
+        search=SearchConfig(**search_raw),
         demo=os.environ.get("APP_DEMO", "").strip().lower() in {"1", "true", "yes"},
         demo_delay_s=float(os.environ.get("APP_DEMO_DELAY", "0") or 0),
     )

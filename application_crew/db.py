@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import JSON, Column, inspect
+from sqlalchemy import JSON, Column, UniqueConstraint, inspect
 from sqlalchemy.engine import Engine
 from sqlmodel import Field, Session, SQLModel, create_engine
 
@@ -69,6 +69,46 @@ class Usage(SQLModel, table=True):
     cache_read_tokens: int = 0
     cache_write_tokens: int = 0
     cost_usd: float = 0.0
+
+
+class Search(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    cv_id: int = Field(foreign_key="cv.id", index=True)
+    titles: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    places: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    remote_only: bool = False
+    requirements: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    # Per source: {"label", "count", "error", "seconds"}.
+    sources: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=_now, index=True)
+
+
+class JobHitRecord(SQLModel, table=True):
+    """A listing seen in a search; stored once per source listing, across searches."""
+
+    __tablename__ = "job_hit"
+    __table_args__ = (UniqueConstraint("source", "external_id"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    source: str
+    external_id: str
+    data: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))  # JobHit
+    status: str = "new"  # new | dismissed | applied
+    run_id: int | None = None  # plain ID: the run may be deleted
+    first_seen_at: datetime = Field(default_factory=_now)
+    last_seen_at: datetime = Field(default_factory=_now)
+
+
+class SearchResult(SQLModel, table=True):
+    __tablename__ = "search_result"
+
+    id: int | None = Field(default=None, primary_key=True)
+    search_id: int = Field(foreign_key="search.id", index=True)
+    hit_id: int = Field(foreign_key="job_hit.id", index=True)
+    score: float = 0.0
+    reasons: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    hidden: str | None = None  # dismissed | requirements | elsewhere | low_score
+    is_new: bool = False  # first seen in this search
 
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"

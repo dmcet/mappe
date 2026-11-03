@@ -162,26 +162,46 @@ def last_requirements(session: SessionDep) -> list[dict]:
     return run.requirements if run else []
 
 
-@router.post("", status_code=201)
-def create_runs(body: RunCreate, request: Request, session: SessionDep) -> list[dict]:
-    cv = session.get(CV, body.cv_id)
+def confirmed_cv(session: Session, cv_id: int) -> CV:
+    cv = session.get(CV, cv_id)
     if cv is None:
         raise HTTPException(404, "CV not found")
     if cv.status != CVStatus.CONFIRMED:
         raise HTTPException(409, "Confirm the CV before starting an application")
-    reqs = [r.model_dump(mode="json") for r in body.requirements]
+    return cv
+
+
+def start_runs(
+    request: Request,
+    session: Session,
+    cv: CV,
+    listings: list[tuple[str | None, str | None]],
+    requirements: list[Requirement],
+) -> list[Run]:
+    """Create one run per (url, text) and queue them. With text, the fetch step is skipped."""
+    reqs = [r.model_dump(mode="json") for r in requirements]
     runs = [
-        Run(cv_id=cv.id, listing_url=u.strip(), requirements=reqs) for u in body.urls if u.strip()
+        Run(cv_id=cv.id, listing_url=url, listing_text=text, requirements=reqs)  # type: ignore[arg-type]
+        for url, text in listings
     ]
-    if body.listing_text.strip():
-        runs.append(Run(cv_id=cv.id, listing_text=body.listing_text.strip(), requirements=reqs))
-    if not runs:
-        raise HTTPException(400, "Provide at least one URL or a pasted listing")
     session.add_all(runs)
     session.commit()
     for run in runs:
         engine_of(request).enqueue(run.id)  # type: ignore[arg-type]
-    return [run_summary(r) for r in runs]
+    return runs
+
+
+@router.post("", status_code=201)
+def create_runs(body: RunCreate, request: Request, session: SessionDep) -> list[dict]:
+    cv = confirmed_cv(session, body.cv_id)
+    listings: list[tuple[str | None, str | None]] = [
+        (u.strip(), None) for u in body.urls if u.strip()
+    ]
+    if body.listing_text.strip():
+        listings.append((None, body.listing_text.strip()))
+    if not listings:
+        raise HTTPException(400, "Provide at least one URL or a pasted listing")
+    return [run_summary(r) for r in start_runs(request, session, cv, listings, body.requirements)]
 
 
 @router.get("/{run_id}")
