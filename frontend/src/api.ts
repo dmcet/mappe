@@ -6,6 +6,10 @@ import type {
   Requirement,
   RunDetail,
   RunSummary,
+  SavedSearch,
+  SearchDetail,
+  SearchSource,
+  SearchSummary,
 } from "./types";
 
 export class ApiError extends Error {
@@ -79,6 +83,30 @@ export const api = {
   deleteRun: (id: number) => request<void>("DELETE", `/api/runs/${id}`),
 
   costs: () => request<CostSummary>("GET", "/api/costs"),
+
+  searchSuggestions: (cvId: number) =>
+    request<{ titles: string[]; sources: SearchSource[] }>(
+      "GET",
+      `/api/search/suggestions?cv_id=${cvId}`,
+    ),
+  searches: () => request<SearchSummary[]>("GET", "/api/searches"),
+  search: (id: number) => request<SearchDetail>("GET", `/api/searches/${id}`),
+  createSearch: (body: {
+    cv_id: number;
+    titles: string[];
+    requirements: Requirement[];
+    sources: string[];
+  }) => request<SearchDetail>("POST", "/api/searches", body),
+  deleteSearch: (id: number) => request<void>("DELETE", `/api/searches/${id}`),
+  dismissHit: (id: number) => request<{ status: string }>("POST", `/api/job-hits/${id}/dismiss`),
+  restoreHit: (id: number) => request<{ status: string }>("POST", `/api/job-hits/${id}/restore`),
+  savedSearches: () => request<SavedSearch[]>("GET", "/api/saved-searches"),
+  saveSearch: (searchId: number, name = "") =>
+    request<SavedSearch>("POST", "/api/saved-searches", { search_id: searchId, name }),
+  runSaved: (id: number) => request<SearchDetail>("POST", `/api/saved-searches/${id}/run`),
+  deleteSaved: (id: number) => request<void>("DELETE", `/api/saved-searches/${id}`),
+  applyHits: (searchId: number, hitIds: number[]) =>
+    request<RunSummary[]>("POST", `/api/searches/${searchId}/apply`, { hit_ids: hitIds }),
 };
 
 export const files = {

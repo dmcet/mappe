@@ -25,6 +25,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <NavLink to="/" end>
               Applications
             </NavLink>
+            <NavLink to="/search">Find jobs</NavLink>
             <NavLink to="/cvs">CVs</NavLink>
             <NavLink to="/costs">Costs</NavLink>
           </nav>

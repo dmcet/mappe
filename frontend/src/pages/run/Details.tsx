@@ -32,6 +32,19 @@ export function RequirementsPanel({ run }: { run: RunDetail }) {
   );
 }
 
+/** The listing's page: where the fetch ended up (after redirects), else the given URL. */
+export function listingUrl(run: RunDetail): string | null {
+  return run.state.fetch?.final_url || run.listing_url || null;
+}
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 export function ListingPanel({ run }: { run: RunDetail }) {
   const l = run.state.listing;
   if (!l) return null;
@@ -41,9 +54,30 @@ export function ListingPanel({ run }: { run: RunDetail }) {
           l.salary_max && l.salary_max !== l.salary_min ? `–${l.salary_max.toLocaleString()}` : ""
         } ${l.salary_currency ?? ""}/${l.salary_period ?? "?"}`
       : "not stated";
+  const url = listingUrl(run);
   return (
-    <Section title="The listing" eyebrow={l.company ?? undefined}>
+    <Section
+      title="The listing"
+      eyebrow={l.company ?? undefined}
+      actions={
+        url && (
+          <a href={url} target="_blank" rel="noreferrer noopener">
+            Open listing ↗
+          </a>
+        )
+      }
+    >
       <dl className="kv">
+        <dt>Source</dt>
+        <dd>
+          {url ? (
+            <a href={url} target="_blank" rel="noreferrer noopener" title={url}>
+              {hostOf(url)}
+            </a>
+          ) : (
+            "pasted text"
+          )}
+        </dd>
         <dt>Location</dt>
         <dd>{l.location ?? "—"}</dd>
         <dt>Work mode</dt>

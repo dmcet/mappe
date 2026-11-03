@@ -25,13 +25,14 @@ LABELS = {
 
 @dataclass
 class Activity:
-    kind: str  # "run" | "cv"
+    kind: str  # "run" | "cv" | "search"
     id: int
     title: str
     phase: str = ""  # pipeline status, e.g. "reviewing"
     detail: str = ""  # what exactly happens now
     model: str | None = None  # set while waiting for Claude
     draft: int | None = None
+    progress: dict | None = None  # search: per source {"label", "state", "count", "error"}
     started_at: float = field(default_factory=time.time)
     detail_since: float = field(default_factory=time.time)
 
@@ -70,6 +71,7 @@ def update(
     model: str | None = None,
     draft: int | None = None,
     title: str | None = None,
+    progress: dict | None = None,
 ) -> None:
     """Update the current job's activity. No-op outside a job (e.g. in tests)."""
     key = _current.get()
@@ -82,6 +84,8 @@ def update(
         job.title = title
     if draft is not None:
         job.draft = draft
+    if progress is not None:
+        job.progress = progress
     if detail is not None:
         job.detail = detail
         job.model = model

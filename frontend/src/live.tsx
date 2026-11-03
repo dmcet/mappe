@@ -15,7 +15,7 @@ interface Live {
   version: (kind: "run" | "cv" | "any", id?: number) => number;
 }
 
-const LiveContext = createContext<Live>({
+export const LiveContext = createContext<Live>({
   status: null,
   connected: false,
   version: () => 0,

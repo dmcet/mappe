@@ -38,6 +38,13 @@ RUN uv sync --no-dev --no-install-project
 COPY application_crew ./application_crew
 RUN uv sync --no-dev
 
+# --- Semantic ranking model (job search), downloaded once at build time -----
+# Must match [search].semantic_model in config.toml.
+FROM builder AS models
+ARG SEMANTIC_MODEL=jinaai/jina-embeddings-v2-base-de
+RUN /opt/venv/bin/python -c "from fastembed import TextEmbedding; \
+TextEmbedding('${SEMANTIC_MODEL}', cache_dir='/opt/models')"
+
 # --- Runtime ----------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils fonts-liberation \
@@ -46,6 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils f
     && mkdir -p /data && chown app:app /data
 COPY --from=typst /usr/local/bin/typst /usr/local/bin/typst
 COPY --from=builder /opt/venv /opt/venv
+COPY --from=models /opt/models /opt/models
 WORKDIR /app
 COPY --chown=app:app application_crew ./application_crew
 COPY --chown=app:app typst ./typst
@@ -53,6 +61,8 @@ COPY --chown=app:app prompts ./prompts
 COPY --chown=app:app config.toml ./
 COPY --from=frontend --chown=app:app /frontend/dist ./frontend/dist
 ENV PATH="/opt/venv/bin:${PATH}" \
+    FASTEMBED_CACHE_PATH=/opt/models \
+    HF_HUB_OFFLINE=1 \
     PYTHONUNBUFFERED=1 \
     APP_DATA_DIR=/data
 USER app

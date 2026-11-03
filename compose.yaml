@@ -10,6 +10,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # not needed with APP_DEMO=1
       APP_DEMO: ${APP_DEMO:-0}
       APP_DEMO_DELAY: ${APP_DEMO_DELAY:-0}  # seconds per sample "Claude call" in demo mode
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}     # optional job search source (free key)
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
     volumes:
       - crew-data:/data
 

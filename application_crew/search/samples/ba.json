@@ -1,0 +1,329 @@
+{
+ "ergebnisliste": [
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Softwareentwicklerin (w/m/d)",
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-22"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "FESTGEHALT",
+   "festgehalt": 72600.0,
+   "vertragsdauer": "BEFRISTET",
+   "befristungInMonaten": 24,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "EUREF-Campus",
+      "hausnummer": "23-24",
+      "plz": "10829",
+      "ort": "Berlin",
+      "region": "BERLIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.480611,
+     "laenge": 13.356027
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "ANGABE_IN_PROZENT",
+   "homeofficeprozent": 50,
+   "chiffrenummer": "21498",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-21"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-21",
+   "aenderungsdatum": "2026-10-22T12:54:32.215",
+   "hauptberuf": "Softwareentwickler/in",
+   "alternativBeruf1": "Softwareentwickler/in",
+   "firma": "GASAG AG",
+   "arbeitgeberKundennummerHash": "btN-WZbWKD098381aM0762_KHx3lkP1Xne2OL2sVVvo=",
+   "referenznummer": "10001-1003891446-S",
+   "entfernung": 6,
+   "alleBerufe": [
+    "Softwareentwickler/in",
+    "Softwareentwickler/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Softwareentwickler (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-23"
+   },
+   "verguetungsangabe": "STUNDENLOHN",
+   "artDerVerguetung": "FESTGEHALT",
+   "festgehalt": 18.39,
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "10965",
+      "ort": "Berlin",
+      "region": "BERLIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.487564282001,
+     "laenge": 13.39135377
+    }
+   ],
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-20"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-20",
+   "aenderungsdatum": "2026-10-20T10:51:52.029",
+   "hauptberuf": "Softwareentwickler/in",
+   "alternativBeruf1": "IT-System-Elektroniker/in",
+   "firma": "PerZukunft Arbeitsvermittlung GmbH & Co. KG",
+   "arbeitgeberKundennummerHash": "K-odMSiWh6Flr85j5gueeE_9FFhpOtsHIPbrBKoeCCs=",
+   "referenznummer": "12016-10005657065-S",
+   "entfernung": 4,
+   "alleBerufe": [
+    "Softwareentwickler/in",
+    "IT-System-Elektroniker/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Senior-Softwareentwickler (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-06"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "FESTGEHALT",
+   "festgehalt": 60000.0,
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "ort": "Berlin",
+      "region": "BERLIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.492683263,
+     "laenge": 13.402575309
+    }
+   ],
+   "chiffrenummer": "39797",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-06"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-06",
+   "aenderungsdatum": "2026-10-06T17:58:27.553",
+   "hauptberuf": "Softwareentwickler/in",
+   "firma": "Actief Personalmanagement GmbH Berlin",
+   "arbeitgeberKundennummerHash": "4-X1WX8mxAO5-RD8xof2-UkPSpeUXDA8Nkx6sL-QOh0=",
+   "referenznummer": "12384-975234242-S",
+   "entfernung": 3,
+   "alleBerufe": [
+    "Softwareentwickler/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Softwareentwickler (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-01"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "GEHALTSSPANNE",
+   "gehaltsspanneVon": 60000.0,
+   "gehaltsspanneBis": 70000.0,
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Linkstraße",
+      "hausnummer": "2",
+      "plz": "10785",
+      "ort": "Berlin",
+      "region": "BERLIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.507539,
+     "laenge": 13.374936
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-21"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-06",
+   "aenderungsdatum": "2026-11-01T07:45:45.974",
+   "externeURL": "https://www.jobvector.de/job/softwareentwickler-e1a87927260526d6/?utm_source=arbeitsagentur&utm_medium=partner&utm_campaign=tmcfdae_job_jid273238&utm_content=b2c&utm_term=tmf8eca_uic997ad81",
+   "hauptberuf": "Informatiker/in",
+   "firma": "nexnet GmbH",
+   "referenznummer": "14225-e1a87927260526d6-S",
+   "entfernung": 3,
+   "alleBerufe": [
+    "Informatiker/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Softwareentwickler (m/w/d) Java/C++",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-10-04"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "10178",
+      "ort": "Berlin",
+      "region": "BERLIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.5210906,
+     "laenge": 13.4099785
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "chiffrenummer": "284200",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-04"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-04",
+   "aenderungsdatum": "2026-10-04T07:12:57.240",
+   "externeURL": "https://www.get-in-engineering.de/jobsuche/p284200?utm_source=arbeitsagentur&utm_medium=organic&utm_campaign=launch-basic",
+   "hauptberuf": "Ingenieur/in - Elektrotechnik",
+   "firma": "IVU Traffic Technologies",
+   "referenznummer": "13645-284200-S",
+   "entfernung": 2,
+   "alleBerufe": [
+    "Ingenieur/in - Elektrotechnik"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Softwareentwickler (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-12"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "10115",
+      "ort": "Berlin",
+      "region": "BERLIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.5319761,
+     "laenge": 13.3867379
+    }
+   ],
+   "homeofficemoeglich": false,
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-12"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-12",
+   "aenderungsdatum": "2026-10-12T07:56:56.882",
+   "externeURL": "https://www.yourfirm.de/job/detail/YF-48852/?utm_source=bundesagentur&utm_medium=unpaid-partner&utm_campaign=000",
+   "hauptberuf": "Softwareentwickler/in",
+   "firma": "bayoonet AG",
+   "referenznummer": "12117-YF-48852-YF-S",
+   "entfernung": 3,
+   "alleBerufe": [
+    "Softwareentwickler/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Softwareentwickler (m/w/d)",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-20"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Mahlower Straße 124A",
+      "plz": "14513",
+      "ort": "Teltow",
+      "region": "BRANDENBURG",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.397721,
+     "laenge": 13.2752475
+    }
+   ],
+   "homeofficemoeglich": false,
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-20"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-20",
+   "aenderungsdatum": "2026-10-20T07:10:29.292",
+   "externeURL": "https://www.heyjobs.co/de-de/jobs/4c9bfbc8-f091-4e98-a6f8-0433670fdb85?utm_content=ad_link&utm_medium=sjm-pr&utm_source=jobboerse",
+   "hauptberuf": "Softwareentwickler/in",
+   "firma": "GP Günter Papenburg AG",
+   "referenznummer": "12951-4c9bfbc8-f091-4e98--S",
+   "entfernung": 16,
+   "alleBerufe": [
+    "Softwareentwickler/in"
+   ]
+  }
+ ],
+ "maxErgebnisse": 211,
+ "page": 1,
+ "size": 25,
+ "woOutput": {
+  "bereinigterOrt": "Berlin",
+  "suchmodus": "UMKREISSUCHE",
+  "koordinaten": [
+   {
+    "lat": 52.5112613,
+    "lon": 13.4255145
+   }
+  ]
+ }
+}

@@ -41,6 +41,7 @@ docker compose up -d --build      # rebuild after pulling changes
 
 To explore the UI without an API key and without costs, start in demo mode. Claude is not
 called; every CV and listing is parsed as the same sample data (a yellow banner says so).
+The job search uses recorded sample responses instead of the live job APIs.
 
 ```bash
 APP_DEMO=1 APP_DEMO_DELAY=4 docker compose up -d --build
@@ -78,6 +79,35 @@ used.
   Mark a requirement as **must-have** to stop early if the listing clearly contradicts it;
   if the listing doesn't mention it, it never fails. The form remembers your last entries.
 - **Start**.
+
+### Or: find jobs
+
+**Find jobs** searches free job APIs and ranks the listings against your CV. This step runs
+in Python only and costs nothing; Claude is only called for the listings you pick.
+
+- Choose the CV. Job titles are suggested from your headline and recent roles, with German
+  and English variants ("Backend Engineer", "Backend-Entwickler"); edit them freely.
+- The requirements are the same as for an application. Cities are searched with a radius
+  (`radius_km`); a must-have hides listings that clearly contradict it.
+- Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy, Remote OK (off by default,
+  mostly US jobs) and Adzuna (needs a free key, see [Configuration](#configuration)). A source
+  that fails is reported and skipped.
+- Each listing gets a score from 0 to 100 from skills from your CV found in the listing,
+  title fit, **meaning** and freshness. Meaning comes from a local embedding model in the
+  image (German and English, no API calls): it compares your CV with each listing, so a fit
+  shows up even when the wording differs. Without the model, keywords decide. Bundesagentur
+  listings have no text in the search, so they are scored mostly on the title. The same
+  listing from several sources is shown once.
+- The first search reads up to 200 listings with the model and takes about half a minute;
+  later searches reuse what was read and only read new listings. The progress bar shows
+  each source and the ranking step while it runs.
+- Hidden, one click away: listings that fail a must-have, onsite jobs outside your cities
+  (or abroad), low matches, and listings you dismissed (they stay hidden in later searches).
+- **Save search** keeps the titles, requirements and sources. **Run** it again later from
+  "Saved searches": listings none of its earlier runs found are marked **new**.
+- Tick listings and **Start applications**. Listings with full text skip the download; the
+  others are fetched as usual (Bundesagentur: the employer's page when the listing names one,
+  otherwise you may be asked to paste the text).
 
 ### 3. Follow the progress
 
@@ -157,6 +187,12 @@ Defaults: Opus 5.5 for CV parsing, matching, CV writing and the claims check; Ha
 listing parsing; Sonnet 5.5 for the cover letter and the recruiter review. After changing the
 file, rebuild with `docker compose up -d --build`.
 
+The `[search]` section sets the job search: default sources, results per source, maximum
+listing age, search radius, timeouts, the score below which listings are hidden, and the
+semantic ranking (`semantic = false` turns it off). The model is baked into the image at
+build time; to use another one, set `semantic_model` and rebuild with
+`docker compose build --build-arg SEMANTIC_MODEL=<model>`.
+
 Environment variables:
 
 | Variable | Purpose |
@@ -166,6 +202,7 @@ Environment variables:
 | `APP_DEMO_DELAY` | seconds per sample "Claude call" in demo mode |
 | `APP_DATA_DIR` | data directory (default `/data` in the container) |
 | `APP_CONFIG` | path to an alternative `config.toml` |
+| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | optional: enables Adzuna in the job search ([free key](https://developer.adzuna.com/)) |
 
 ## Reset
 
