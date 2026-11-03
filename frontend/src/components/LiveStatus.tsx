@@ -5,7 +5,7 @@ import { useLive } from "../live";
 import type { Job } from "../types";
 
 function JobLine({ job }: { job: Job }) {
-  const href = job.kind === "run" ? `/runs/${job.id}` : `/cvs/${job.id}`;
+  const href = { run: `/runs/${job.id}`, cv: `/cvs/${job.id}`, search: "/search" }[job.kind];
   const info = [
     duration(job.detail_elapsed_s),
     modelName(job.model),

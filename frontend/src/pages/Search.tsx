@@ -68,6 +68,29 @@ function SourceLine({ sources }: { sources: Record<string, SourceStatus> }) {
   );
 }
 
+/** Per-source progress of a running search, from the live status stream. */
+export function SearchProgress() {
+  const { status } = useLive();
+  const job = status?.jobs.find((j) => j.kind === "search");
+  if (!job?.progress) return null;
+  return (
+    <GlassCard className="search-progress" aria-live="polite">
+      <p className="search-progress__head">{job.detail}</p>
+      <ul>
+        {Object.entries(job.progress).map(([key, p]) => (
+          <li key={key} className={`search-progress__item search-progress__item--${p.state}`}>
+            <span className="search-progress__dot" aria-hidden="true" />
+            {p.label}
+            <span className="muted">
+              {p.state === "running" ? "searching…" : p.error ?? `${p.count} listings`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </GlassCard>
+  );
+}
+
 function HitCard({
   item,
   selected,
@@ -158,7 +181,16 @@ function HitCard({
   );
 }
 
-function Results({ search, onChanged }: { search: SearchDetail; onChanged: () => void }) {
+function Results({
+  search,
+  onChanged,
+  onSaved,
+}: {
+  search: SearchDetail;
+  onChanged: () => void;
+  onSaved: () => void;
+}) {
+  const save = useAction();
   const [shown, setShown] = useState<Set<HiddenReason>>(new Set());
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const action = useAction();
@@ -178,7 +210,24 @@ function Results({ search, onChanged }: { search: SearchDetail; onChanged: () =>
 
   return (
     <div className="stack">
-      <SourceLine sources={search.sources} />
+      <div className="results-head">
+        <SourceLine sources={search.sources} />
+        {search.saved_id === null ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            loading={save.busy}
+            onClick={async () => {
+              if (await save.run(() => api.saveSearch(search.id))) onSaved();
+            }}
+          >
+            Save search
+          </Button>
+        ) : (
+          <span className="muted">Saved search</span>
+        )}
+      </div>
+      <ErrorNote error={save.error} />
       <div className="hidden-toggles">
         <span className="muted">
           {visible.length} shown{search.new > 0 && ` · ${search.new} new`}
@@ -348,8 +397,74 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
   );
 }
 
-function History({ current, onDeleted }: { current: number | null; onDeleted: () => void }) {
-  const searches = useResource(() => api.searches(), [current]);
+function SavedSearches({
+  version,
+  onRun,
+  onChanged,
+}: {
+  version: number;
+  onRun: (s: SearchDetail) => void;
+  onChanged: () => void;
+}) {
+  const saved = useResource(() => api.savedSearches(), [version]);
+  const action = useAction();
+  const [running, setRunning] = useState<number | null>(null);
+  if (!saved.data?.length) return null;
+  return (
+    <Section title="Saved searches" eyebrow="Run again">
+      <ErrorNote error={action.error} />
+      <ul className="search-history">
+        {saved.data.map((s) => (
+          <li key={s.id}>
+            <span className="saved-name">{s.name}</span>
+            <span className="muted">
+              {s.last_run
+                ? `${when(s.last_run.created_at)} · ${s.last_run.new} new`
+                : "not run yet"}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={running === s.id}
+              disabled={running !== null}
+              onClick={async () => {
+                setRunning(s.id);
+                const result = await action.run(() => api.runSaved(s.id));
+                setRunning(null);
+                if (result) {
+                  onRun(result);
+                  onChanged();
+                }
+              }}
+            >
+              Run
+            </Button>
+            <ConfirmButton
+              label="×"
+              title="Delete this saved search?"
+              body={<p>Its earlier results stay in your search history.</p>}
+              onConfirm={async () => {
+                await api.deleteSaved(s.id);
+                onChanged();
+              }}
+            />
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+function History({
+  current,
+  version,
+  onDeleted,
+}: {
+  current: number | null;
+  version: number;
+  onDeleted: () => void;
+}) {
+  const searches = useResource(() => api.searches(), [current, version]);
   if (!searches.data?.length) return null;
   return (
     <Section title="Earlier searches">
@@ -386,6 +501,15 @@ export function SearchPage() {
   const [search, setSearch] = useState<SearchDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const [savedVersion, setSavedVersion] = useState(0);
+  const show = (s: SearchDetail) => {
+    setSearch(s);
+    setParams({ id: String(s.id) });
+  };
+  const savedChanged = () => {
+    setSavedVersion((v) => v + 1);
+    setNonce((n) => n + 1);
+  };
 
   useEffect(() => {
     if (id === null) {
@@ -417,20 +541,21 @@ export function SearchPage() {
       <div className="dashboard">
         <div>
           <ErrorNote error={error} />
+          <SearchProgress />
           {search ? (
-            <Results search={search} onChanged={() => setNonce((n) => n + 1)} />
+            <Results
+              search={search}
+              onChanged={() => setNonce((n) => n + 1)}
+              onSaved={savedChanged}
+            />
           ) : (
             <p className="empty">Run a search to see listings ranked against your CV.</p>
           )}
         </div>
         <div className="stack">
-          <SearchForm
-            onSearched={(s) => {
-              setSearch(s);
-              setParams({ id: String(s.id) });
-            }}
-          />
-          <History current={id} onDeleted={() => setParams({})} />
+          <SearchForm onSearched={show} />
+          <SavedSearches version={savedVersion} onRun={show} onChanged={savedChanged} />
+          <History current={id} version={savedVersion} onDeleted={() => setParams({})} />
         </div>
       </div>
     </div>

@@ -12,9 +12,10 @@ import httpx
 from sqlmodel import Session, col, delete, select
 
 from application_crew.config import Settings
-from application_crew.db import JobHitRecord, Search, SearchResult
+from application_crew.db import JobHitRecord, SavedSearch, Search, SearchResult
 from application_crew.domain.models import ParsedCV, Requirement
 from application_crew.fetch.listing import USER_AGENT
+from application_crew.runner import activity
 from application_crew.search.dedupe import dedupe
 from application_crew.search.models import JobHit, SearchQuery
 from application_crew.search.queries import places_from, remote_only
@@ -126,8 +127,33 @@ async def collect(
             statuses[source.key] = SourceStatus(source.label, error=f"needs {', '.join(missing)}")
         else:
             runnable.append(source)
+    progress = {
+        k: {"label": SOURCES[k].label, "state": "running", "count": 0, "error": None}
+        for k in keys
+        if k in SOURCES
+    }
+    for key, status in statuses.items():
+        progress[key] |= {"state": "failed", "error": status.error}
+
+    def report() -> None:
+        done = sum(p["state"] != "running" for p in progress.values())
+        found = sum(p["count"] for p in progress.values())
+        detail = f"Searching jobs · {done}/{len(progress)} sources · {found} listings"
+        activity.update(detail, progress={k: dict(v) for k, v in progress.items()})
+
+    async def run(source: Source, client: httpx.AsyncClient) -> SourceStatus:
+        status = await _run_source(source, client, query, settings)
+        progress[source.key] |= {
+            "state": "failed" if status.error else "done",
+            "count": status.count,
+            "error": status.error,
+        }
+        report()
+        return status
+
+    report()
     async with make_client(settings.search.timeout_seconds) as client:
-        results = await asyncio.gather(*(_run_source(s, client, query, settings) for s in runnable))
+        results = await asyncio.gather(*(run(s, client) for s in runnable))
     statuses |= {s.key: r for s, r in zip(runnable, results, strict=True)}
     hits = [h for r in results for h in r.hits]
     return hits, {k: statuses[k] for k in keys if k in statuses}
@@ -147,8 +173,19 @@ def save_search(
     hits: list[JobHit],
     statuses: dict[str, SourceStatus],
     settings: Settings,
+    saved_id: int | None = None,
 ) -> Search:
+    """Store a search. "New" means first seen ever, or, for a saved search, not found by
+    any of its earlier runs."""
     hits = dedupe(hits)
+    seen_before: set[int] | None = None
+    if saved_id is not None:
+        earlier = select(Search.id).where(Search.saved_id == saved_id)
+        seen_before = set(
+            session.exec(
+                select(SearchResult.hit_id).where(col(SearchResult.search_id).in_(earlier))
+            ).all()
+        )
     ids = {h.external_id for h in hits}
     records = (
         {
@@ -174,6 +211,7 @@ def save_search(
 
     search = Search(
         cv_id=cv_id,
+        saved_id=saved_id,
         titles=query.titles,
         places=query.places,
         remote_only=query.remote_only,
@@ -185,9 +223,9 @@ def save_search(
     for item in ranked:
         hit = item.hit
         record = records.get((hit.source, hit.external_id))
-        is_new = record is None
         if record is None:
             record = JobHitRecord(source=hit.source, external_id=hit.external_id)
+        is_new = record.id is None if seen_before is None else record.id not in seen_before
         record.data = hit.model_dump(mode="json")
         record.last_seen_at = _now()
         session.add(record)
@@ -212,6 +250,7 @@ def search_summary(session: Session, search: Search) -> dict:
     return {
         "id": search.id,
         "cv_id": search.cv_id,
+        "saved_id": search.saved_id,
         "titles": search.titles,
         "places": search.places,
         "remote_only": search.remote_only,
@@ -267,6 +306,30 @@ def search_detail(session: Session, search: Search) -> dict:
         "sources": search.sources,
         "results": results,
     }
+
+
+def saved_view(session: Session, saved: SavedSearch) -> dict:
+    last = session.exec(
+        select(Search).where(Search.saved_id == saved.id).order_by(col(Search.id).desc()).limit(1)
+    ).first()
+    return {
+        "id": saved.id,
+        "cv_id": saved.cv_id,
+        "name": saved.name,
+        "titles": saved.titles,
+        "requirements": saved.requirements,
+        "sources": saved.sources,
+        "created_at": saved.created_at,
+        "last_run": search_summary(session, last) if last else None,
+    }
+
+
+def delete_saved(session: Session, saved: SavedSearch) -> None:
+    """Delete a saved search; its runs stay as ordinary searches (the caller commits)."""
+    for search in session.exec(select(Search).where(Search.saved_id == saved.id)).all():
+        search.saved_id = None
+        session.add(search)
+    session.delete(saved)
 
 
 def delete_search(session: Session, search: Search) -> None:

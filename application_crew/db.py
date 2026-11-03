@@ -71,9 +71,24 @@ class Usage(SQLModel, table=True):
     cost_usd: float = 0.0
 
 
+class SavedSearch(SQLModel, table=True):
+    """A search to run again later; its runs mark what is new since the previous run."""
+
+    __tablename__ = "saved_search"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cv_id: int = Field(foreign_key="cv.id", index=True)
+    name: str
+    titles: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    requirements: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    sources: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=_now)
+
+
 class Search(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     cv_id: int = Field(foreign_key="cv.id", index=True)
+    saved_id: int | None = Field(default=None, index=True)  # plain ID, see SavedSearch
     titles: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     places: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     remote_only: bool = False

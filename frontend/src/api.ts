@@ -6,6 +6,7 @@ import type {
   Requirement,
   RunDetail,
   RunSummary,
+  SavedSearch,
   SearchDetail,
   SearchSource,
   SearchSummary,
@@ -99,6 +100,11 @@ export const api = {
   deleteSearch: (id: number) => request<void>("DELETE", `/api/searches/${id}`),
   dismissHit: (id: number) => request<{ status: string }>("POST", `/api/job-hits/${id}/dismiss`),
   restoreHit: (id: number) => request<{ status: string }>("POST", `/api/job-hits/${id}/restore`),
+  savedSearches: () => request<SavedSearch[]>("GET", "/api/saved-searches"),
+  saveSearch: (searchId: number, name = "") =>
+    request<SavedSearch>("POST", "/api/saved-searches", { search_id: searchId, name }),
+  runSaved: (id: number) => request<SearchDetail>("POST", `/api/saved-searches/${id}/run`),
+  deleteSaved: (id: number) => request<void>("DELETE", `/api/saved-searches/${id}`),
   applyHits: (searchId: number, hitIds: number[]) =>
     request<RunSummary[]>("POST", `/api/searches/${searchId}/apply`, { hit_ids: hitIds }),
 };

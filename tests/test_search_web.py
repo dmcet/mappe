@@ -5,7 +5,9 @@ from datetime import date
 
 import httpx
 import pytest
+from sqlmodel import Session
 
+from application_crew.db import SavedSearch, get_engine
 from application_crew.search.sources.base import SAMPLES_DIR, clear_cache
 from tests.test_web import confirmed_cv, status_is, wait_for
 
@@ -40,9 +42,10 @@ def job_apis(monkeypatch):
             payload["links"] = {"next": None}
         return httpx.Response(200, json=payload)
 
+    apis.handler = handler
     monkeypatch.setattr(
         "application_crew.search.service.make_client",
-        lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+        lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(lambda r: apis.handler(r))),
     )
     clear_cache()
     yield apis
@@ -187,3 +190,81 @@ def test_demo_mode_uses_samples_dated_as_of_today(client, monkeypatch):
     newest = max(r["hit"]["posted_at"] for r in data["results"])
     assert newest == date.today().isoformat()
     assert requests == []  # demo mode never calls the job APIs
+
+
+def test_live_status_shows_per_source_progress(client, job_apis, monkeypatch):
+    from application_crew.runner import activity
+
+    seen = []
+    handler = job_apis.handler
+
+    def watching(request):
+        seen.append([j for j in activity.snapshot() if j["kind"] == "search"])
+        return handler(request)
+
+    monkeypatch.setattr(job_apis, "handler", watching)
+    cv_id = confirmed_cv(client)
+    search(client, cv_id, sources=["ba", "jobicy"], titles=["Backend Engineer"])
+
+    jobs = [j for snapshot in seen for j in snapshot]
+    assert jobs and all(j["title"] == "Job search: Backend Engineer" for j in jobs)
+    assert set(jobs[0]["progress"]) == {"ba", "jobicy"}
+    assert jobs[0]["detail"].startswith("Searching jobs · ")
+    states = {k: v["state"] for j in jobs for k, v in j["progress"].items()}
+    assert set(states.values()) <= {"running", "done"}
+    assert not [j for j in activity.snapshot() if j["kind"] == "search"]  # ended
+
+
+def test_saved_search_marks_what_is_new_since_its_last_run(client, job_apis):
+    cv_id = confirmed_cv(client)
+    first = search(
+        client,
+        cv_id,
+        sources=["ba"],
+        titles=["Softwareentwickler"],
+        requirements=[{"kind": "location", "value": "Berlin"}],
+    )
+    saved = client.post("/api/saved-searches", json={"search_id": first["id"]}).json()
+    assert saved["name"] == "Softwareentwickler · Berlin"
+    assert saved["sources"] == ["ba"] and saved["last_run"]["id"] == first["id"]
+    assert client.post("/api/saved-searches", json={"search_id": first["id"]}).status_code == 409
+
+    # Another, unsaved search sees the same listings: they're not new for it ...
+    other = search(client, cv_id, sources=["ba"], titles=["Softwareentwickler"])
+    assert not any(r["is_new"] for r in other["results"])
+
+    # ... and not new for the saved search either: its first run found them.
+    run = client.post(f"/api/saved-searches/{saved['id']}/run").json()
+    assert run["saved_id"] == saved["id"] and run["places"] == ["Berlin"]
+    assert run["results"] and not any(r["is_new"] for r in run["results"])
+    listed = client.get("/api/saved-searches").json()
+    assert [s["last_run"]["id"] for s in listed] == [run["id"]]
+
+    # Deleting the saved search keeps its runs as ordinary searches.
+    assert client.delete(f"/api/saved-searches/{saved['id']}").status_code == 204
+    assert client.get(f"/api/searches/{run['id']}").json()["saved_id"] is None
+
+
+def test_saved_search_reports_listings_its_earlier_runs_missed(client, job_apis):
+    cv_id = confirmed_cv(client)
+    # Seen by an unsaved search first: globally old, but new for the saved search.
+    search(client, cv_id, sources=["remotive"])
+    first = search(client, cv_id, sources=["ba"])
+    saved = client.post("/api/saved-searches", json={"search_id": first["id"], "name": "Mine"})
+    saved_id = saved.json()["id"]
+    with Session(get_engine()) as session:  # widen the saved search to a second source
+        row = session.get(SavedSearch, saved_id)
+        row.sources = ["ba", "remotive"]
+        session.add(row)
+        session.commit()
+    run = client.post(f"/api/saved-searches/{saved_id}/run").json()
+    new = {r["hit"]["source"] for r in run["results"] if r["is_new"]}
+    assert new == {"remotive"}
+
+
+def test_deleting_the_cv_deletes_its_saved_searches(client, job_apis):
+    cv_id = confirmed_cv(client)
+    first = search(client, cv_id, sources=["ba"])
+    client.post("/api/saved-searches", json={"search_id": first["id"]})
+    assert client.delete(f"/api/cvs/{cv_id}").status_code == 204
+    assert client.get("/api/saved-searches").json() == []

@@ -330,3 +330,14 @@ td ul { margin: 0; }
   .hit { grid-template-columns: 40px minmax(0, 1fr); }
   .hit__actions { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; }
 }
+.results-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.saved-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--pui-fg); }
+.search-progress { padding: 14px 16px !important; }
+.search-progress__head { margin: 0 0 8px; font-weight: 600; }
+.search-progress ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; }
+.search-progress__item { display: flex; align-items: center; gap: 8px; margin: 0 !important; font-size: 0.88rem; }
+.search-progress__item .muted { margin-left: auto; font-size: 0.8rem; }
+.search-progress__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pui-fg-mute); flex: none; }
+.search-progress__item--running .search-progress__dot { background: var(--pui-grad-to); animation: pui-breathe 1.2s ease-in-out infinite; }
+.search-progress__item--done .search-progress__dot { background: var(--good); }
+.search-progress__item--failed .search-progress__dot { background: var(--bad); }

@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
+import itertools
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlmodel import Session, col, select
 
 from application_crew.config import get_settings
-from application_crew.db import CV, JobHitRecord, Search, SearchResult
+from application_crew.db import CV, JobHitRecord, SavedSearch, Search, SearchResult
 from application_crew.domain.models import ParsedCV, Requirement
+from application_crew.runner import activity
 from application_crew.search.models import JobHit
 from application_crew.search.queries import suggest_titles
 from application_crew.search.service import (
     available_sources,
     build_query,
     collect,
+    delete_saved,
     delete_search,
     save_search,
+    saved_view,
     search_detail,
     search_summary,
 )
@@ -25,6 +30,7 @@ from application_crew.web.deps import SessionDep
 from application_crew.web.runs import confirmed_cv, run_summary, start_runs
 
 router = APIRouter(prefix="/api")
+_search_ids = itertools.count(1)  # live status IDs for running searches
 
 
 class SearchCreate(BaseModel):
@@ -32,6 +38,11 @@ class SearchCreate(BaseModel):
     titles: list[str] = Field(default_factory=list)
     requirements: list[Requirement] = Field(default_factory=list)
     sources: list[str] | None = None  # None = the configured defaults
+
+
+class SavedCreate(BaseModel):
+    search_id: int  # save the parameters of this search; it becomes the first run
+    name: str = ""
 
 
 class ApplyHits(BaseModel):
@@ -57,29 +68,45 @@ def suggestions(cv_id: int, session: SessionDep) -> dict:
     return {"titles": suggest_titles(_parsed(cv)), "sources": available_sources(get_settings())}
 
 
-@router.post("/searches", status_code=201)
-async def create_search(body: SearchCreate, session: SessionDep) -> dict:
+async def _run(
+    session: Session,
+    cv_id: int,
+    titles: list[str],
+    requirements: list[Requirement],
+    sources: list[str] | None,
+    saved_id: int | None = None,
+) -> Search:
     settings = get_settings()
-    cv = confirmed_cv(session, body.cv_id)
+    cv = confirmed_cv(session, cv_id)
     parsed = _parsed(cv)
-    query = build_query(settings, body.titles or suggest_titles(parsed), body.requirements)
+    query = build_query(settings, titles or suggest_titles(parsed), requirements)
     if not query.titles:
         raise HTTPException(400, "Enter at least one job title to search for")
-    keys = body.sources if body.sources is not None else list(settings.search.sources)
+    keys = sources if sources is not None else list(settings.search.sources)
     unknown = [k for k in keys if k not in SOURCES]
     if unknown or not keys:
         raise HTTPException(400, f"Unknown sources: {unknown}" if unknown else "Choose a source")
-    hits, statuses = await collect(settings, query, keys)
-    search = save_search(
+    activity.begin("search", next(_search_ids), f"Job search: {', '.join(query.titles[:2])}")
+    try:
+        hits, statuses = await collect(settings, query, keys)
+    finally:
+        activity.end()
+    return save_search(
         session,
-        cv_id=cv.id,  # type: ignore[arg-type]
+        cv_id=cv_id,
         cv=parsed,
         query=query,
-        requirements=body.requirements,
+        requirements=requirements,
         hits=hits,
         statuses=statuses,
         settings=settings,
+        saved_id=saved_id,
     )
+
+
+@router.post("/searches", status_code=201)
+async def create_search(body: SearchCreate, session: SessionDep) -> dict:
+    search = await _run(session, body.cv_id, body.titles, body.requirements, body.sources)
     return search_detail(session, search)
 
 
@@ -154,3 +181,59 @@ def apply_hits(
         session.add(record)
     session.commit()
     return [run_summary(r) for r in runs]
+
+
+# --- saved searches ---------------------------------------------------------------------
+
+
+def _saved(session: Session, saved_id: int) -> SavedSearch:
+    saved = session.get(SavedSearch, saved_id)
+    if saved is None:
+        raise HTTPException(404, "Saved search not found")
+    return saved
+
+
+@router.get("/saved-searches")
+def list_saved(session: SessionDep) -> list[dict]:
+    rows = session.exec(select(SavedSearch).order_by(col(SavedSearch.name))).all()
+    return [saved_view(session, s) for s in rows]
+
+
+@router.post("/saved-searches", status_code=201)
+def create_saved(body: SavedCreate, session: SessionDep) -> dict:
+    search = _search(session, body.search_id)
+    if search.saved_id is not None:
+        raise HTTPException(409, "This search is already saved")
+    name = body.name.strip() or ", ".join(search.titles[:2])
+    if search.places:
+        name = body.name.strip() or f"{name} · {', '.join(search.places)}"
+    saved = SavedSearch(
+        cv_id=search.cv_id,
+        name=name,
+        titles=search.titles,
+        requirements=search.requirements,
+        sources=list(search.sources),
+    )
+    session.add(saved)
+    session.flush()
+    search.saved_id = saved.id
+    session.add(search)
+    session.commit()
+    return saved_view(session, saved)
+
+
+@router.post("/saved-searches/{saved_id}/run", status_code=201)
+async def run_saved(saved_id: int, session: SessionDep) -> dict:
+    """Run a saved search again; "new" marks listings none of its earlier runs found."""
+    saved = _saved(session, saved_id)
+    requirements = [Requirement.model_validate(r) for r in saved.requirements]
+    search = await _run(
+        session, saved.cv_id, saved.titles, requirements, saved.sources, saved_id=saved.id
+    )
+    return search_detail(session, search)
+
+
+@router.delete("/saved-searches/{saved_id}", status_code=204)
+def remove_saved(saved_id: int, session: SessionDep) -> None:
+    delete_saved(session, _saved(session, saved_id))
+    session.commit()

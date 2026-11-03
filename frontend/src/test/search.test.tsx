@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { SearchPage, groupResults, salaryText, workMode } from "../pages/Search";
+import { LiveContext } from "../live";
+import { SearchPage, SearchProgress, groupResults, salaryText, workMode } from "../pages/Search";
 import type { JobHit, SearchDetail, SearchResultItem } from "../types";
 
 const hit = (over: Partial<JobHit> = {}): JobHit => ({
@@ -60,6 +61,7 @@ describe("search page", () => {
   const detail: SearchDetail = {
     id: 7,
     cv_id: 1,
+    saved_id: null,
     titles: ["Backend Engineer"],
     places: ["Berlin"],
     remote_only: false,
@@ -110,5 +112,40 @@ describe("search page", () => {
 
     fireEvent.click(screen.getAllByLabelText("apply")[0]);
     expect(screen.getByText("Start 1 application")).toBeInTheDocument();
+    expect(screen.getByText("Save search")).toBeInTheDocument();
+  });
+
+  it("shows each source's progress while a search runs", () => {
+    const status = {
+      jobs: [
+        {
+          kind: "search" as const,
+          id: 1,
+          title: "Job search: Backend Engineer",
+          phase: "",
+          detail: "Searching jobs · 1/2 sources · 12 listings",
+          model: null,
+          draft: null,
+          elapsed_s: 1,
+          detail_elapsed_s: 0,
+          progress: {
+            ba: { label: "Bundesagentur für Arbeit", state: "done" as const, count: 12, error: null },
+            jobicy: { label: "Jobicy", state: "running" as const, count: 0, error: null },
+          },
+        },
+      ],
+      queued: [],
+      waiting_for_you: [],
+      demo: false,
+      costs: { total_usd: 0, today_usd: 0, limit_per_run_usd: 2 },
+    };
+    render(
+      <LiveContext.Provider value={{ status, connected: true, version: () => 0 }}>
+        <SearchProgress />
+      </LiveContext.Provider>,
+    );
+    expect(screen.getByText("Searching jobs · 1/2 sources · 12 listings")).toBeInTheDocument();
+    expect(screen.getByText("12 listings")).toBeInTheDocument();
+    expect(screen.getByText("searching…")).toBeInTheDocument();
   });
 });

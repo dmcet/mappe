@@ -19,14 +19,22 @@ export type RunStatus =
   | "done"
   | "failed";
 
+export interface SourceProgress {
+  label: string;
+  state: "running" | "done" | "failed";
+  count: number;
+  error: string | null;
+}
+
 export interface Job {
-  kind: "run" | "cv";
+  kind: "run" | "cv" | "search";
   id: number;
   title: string;
   phase: string;
   detail: string;
   model: string | null;
   draft: number | null;
+  progress?: Record<string, SourceProgress> | null;
   elapsed_s: number;
   detail_elapsed_s: number;
 }
@@ -388,6 +396,7 @@ export interface SearchResultItem {
 export interface SearchSummary {
   id: number;
   cv_id: number;
+  saved_id: number | null;
   titles: string[];
   places: string[];
   remote_only: boolean;
@@ -401,4 +410,15 @@ export interface SearchDetail extends SearchSummary {
   requirements: Requirement[];
   sources: Record<string, SourceStatus>;
   results: SearchResultItem[];
+}
+
+export interface SavedSearch {
+  id: number;
+  cv_id: number;
+  name: string;
+  titles: string[];
+  requirements: Requirement[];
+  sources: string[];
+  created_at: string;
+  last_run: SearchSummary | null;
 }
