@@ -1,33 +1,198 @@
 # application-crew
 
-A local web app that tailors ATS-friendly CVs and cover letters for IT jobs in the German market,
-using Claude for reasoning and deterministic Python for everything else.
+A local web app that turns your master CV and a job listing into a tailored, ATS-friendly CV
+and cover letter (PDF) for IT jobs in the German market. Claude does the reasoning (reading,
+assessing, writing, reviewing); deterministic Python does everything else (fetching, skill
+matching, fact checks, ATS checks, rendering). Every statement in the generated documents is
+traced back to your CV.
 
 - Requirements: [docs/requirements.md](docs/requirements.md)
 - Architecture: [docs/architecture.md](docs/architecture.md)
 
-## Run
+## Requirements
+
+- Docker with Compose (Docker Desktop on macOS/Windows)
+- An Anthropic API key (not needed for [demo mode](#demo-mode))
+
+Everything else (Python, Node, Typst, the PDF tools and fonts) is inside the image.
+
+## Build and start
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-docker compose up --build
+docker compose up -d --build
 ```
 
-Open http://127.0.0.1:8000. Data (SQLite DB, generated files) lives in the `crew-data` volume.
+Open **http://127.0.0.1:8000**. The app listens on localhost only.
 
-To explore the UI without an API key, start in demo mode. Claude is not called, and every
-CV is parsed as the same sample data:
+- The first build takes a few minutes; it also type-checks and tests the frontend.
+- The database schema is migrated automatically at startup.
+- All data lives in the Docker volume `crew-data` and survives rebuilds.
+
+Useful commands:
 
 ```bash
-APP_DEMO=1 docker compose up --build
-# optional: APP_DEMO_DELAY=4 makes every demo "Claude call" take 4 s, so the live status is visible
+docker compose logs -f app        # follow the logs
+docker compose down               # stop (data is kept)
+docker compose up -d --build      # rebuild after pulling changes
 ```
 
-## Test
+### Demo mode
+
+To explore the UI without an API key and without costs, start in demo mode. Claude is not
+called; every CV and listing is parsed as the same sample data (a yellow banner says so).
 
 ```bash
-docker build --target test -t application-crew:test .
-docker run --rm application-crew:test
+APP_DEMO=1 APP_DEMO_DELAY=4 docker compose up -d --build
+```
+
+`APP_DEMO_DELAY` (seconds) makes every sample "Claude call" take a while, so you can watch
+the live status. Leave it out for instant answers.
+
+## Using the app
+
+### 1. Add your CV (once)
+
+**CVs → Add a CV**: give it a label and paste your CV as Markdown. Claude extracts every
+position, bullet, skill (with the level you state, e.g. "Fortgeschritten"), language,
+certification and degree. Then check the result:
+
+- **Warnings** list missing or unclear information (no phone number, a position without
+  location, a language level that isn't CEFR, ...).
+- **Quick fixes** fill in contact details, notice period, earliest start and similar fields.
+- Anything else: edit the Markdown and **Save and parse again**.
+- **Confirm CV** (or "Confirm anyway"). Only confirmed CVs can be used for applications.
+
+The extracted data is the only source for everything that follows; nothing outside it is
+used.
+
+### 2. Start an application
+
+**Applications → New application**:
+
+- Choose the CV.
+- Enter one or more job listing URLs (one per line; each becomes its own application),
+  or paste the listing text.
+- Set your **requirements**: minimum salary (EUR/year), maximum onsite days (0 = remote),
+  acceptable cities, and free-text must-haves and nice-to-haves (e.g. "EGYM Wellpass").
+  Mark a requirement as **must-have** to stop early if the listing clearly contradicts it;
+  if the listing doesn't mention it, it never fails. The form remembers your last entries.
+- **Start**.
+
+### 3. Follow the progress
+
+The bar under the header shows what is happening right now (for example
+"Claude · Checking claims against your CV · 12s · Opus 5.5") and which applications are
+waiting for you. Each application page shows the pipeline with the current stage, an
+activity log and the model costs of every call.
+
+The application stops where it needs you:
+
+| You see | What to do |
+|---|---|
+| **Paste the listing** | The page couldn't be fetched (login wall, JavaScript-only page, listing taken down). Copy the text from the browser and paste it. |
+| **A must-have isn't met** | Decide: don't apply, or continue anyway. |
+| **Your decision** | Read the assessment: verdict and score, strengths, gaps, transferable skills and the skill coverage table (fact IDs like `pos1.resp2` show the CV bullet on hover). Choose whether a cover letter should be written and click **Apply** or **Don't apply**. |
+| **Your final review** | See below. |
+
+### 4. Review loop (automatic)
+
+After you apply, the documents are written and checked, draft by draft:
+
+1. **Fact check**: every bullet cites CV facts of its own position; numbers and skills come
+   from your CV; skills you don't have are never mentioned.
+2. **Rendering** to PDF.
+3. **Claims check**: Claude compares every statement with the facts it cites and flags
+   embellishments ("shared" when your CV says "own", "led" when it says "worked in", ...).
+4. **ATS check** on the text extracted from the PDF: contact data, headings and employers
+   found, required skills you have are visible, no keyword stuffing.
+5. **Recruiter review**: scores relevance, keywords, evidence, clarity, seniority and the
+   cover letter, and decides whether it would invite you.
+
+Problems go back to the author. The loop stops when everything passes, when the recruiter
+score stops improving, at the cost limit, or after 4 drafts; the best clean draft is used.
+
+### 5. Final review and download
+
+On **Your final review** you see all checks of the final draft and can download the PDFs.
+
+- **Edit text** opens an editor with your original CV next to each position. Saving creates
+  a new draft that is rendered and checked again (fact and ATS checks only, no AI calls);
+  problems are shown as warnings, you decide.
+- If a draft still has open problems, a red note says so above the approve button.
+- **Approve and finish** produces the final files, named like
+  `Lastname_Firstname_CV_Company.pdf` (or `_Lebenslauf_` / `_Anschreiben_` for German
+  listings), plus **a ZIP** with all drafts, the parsed CV, the listing and the assessment.
+
+### Costs
+
+The header always shows today's and the total model costs. **Costs** breaks them down by
+day, model, step and application. A typical application (2 drafts, with cover letter)
+costs roughly $0.40–0.70; parsing a CV about $0.10. Each application is capped at
+`cost_limit_usd` (default $2) for the review loop.
+
+### Deleting
+
+Applications and CVs have a **Delete** button (a CV with applications deletes them too, after
+confirmation). Running applications can't be deleted until they pause. The cost history is
+always kept.
+
+## Configuration
+
+`config.toml` sets the model and reasoning effort per step and the review loop limits:
+
+```toml
+[review]
+max_iterations = 4          # drafts per application
+stop_after_no_improvement = 2
+recruiter_pass_score = 3.5  # average rubric score (1-5); the recruiter must also invite
+cost_limit_usd = 2.0        # per application; 0 = no limit
+
+[llm.steps.author_cv]
+model = "claude-opus-5-5"   # optional, defaults to [llm.default]
+effort = "medium"           # low | medium | high | xhigh | max
+```
+
+Defaults: Opus 5.5 for CV parsing, matching, CV writing and the claims check; Haiku 5.5 for
+listing parsing; Sonnet 5.5 for the cover letter and the recruiter review. After changing the
+file, rebuild with `docker compose up -d --build`.
+
+Environment variables:
+
+| Variable | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | Claude API key (required unless `APP_DEMO=1`) |
+| `APP_DEMO` | `1` = demo mode with sample data, no API calls |
+| `APP_DEMO_DELAY` | seconds per sample "Claude call" in demo mode |
+| `APP_DATA_DIR` | data directory (default `/data` in the container) |
+| `APP_CONFIG` | path to an alternative `config.toml` |
+
+## Reset
+
+Delete everything (CVs, applications, files, cost history) and start with an empty database:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+This can't be undone. To keep the cost history, delete CVs and applications in the UI instead.
+
+## Troubleshooting
+
+- **The page is empty or shows "Frontend not built"**: rebuild with
+  `docker compose up -d --build`.
+- **"ANTHROPIC_API_KEY is not set" in the logs**: export the key in the same shell before
+  `docker compose up`, or use demo mode.
+- **A listing always asks for pasted text**: the site blocks automatic fetching or the
+  listing is gone (a redirect to the job index is detected). Pasting always works.
+- **The live status says "Connecting…"**: the browser lost the event stream; reload the page.
+
+## Tests
+
+```bash
+docker build --target test -t application-crew:test .   # also runs the frontend checks
+docker run --rm application-crew:test                    # backend tests
 ```
 
 ## Local development (optional)
@@ -42,22 +207,13 @@ cd frontend && npm install && npm run dev                                 # UI o
 uv run pytest && (cd frontend && npm run typecheck && npm test)
 ```
 
-The database schema is managed with Alembic (`application_crew/migrations/`); migrations
-run automatically at startup. To add one, create a new file in `migrations/versions/`.
+The database schema is managed with Alembic (`application_crew/migrations/`); migrations run
+automatically at startup. To add one, create a new file in `migrations/versions/`.
 
-## Status
+## Known gaps
 
-The full pipeline works end to end: CV parsing and confirmation, listing fetch and parsing,
-requirement checks, matching with an apply decision, authoring of the tailored CV and
-cover letter, the review loop (fact check, claims check, ATS check, recruiter review),
-final review with an editor, and delivery of named PDFs plus a ZIP of all intermediates.
-
-The UI is a React app (performative-ui components) with a live status indicator for every
-running job and an always-visible model-cost meter; CVs and applications can be deleted
-(their cost history is kept).
-
-Known gaps:
 - No AI repair of Typst errors: content is inserted as plain text, so a failed render
   points to a template bug and is shown as an error instead.
-- Edits in the final review are checked by the fact and ATS checks only, not by the
-  AI claims check or recruiter.
+- Edits in the final review are checked by the fact and ATS checks only, not by the AI
+  claims check or recruiter.
+- The recruiter's pass score was calibrated on Opus; with Sonnet it may need adjusting.

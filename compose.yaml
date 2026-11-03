@@ -9,6 +9,7 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # not needed with APP_DEMO=1
       APP_DEMO: ${APP_DEMO:-0}
+      APP_DEMO_DELAY: ${APP_DEMO_DELAY:-0}  # seconds per sample "Claude call" in demo mode
     volumes:
       - crew-data:/data
 
