@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    image: application-crew:dev
+    ports:
+      - "127.0.0.1:8000:8000"   # local only
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # not needed with APP_DEMO=1
+      APP_DEMO: ${APP_DEMO:-0}
+      APP_DEMO_DELAY: ${APP_DEMO_DELAY:-0}  # seconds per sample "Claude call" in demo mode
+    volumes:
+      - crew-data:/data
+
+volumes:
+  crew-data:   # not "app-data": that name collides with an older, unrelated volume

@@ -1,0 +1,45 @@
+# Application Crew configuration.
+# Secrets (ANTHROPIC_API_KEY) come from the environment, never from this file.
+
+[app]
+data_dir = "/data"          # overridden by APP_DATA_DIR
+max_concurrent_runs = 2
+
+[review]
+max_iterations = 4
+stop_after_no_improvement = 2
+recruiter_pass_score = 3.5  # average rubric score (1-5); the recruiter must also invite
+cost_limit_usd = 2.0        # per run; 0 = no limit
+
+# Per-step model and effort. See docs/architecture.md, section 4.
+[llm.default]
+model = "claude-opus-5-5"
+effort = "medium"
+max_tokens = 16000
+
+[llm.steps.parse_cv]
+effort = "low"            # once per CV; everything builds on it, so it stays on Opus
+
+[llm.steps.parse_listing]
+model = "claude-haiku-5-5"  # extraction; salary, work mode and quotes are checked in Python
+effort = "low"
+
+[llm.steps.match]
+effort = "medium"
+
+[llm.steps.author_cv]
+effort = "medium"
+
+[llm.steps.author_letter]
+model = "claude-sonnet-5-5"
+effort = "medium"
+
+[llm.steps.claims_check]
+effort = "medium"         # the safeguard against invented content: stays on Opus
+
+[llm.steps.recruiter]
+model = "claude-sonnet-5-5"
+effort = "medium"
+
+[llm.steps.repair]
+effort = "low"
