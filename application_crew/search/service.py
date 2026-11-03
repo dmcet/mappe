@@ -209,8 +209,11 @@ async def save_search(
     ranked = rank(hits, cv, requirements, **options)
 
     # Semantic ranking for the best candidates that passed the filters.
-    candidates = [r.hit for r in ranked if r.hidden in (None, "low_score")]
-    candidates = candidates[: settings.search.semantic_max_listings]
+    # Title-only hits (Bundesagentur) are short and cheap to embed, so all of them are;
+    # the budget is for listings with a description.
+    passed = [r.hit for r in ranked if r.hidden in (None, "low_score")]
+    with_text = [h for h in passed if h.description][: settings.search.semantic_max_listings]
+    candidates = [h for h in passed if not h.description] + with_text
     ranking, fresh = await _semantic(cv, candidates, records, settings)
     if ranking.get("fits"):
         ranked = rank(hits, cv, requirements, semantic=ranking.pop("fits"), **options)

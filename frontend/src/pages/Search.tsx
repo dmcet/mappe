@@ -371,8 +371,11 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
         </label>
         <RequirementsEditor value={reqs} onChange={setReqs} />
         <p className="hint">
-          Cities are searched with a radius. A must-have hides listings that clearly contradict it;
-          hidden listings stay one click away.
+          {reqs.location.trim()
+            ? "Cities are searched with a radius."
+            : "No cities: all of Germany is searched (jobs abroad are hidden). Add cities to search near you."}{" "}
+          A must-have hides listings that clearly contradict it; hidden listings stay one click
+          away.
         </p>
         <fieldset className="requirements">
           <legend>Sources</legend>

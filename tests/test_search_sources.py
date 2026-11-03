@@ -140,3 +140,11 @@ def test_dates():
     assert parse_date("2026-11-02T09:42:28.340") == date(2026, 11, 2)
     assert parse_date(1793742325) == date(2026, 11, 3)
     assert parse_date("soon") is None
+
+
+def test_ba_titles_that_say_remote_are_remote():
+    payload = sample("ba")
+    job = dict(payload["ergebnisliste"][0], stellenangebotsTitel="Software Architect (Remote)")
+    job.pop("homeofficemoeglich", None)
+    (parsed,) = SOURCES["ba"].parse({"ergebnisliste": [job]})
+    assert parsed.remote == "remote"

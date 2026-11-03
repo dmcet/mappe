@@ -7,6 +7,7 @@ the hit names one).
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import httpx
@@ -18,7 +19,7 @@ from application_crew.search.text import parse_date
 API = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
 HEADERS = {"X-API-Key": "jobboerse-jobsuche"}
 DETAIL = "https://www.arbeitsagentur.de/jobsuche/jobdetail/{ref}"
-MAX_REQUESTS = 6
+MAX_REQUESTS = 8
 
 
 async def fetch(client: httpx.AsyncClient, query: SearchQuery, opts: SourceOptions) -> list[Any]:
@@ -44,7 +45,12 @@ async def fetch(client: httpx.AsyncClient, query: SearchQuery, opts: SourceOptio
     return payloads
 
 
+_REMOTE_TITLE = re.compile(r"\b(remote|home[- ]?office|100\s*%\s*mobil)\b", re.I)
+
+
 def _remote(job: dict) -> tuple[str | None, int | None]:
+    if _REMOTE_TITLE.search(job.get("stellenangebotsTitel") or ""):
+        return "remote", None
     # "No home office" is often just an unticked box, so it stays unknown (never fails).
     if not job.get("homeofficemoeglich"):
         return None, None

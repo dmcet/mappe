@@ -241,7 +241,9 @@ Chosen: Jina, at 800 characters (vectors 97 % identical to 1,500), via fastembed
 PyTorch). Speed comes from storing each listing's vector (`job_hit.embedding`, float16,
 keyed by model + text hash): the first search pays, later ones read only new listings. Only
 the best 200 candidates that passed the filters are embedded. Score with meaning: skills 40,
-title 20, meaning 30, freshness 10 (title-only hits: 10 / 50 / 30 / 10). Cosine similarity
+title 20, meaning 30, freshness 10. Title-only hits use the same weights with their skills
+counted as average (0.4): in the first real run (Fürth), separate title-heavy weights put
+29 Bundesagentur listings with generic titles into the top 30. Cosine similarity
 is mapped to 0..1 with a per-model calibration (Jina: 0.40 → 0, 0.70 → 1; measured: unrelated
 jobs ~0.20, generic tech jobs ~0.50, close matches 0.65–0.73).
 

@@ -18,7 +18,12 @@ def search(client, cv_id, **body):
 def test_suggestions(client):
     cv_id = confirmed_cv(client)
     data = client.get(f"/api/search/suggestions?cv_id={cv_id}").json()
-    assert data["titles"] == ["Backend Engineer", "Backend-Entwickler"]
+    assert data["titles"] == [
+        "Backend Engineer",
+        "Python Developer",
+        "Backend-Entwickler",
+        "Python-Entwickler",
+    ]
     sources = {s["key"]: s for s in data["sources"]}
     assert sources["ba"]["default"] and not sources["remoteok"]["default"]
     assert sources["adzuna"]["missing_env"] == ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"]

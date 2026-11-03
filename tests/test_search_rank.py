@@ -2,6 +2,8 @@
 
 from datetime import date
 
+import pytest
+
 from application_crew.domain.extraction import to_parsed_cv
 from application_crew.domain.models import Requirement
 from application_crew.search.dedupe import dedupe
@@ -43,10 +45,49 @@ def test_title_variants():
     assert "Software Engineer" in variants("Softwareentwickler")
     assert variants("Androidentwickler") == ["Android Developer"]
     assert variants("Scrum Master") == []
+    assert variants("System Engineer") == ["Systemingenieur"]
+    assert variants("Technical Architect") == []
+    assert variants("Data Engineer") == []  # the same title in German job ads
+    assert variants("Android Developer") == ["Android-Entwickler"]
 
 
 def test_suggested_titles_from_cv():
-    assert suggest_titles(CV) == ["Backend Engineer", "Backend-Entwickler"]
+    # Python is the CV's advanced skill and not in a title yet: it adds a skill title.
+    assert suggest_titles(CV) == [
+        "Backend Engineer",
+        "Python Developer",
+        "Backend-Entwickler",
+        "Python-Entwickler",
+    ]
+
+
+def test_every_job_title_in_the_headline_is_used():
+    cv = CV.model_copy(update={"headline": "Software Architect | System Engineer | Python & Cloud"})
+    assert suggest_titles(cv) == [
+        "Software Architect",
+        "System Engineer",
+        "Backend Engineer",
+        "Python Developer",
+        "Softwarearchitekt",
+        "Systemingenieur",
+        "Backend-Entwickler",
+        "Python-Entwickler",
+    ]
+
+
+def test_abroad_detection():
+    from application_crew.search.rank import abroad
+
+    for place in ["Waardenburg, Gelderland, Netherlands", "Bern", "Bundesland: Wien", "Linz"]:
+        assert abroad(place), place
+    for place in ["Fürth, Bayern", "Munich, Bavaria, Germany", "Berlin", "Wien, Bayern"]:
+        assert not abroad(place), place
+
+
+def test_without_cities_radius_sources_are_checked_for_abroad_too():
+    vienna = hit("Backend Engineer", "Python", location="Bundesland: Wien", source="ba")
+    ranked = rank([vienna], CV, [], located={"ba"}, today=TODAY)
+    assert ranked[0].hidden == "elsewhere"
 
 
 def test_places_and_remote_from_requirements():
@@ -82,8 +123,12 @@ def test_skill_matching_uses_synonyms_and_word_boundaries():
 
 
 def test_title_only_hits_are_scored_on_the_title():
-    ranked = rank([hit("Backend-Entwickler (m/w/d)", source="ba")], CV, [], today=TODAY)
-    assert ranked[0].basis == "title only" and ranked[0].score > 70
+    title_only = hit("Backend-Entwickler (m/w/d)", source="ba")
+    read = hit("Backend Engineer", "Python, FastAPI, PostgreSQL and Kubernetes", external_id="r")
+    by_basis = {r.basis: r for r in rank([title_only, read], CV, [], today=TODAY)}
+    assert by_basis["title only"].score == pytest.approx(60 * 0.4 + 30 + 10, abs=1)
+    # A listing that was read and fits beats the same title with unknown skills.
+    assert by_basis["description"].score > by_basis["title only"].score
 
 
 def test_must_have_requirements_hide_but_keep_hits():

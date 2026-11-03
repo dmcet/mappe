@@ -2,8 +2,8 @@
 
 Score 0-100. Keywords only: skill overlap (60) + title fit (30) + freshness (10). With
 semantic similarity from the local embedding model: skills (40) + title (20) + meaning (30)
-+ freshness (10). Hits without a description (Bundesagentur) are scored mostly on the
-title and marked as "title only".
++ freshness (10). Hits without a description (Bundesagentur) use the same weights with
+their skills counted as average (0.4), and are marked as "title only".
 """
 
 from __future__ import annotations
@@ -30,18 +30,43 @@ TOP_SKILLS = 20  # the CV skills that count
 FULL_SKILL_WEIGHT = 6.0  # matched weight that earns the whole skill share ...
 FULL_SKILL_SHARE = 0.6  # ... or this share of the CV's total, for CVs with few skills
 RECENT_YEARS = 3
+UNKNOWN_SKILL_FIT = 0.4  # listings without a description: skills can't be checked
 # Short or everyday words: matched only as written in the CV ("Go", not "go").
 _CASE_SENSITIVE = {"go", "r", "c", "d", "rest", "swift", "spring", "flow", "compose", "dart"}
 CHECKED_KINDS = {"salary_min", "max_onsite_days", "location"}
-# Without places to search, onsite jobs naming these are outside the German market.
-_ABROAD = re.compile(
-    r"\b(netherlands|nederland|united kingdom|uk|england|france|spain|portugal|italy|poland|"
-    r"switzerland|schweiz|austria|österreich|sweden|denmark|norway|finland|ireland|belgium|"
-    r"czech|usa|united states|canada|india|london|paris|amsterdam|rotterdam|den haag|"
-    r"zurich|zürich|vienna|wien|barcelona|madrid|lisbon|warsaw|prague|dublin|stockholm|"
-    r"copenhagen|milan|brussels)\b",
+# Without places to search, onsite jobs are hidden when their location is abroad: it names
+# a German state or Germany -> domestic; else a foreign country, region or city -> abroad.
+_GERMANY = re.compile(
+    r"\b(germany|deutschland|bayern|bavaria|baden|württemberg|wuerttemberg|hessen|hesse|"
+    r"sachsen|saxony|thüringen|thuringia|brandenburg|mecklenburg|niedersachsen|"
+    r"lower saxony|nordrhein|westfalen|north rhine|rheinland|pfalz|saarland|schleswig|"
+    r"holstein|mittelfranken|oberfranken|unterfranken|oberbayern|niederbayern|schwaben)\b",
     re.I,
 )
+_ABROAD = re.compile(
+    r"\b(netherlands|nederland|holland|gelderland|utrecht|brabant|limburg|overijssel|"
+    r"groningen|friesland|eindhoven|amsterdam|rotterdam|den haag|the hague|"
+    r"united kingdom|uk|england|scotland|wales|london|manchester|edinburgh|ireland|dublin|"
+    r"france|paris|lyon|spain|españa|barcelona|madrid|valencia|portugal|lisbon|lisboa|porto|"
+    r"italy|italia|milan|milano|rome|roma|poland|polska|warsaw|warszawa|krakow|kraków|"
+    r"wroclaw|wrocław|czech|prague|praha|brno|slovakia|hungary|budapest|romania|bucharest|"
+    r"bulgaria|sofia|croatia|serbia|greece|athens|cyprus|malta|"
+    r"switzerland|schweiz|suisse|zurich|zürich|bern|basel|geneva|genf|lausanne|luzern|"
+    r"lucerne|zug|winterthur|st\. gallen|"
+    r"austria|österreich|wien|vienna|graz|linz|salzburg|innsbruck|klagenfurt|"
+    r"steiermark|tirol|kärnten|vorarlberg|burgenland|oberösterreich|niederösterreich|"
+    r"belgium|belgique|brussels|bruxelles|antwerp|luxembourg|denmark|copenhagen|sweden|"
+    r"stockholm|norway|oslo|finland|helsinki|estonia|tallinn|latvia|riga|lithuania|vilnius|"
+    r"usa|united states|canada|toronto|mexico|brazil|india|bangalore|singapore|"
+    r"australia|israel|tel aviv|turkey|istanbul|dubai|uae)\b",
+    re.I,
+)
+
+
+def abroad(location: str) -> bool:
+    if _GERMANY.search(location):
+        return False
+    return bool(_ABROAD.search(location))
 
 
 @dataclass
@@ -156,7 +181,7 @@ def _elsewhere(hit: JobHit, places: list[str]) -> bool:
         return False
     if places:
         return not any(re.search(rf"\b{re.escape(normalize_place(p))}\b", where) for p in places)
-    return bool(_ABROAD.search(hit.location))
+    return abroad(hit.location)
 
 
 def rank(
@@ -193,10 +218,11 @@ def rank(
         fresh = _freshness(hit, today, max_age_days)
         meaning = (semantic or {}).get(hit.key)
         basis = "description" if hit.description else "title only"
-        if meaning is None:
-            weights = (60, 30, 0, 10) if hit.description else (15, 75, 0, 10)
-        else:
-            weights = (40, 20, 30, 10) if hit.description else (10, 50, 30, 10)
+        if not hit.description:
+            # Skills unknown (no text): count them as average, not as missing, and use the
+            # same weights, so an identical title doesn't outrank a listing that was read.
+            skill_fit = max(skill_fit, UNKNOWN_SKILL_FIT)
+        weights = (60, 30, 0, 10) if meaning is None else (40, 20, 30, 10)
         parts = (skill_fit, tfit, meaning or 0.0, fresh)
         score = sum(w * p for w, p in zip(weights, parts, strict=True))
         item = Ranked(
@@ -214,7 +240,9 @@ def rank(
         elif failed:
             item.hidden = "requirements"
             item.notes = [f"{r.requirement.kind}: {r.note}" for r in failed]
-        elif hit.source not in (located or set()) and _elsewhere(hit, places or []):
+        # Radius searches (Bundesagentur) found their hits around the cities themselves;
+        # without cities, every source is checked for jobs abroad.
+        elif (not places or hit.source not in (located or set())) and _elsewhere(hit, places or []):
             item.hidden = "elsewhere"
         elif item.score < min_score:
             item.hidden = "low_score"
