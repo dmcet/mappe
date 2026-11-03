@@ -1,12 +1,81 @@
 {% extends "base.html" %}
 {% block title %}Run {{ run.id }} · Application Crew{% endblock %}
+{% block head %}{% if working %}<meta http-equiv="refresh" content="3">{% endif %}{% endblock %}
 {% block content %}
 <section class="card">
-  <h2>Run {{ run.id }}</h2>
-  <p>{{ run.listing_url or "pasted listing" }}</p>
-  <p>Status: <span class="status status-{{ run.status }}">{{ run.status }}</span></p>
+  <h2>{% if listing and listing.title %}{{ listing.title }}{% else %}Run {{ run.id }}{% endif %}</h2>
+  <p class="muted">{% if run.listing_url %}<a href="{{ run.listing_url }}" rel="noreferrer noopener" target="_blank">{{ run.listing_url }}</a>{% else %}Pasted listing{% endif %}</p>
+  <p>Status: <span class="status status-{{ run.status }}">{{ run.status }}</span>
+    {% if run.cost_usd %}<span class="muted"> · cost so far ≈ ${{ "%.3f"|format(run.cost_usd) }}</span>{% endif %}</p>
   {% if run.error %}<p class="error">{{ run.error }}</p>{% endif %}
 </section>
+
+{% if run.status == "waiting_for_listing_text" %}
+<form class="card" method="post" action="/runs/{{ run.id }}/listing-text">
+  <h2>Paste the listing</h2>
+  <p>The listing couldn't be fetched automatically (see the events below). Copy the text from the page and paste it here.</p>
+  <label>Listing text <textarea name="listing_text" rows="12" required></textarea></label>
+  <button type="submit">Continue</button>
+</form>
+{% endif %}
+
+{% if run.status == "stopped_by_requirements" %}
+<section class="card warnings">
+  <h2>A must-have requirement isn't met</h2>
+  <p>The listing contradicts at least one of your must-haves (marked below). You can stop here or continue anyway.</p>
+  <div class="actions">
+    <form method="post" action="/runs/{{ run.id }}/decline"><button type="submit">Don't apply</button></form>
+    <form method="post" action="/runs/{{ run.id }}/continue"><button type="submit" class="secondary">Continue anyway</button></form>
+  </div>
+</section>
+{% endif %}
+
+{% if results %}
+<section class="card">
+  <h2>Requirements</h2>
+  <table>
+    <thead><tr><th>Requirement</th><th>Result</th><th>Details</th></tr></thead>
+    <tbody>
+    {% for r in results %}
+      <tr>
+        <td>{{ r.requirement.kind | replace("_", " ") }}: {{ r.requirement.value }}{% if r.requirement.must_have %} <strong>(must)</strong>{% endif %}</td>
+        <td><span class="outcome outcome-{{ r.outcome }}">{{ r.outcome }}</span></td>
+        <td>{{ r.note }}{% if r.evidence %}<blockquote>“{{ r.evidence }}”</blockquote>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if listing %}
+<section class="card">
+  <h2>Listing</h2>
+  <dl class="kv">
+    <dt>Company</dt><dd>{{ listing.company or "—" }}{% if listing.domain %} ({{ listing.domain }}){% endif %}</dd>
+    <dt>Location</dt><dd>{{ listing.location or "—" }}</dd>
+    <dt>Work mode</dt><dd>{{ listing.remote or "—" }}{% if listing.onsite_days_per_week is not none %}, {{ listing.onsite_days_per_week }} onsite day(s)/week{% endif %}</dd>
+    <dt>Salary</dt><dd>{% if listing.salary_min or listing.salary_max %}{{ "{:,}".format(listing.salary_min or listing.salary_max) }}{% if listing.salary_max and listing.salary_max != listing.salary_min %}–{{ "{:,}".format(listing.salary_max) }}{% endif %} {{ listing.salary_currency or "" }}/{{ listing.salary_period or "?" }}{% else %}not stated{% endif %}</dd>
+    <dt>Language</dt><dd>{{ "German" if listing.language == "de" else "English" }}</dd>
+    <dt>Cover letter</dt><dd>{{ "requested" if listing.cover_letter_requested else "not requested" }}</dd>
+  </dl>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>Required skills</h2>
+    <p class="tags">{% for s in listing.required_skills %}<span>{{ s }}</span>{% else %}—{% endfor %}</p>
+    <h2>Nice to have</h2>
+    <p class="tags">{% for s in listing.nice_to_have_skills %}<span>{{ s }}</span>{% else %}—{% endfor %}</p>
+  </div>
+  <div class="card">
+    <h2>Responsibilities</h2>
+    <ul>{% for r in listing.responsibilities %}<li>{{ r }}</li>{% else %}<li>—</li>{% endfor %}</ul>
+    <h2>Benefits</h2>
+    <ul>{% for b in listing.benefits %}<li>{{ b }}</li>{% else %}<li>—</li>{% endfor %}</ul>
+  </div>
+</section>
+{% endif %}
 
 <section class="card">
   <h2>Events</h2>

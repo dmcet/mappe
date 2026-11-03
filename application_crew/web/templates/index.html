@@ -17,6 +17,25 @@
     </label>
     <label>Job listing URLs (one per line) <textarea name="urls" rows="4"></textarea></label>
     <label>…or paste a listing <textarea name="listing_text" rows="4"></textarea></label>
+
+    <fieldset>
+      <legend>Requirements <span class="muted">(pre-filled from your last application)</span></legend>
+      <p class="muted">Must-haves stop the application early if the listing contradicts them. If the listing doesn't say, they don't fail.</p>
+      <div class="req-row">
+        <label>Min. salary (EUR/year) <input name="salary_min" inputmode="numeric" placeholder="75000" value="{{ req.salary_min or '' }}"></label>
+        <label class="check"><input type="checkbox" name="salary_min_must" {% if req.salary_min_must %}checked{% endif %}> must-have</label>
+      </div>
+      <div class="req-row">
+        <label>Max. onsite days/week (0 = remote) <input name="max_onsite_days" inputmode="numeric" placeholder="2" value="{{ req.max_onsite_days or '' }}"></label>
+        <label class="check"><input type="checkbox" name="max_onsite_days_must" {% if req.max_onsite_days_must %}checked{% endif %}> must-have</label>
+      </div>
+      <div class="req-row">
+        <label>Cities (comma-separated) <input name="location" placeholder="Berlin, Hamburg" value="{{ req.location or '' }}"></label>
+        <label class="check"><input type="checkbox" name="location_must" {% if req.location_must %}checked{% endif %}> must-have</label>
+      </div>
+      <label>Other must-haves (one per line) <textarea name="must_other" rows="2" placeholder="30 vacation days">{{ req.must_other }}</textarea></label>
+      <label>Nice-to-haves (one per line) <textarea name="nice_other" rows="2" placeholder="Training budget&#10;Company bike (Jobrad)">{{ req.nice_other }}</textarea></label>
+    </fieldset>
     {% set confirmed = cvs | selectattr("status", "equalto", "confirmed") | list %}
     {% if not confirmed %}<p class="muted">Add and confirm a CV first.</p>{% endif %}
     <button type="submit" {% if not confirmed %}disabled{% endif %}>Start</button>
@@ -49,7 +68,8 @@
     {% for run in runs %}
       <tr>
         <td><a href="/runs/{{ run.id }}">{{ run.id }}</a></td>
-        <td>{{ run.listing_url or "pasted listing" }}</td>
+        {% set l = run.state.get("listing") %}
+        <td>{% if l and l.title %}{{ l.title }}{% if l.company %} · {{ l.company }}{% endif %}{% else %}{{ run.listing_url or "pasted listing" }}{% endif %}</td>
         <td><span class="status status-{{ run.status }}">{{ run.status }}</span></td>
         <td>{{ run.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
       </tr>

@@ -1,6 +1,7 @@
 """Demo mode: canned Claude responses so the UI can be explored without an API key.
 
-The sample data never depends on the input. The UI shows a banner while demo mode is on.
+The sample data never depends on the input (CV or listing).
+The UI shows a banner while demo mode is on.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from application_crew.domain.extraction import (
     ExtractedLanguage,
     ExtractedPosition,
 )
+from application_crew.domain.listing import ExtractedListing
 
 
 def sample_cv(**overrides) -> ExtractedCV:
@@ -97,7 +99,34 @@ def demo_cv() -> ExtractedCV:
     return cv
 
 
+def demo_listing() -> ExtractedListing:
+    """A German hybrid backend role. Requirement checks are left empty ("not mentioned")."""
+    return ExtractedListing(
+        title="Senior Python Developer (m/w/d)",
+        company="Beispiel Mobility GmbH",
+        domain="automotive",
+        responsibilities=[
+            "Weiterentwicklung unserer Flottenmanagement-Plattform",
+            "Design und Betrieb von Microservices auf Kubernetes",
+        ],
+        required_skills=["Python", "FastAPI", "PostgreSQL", "Kubernetes"],
+        nice_to_have_skills=["Kafka", "Terraform"],
+        location="München",
+        remote="hybrid",
+        onsite_days_per_week=2,
+        salary_min=70000,
+        salary_max=85000,
+        salary_currency="EUR",
+        salary_period="year",
+        benefits=["30 Urlaubstage", "Jobrad", "Weiterbildungsbudget"],
+        cover_letter_requested=False,
+        requirement_checks=[],
+    )
+
+
 def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
     if step == "parse_cv" and output is ExtractedCV:
         return demo_cv()
+    if step == "parse_listing" and output is ExtractedListing:
+        return demo_listing()
     raise NotImplementedError(f"demo mode has no sample response for step '{step}'")

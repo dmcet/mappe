@@ -2,7 +2,7 @@ import pytest
 
 from application_crew.domain.extraction import ExtractedCV
 from application_crew.llm.client import Usage
-from application_crew.llm.demo import sample_cv
+from application_crew.llm.demo import demo_listing, sample_cv
 
 make_extracted = sample_cv
 
@@ -22,12 +22,15 @@ def fake_llm(monkeypatch):
         calls: list[dict] = []
 
         async def structured(self, settings, step, output, stable_context, task, **kw):
-            self.calls.append({"step": step, "context": stable_context})
+            self.calls.append({"step": step, "context": stable_context, "task": task})
             if self.error:
                 raise self.error
-            return self.result, USAGE
+            if step == "parse_cv":
+                return self.result, USAGE
+            return self.results[step], USAGE
 
     fake = Fake()
     fake.calls = []
+    fake.results = {"parse_listing": demo_listing()}
     monkeypatch.setattr("application_crew.llm.client.structured", fake.structured)
     return fake

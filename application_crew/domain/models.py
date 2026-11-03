@@ -76,26 +76,42 @@ class ParsedCV(BaseModel):
     work_permit: str | None = None
 
 
+RemoteMode = Literal["remote", "hybrid", "onsite"]
+SalaryPeriod = Literal["year", "month", "hour"]
+
+
 class ParsedListing(BaseModel):
     title: str | None = None
     company: str | None = None
     domain: str | None = None
+    language: str = "en"  # set by Python, not Claude
     responsibilities: list[str] = Field(default_factory=list)
     required_skills: list[str] = Field(default_factory=list)
     nice_to_have_skills: list[str] = Field(default_factory=list)
     location: str | None = None
-    remote: Literal["remote", "hybrid", "onsite"] | None = None
+    remote: RemoteMode | None = None
     onsite_days_per_week: int | None = None
     salary_min: int | None = None
     salary_max: int | None = None
+    salary_currency: str | None = None
+    salary_period: SalaryPeriod | None = None
     benefits: list[str] = Field(default_factory=list)
     cover_letter_requested: bool = False
 
 
-class Requirement(BaseModel):
-    """A user requirement checked against a listing."""
+RequirementKind = Literal["salary_min", "max_onsite_days", "location", "benefit", "other"]
 
-    kind: Literal["salary_min", "max_onsite_days", "remote", "location", "benefit", "other"]
+
+class Requirement(BaseModel):
+    """A user requirement checked against a listing.
+
+    - ``salary_min``: minimum gross annual salary in EUR, e.g. "75000"
+    - ``max_onsite_days``: maximum onsite days per week, "0" = fully remote
+    - ``location``: acceptable cities, comma-separated, e.g. "Berlin, Hamburg"
+    - ``benefit`` / ``other``: free text, judged by Claude against the listing
+    """
+
+    kind: RequirementKind
     value: str
     must_have: bool = False
 
@@ -104,6 +120,7 @@ class RequirementResult(BaseModel):
     requirement: Requirement
     outcome: Literal["passed", "failed", "unknown"]
     note: str = ""
+    evidence: str | None = None  # quote from the listing (fuzzy checks only)
 
 
 class Bullet(BaseModel):

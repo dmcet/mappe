@@ -22,11 +22,12 @@ import application_crew.steps  # noqa: F401 - registers steps
 from application_crew.checks.completeness import check_cv
 from application_crew.config import get_settings
 from application_crew.db import CV, Event, Run, get_engine, get_session, init_engine
-from application_crew.domain.models import ParsedCV
+from application_crew.domain.models import ParsedCV, ParsedListing, RequirementResult
 from application_crew.domain.summary import summarize
 from application_crew.render.typst import typst_available
-from application_crew.runner.engine import Engine
-from application_crew.runner.states import CVStatus
+from application_crew.runner.engine import Engine, InvalidTransition, set_status
+from application_crew.runner.states import WORKING, CVStatus, RunStatus
+from application_crew.web.forms import form_defaults, requirements_from_form
 
 log = logging.getLogger(__name__)
 WEB_DIR = Path(__file__).resolve().parent
@@ -66,7 +67,9 @@ def health() -> dict[str, object]:
 def index(request: Request, session: SessionDep) -> HTMLResponse:
     cvs = session.exec(select(CV).order_by(CV.created_at.desc())).all()  # type: ignore[attr-defined]
     runs = session.exec(select(Run).order_by(Run.created_at.desc())).all()  # type: ignore[attr-defined]
-    return templates.TemplateResponse(request, "index.html", {"cvs": cvs, "runs": runs})
+    defaults = form_defaults(runs[0].requirements) if runs else form_defaults([])
+    context = {"cvs": cvs, "runs": runs, "req": defaults}
+    return templates.TemplateResponse(request, "index.html", context)
 
 
 def _engine(request: Request) -> Engine:
@@ -188,7 +191,7 @@ def confirm_cv(cv_id: int, session: SessionDep) -> RedirectResponse:
 
 
 @app.post("/runs")
-def create_runs(
+async def create_runs(
     request: Request,
     session: SessionDep,
     cv_id: Annotated[int, Form()],
@@ -197,25 +200,78 @@ def create_runs(
 ) -> RedirectResponse:
     if _get_cv(session, cv_id).status != CVStatus.CONFIRMED:
         raise HTTPException(409, "Confirm the CV before starting an application")
-    new_runs = [Run(cv_id=cv_id, listing_url=u.strip()) for u in urls.splitlines() if u.strip()]
+    reqs = [r.model_dump(mode="json") for r in requirements_from_form(await request.form())]
+    new_runs = [
+        Run(cv_id=cv_id, listing_url=u.strip(), requirements=reqs)
+        for u in urls.splitlines()
+        if u.strip()
+    ]
     if listing_text.strip():
-        new_runs.append(Run(cv_id=cv_id, listing_text=listing_text.strip()))
+        new_runs.append(Run(cv_id=cv_id, listing_text=listing_text.strip(), requirements=reqs))
     if not new_runs:
         raise HTTPException(400, "Provide at least one URL or a pasted listing")
     session.add_all(new_runs)
     session.commit()
     for run in new_runs:
         _engine(request).enqueue(run.id)  # type: ignore[arg-type]
+    if len(new_runs) == 1:
+        return RedirectResponse(f"/runs/{new_runs[0].id}", status_code=303)
     return RedirectResponse("/", status_code=303)
+
+
+def _get_run(session: Session, run_id: int) -> Run:
+    run = session.get(Run, run_id)
+    if run is None:
+        raise HTTPException(404, "Run not found")
+    return run
+
+
+def _resume(request: Request, session: Session, run: Run, target: RunStatus) -> RedirectResponse:
+    """Move a run out of a user gate and hand it back to the engine."""
+    try:
+        set_status(session, run, target)
+    except InvalidTransition as exc:
+        raise HTTPException(409, str(exc)) from exc
+    if target in WORKING:
+        _engine(request).enqueue(run.id)  # type: ignore[arg-type]
+    return RedirectResponse(f"/runs/{run.id}", status_code=303)
 
 
 @app.get("/runs/{run_id}", response_class=HTMLResponse)
 def run_detail(request: Request, run_id: int, session: SessionDep) -> HTMLResponse:
-    run = session.get(Run, run_id)
-    if run is None:
-        raise HTTPException(404, "Run not found")
-    events = session.exec(select(Event).where(Event.run_id == run_id).order_by(Event.id)).all()
-    return templates.TemplateResponse(request, "run.html", {"run": run, "events": events})
+    run = _get_run(session, run_id)
+    listing = run.state.get("listing")
+    context = {
+        "run": run,
+        "working": run.status in WORKING,
+        "listing": ParsedListing.model_validate(listing) if listing else None,
+        "results": [
+            RequirementResult.model_validate(r) for r in run.state.get("requirement_results", [])
+        ],
+    }
+    return templates.TemplateResponse(request, "run.html", context)
+
+
+@app.post("/runs/{run_id}/listing-text")
+def submit_listing_text(
+    request: Request, run_id: int, session: SessionDep, listing_text: Annotated[str, Form()]
+) -> RedirectResponse:
+    run = _get_run(session, run_id)
+    if not listing_text.strip():
+        raise HTTPException(400, "Paste the listing text")
+    run.listing_text = listing_text.strip()
+    return _resume(request, session, run, RunStatus.PARSING_LISTING)
+
+
+@app.post("/runs/{run_id}/continue")
+def continue_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
+    """Override failed must-have requirements and continue with matching."""
+    return _resume(request, session, _get_run(session, run_id), RunStatus.MATCHING)
+
+
+@app.post("/runs/{run_id}/decline")
+def decline_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
+    return _resume(request, session, _get_run(session, run_id), RunStatus.DECLINED)
 
 
 @app.get("/runs/{run_id}/events")

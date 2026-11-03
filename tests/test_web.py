@@ -84,3 +84,59 @@ def test_demo_mode_parses_sample_cv_without_api(tmp_path, monkeypatch):
             assert "Contact: no phone number found." in page.text
     finally:
         get_settings.cache_clear()
+
+
+def confirmed_cv(client) -> str:
+    resp = client.post("/cvs", data={"label": "Main CV", "markdown": "# Jane Doe"})
+    cv_url = str(resp.url.path)
+    wait_for(client, cv_url, "waiting_for_confirmation")
+    client.post(f"{cv_url}/confirm")
+    return cv_url.rsplit("/", 1)[1]
+
+
+def test_run_stops_on_must_have_and_can_be_declined_or_continued(client):
+    cv_id = confirmed_cv(client)
+    form = {
+        "cv_id": cv_id,
+        "listing_text": "Wir suchen ...",
+        "salary_min": "100000",
+        "salary_min_must": "on",
+        "nice_other": "Jobrad",
+    }
+
+    resp = client.post("/runs", data=form)
+    run_url = str(resp.url.path)
+    page = wait_for(client, run_url, "stopped_by_requirements")
+    assert "A must-have requirement isn't met" in page.text
+    assert "Senior Python Developer (m/w/d)" in page.text
+    assert "Band 70,000–85,000 EUR/year is below 100,000 EUR/year" in page.text
+
+    page = client.post(f"{run_url}/decline")
+    assert "status-declined" in page.text
+    assert client.post(f"{run_url}/continue").status_code == 409  # declined is final
+
+    # The form is pre-filled from the last run.
+    index = client.get("/").text
+    assert 'value="100000"' in index and ">Jobrad</textarea>" in index
+
+    run_url = str(client.post("/runs", data=form).url.path)
+    wait_for(client, run_url, "stopped_by_requirements")
+    client.post(f"{run_url}/continue")
+    wait_for(client, run_url, "step &#39;matching&#39; not implemented")
+
+
+def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):
+    from application_crew.fetch.listing import FetchResult
+
+    async def blocked(url):
+        return FetchResult(ok=False, error="403 Forbidden")
+
+    monkeypatch.setattr("application_crew.steps.listing.fetch_listing", blocked)
+    cv_id = confirmed_cv(client)
+    run_url = str(
+        client.post("/runs", data={"cv_id": cv_id, "urls": "https://x.test/job"}).url.path
+    )
+    wait_for(client, run_url, "Paste the listing")
+
+    client.post(f"{run_url}/listing-text", data={"listing_text": "Wir suchen ..."})
+    wait_for(client, run_url, "Senior Python Developer (m/w/d)")
