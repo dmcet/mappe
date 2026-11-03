@@ -6,11 +6,13 @@
 
 ### Technical requirements
 - Uses CrewAI as a multiagentic platform
-- Can use either a locally running LMStudio or a ChatGPT/Codex API token for its agents
+- Uses a Claude API token for agentic work
 - Is running in a Docker container for reproducible builds and easy deployment/shipping
 - the Docker container is self-contained, hence it contains all the required tools for processing/building the intermediate steps (e.g. Python, LaTeX, Markdown processing tools, ...)
 - Provides a simple, modern web UI where the process can be started and the current state of the workers can be observed
 - The pipeline should be fully operable from the Web UI, including the Download of intermediates/end results
+- Performs as much of the work in Python, only uses Claude for reasoning workloads, everything deterministic should be performed in Python using suitable algorithms
+- The models sent to the AI should be as simple as possible, avoid complex schemas
 
 ### Input/Output
 - Inputs:
