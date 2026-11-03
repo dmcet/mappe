@@ -16,6 +16,7 @@ from application_crew.domain.models import ParsedCV, ParsedListing
 from application_crew.fetch.listing import detect_language
 from application_crew.llm import client
 from application_crew.llm.pricing import cost_usd
+from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.common import run_cv
@@ -94,6 +95,7 @@ async def author(ctx: StepContext) -> RunStatus:
     last = drafts[-1] if drafts else None
     wants_letter = run.state.get("decision", {}).get("cover_letter", False)
 
+    activity.update(f"Preparing draft {iteration}", draft=iteration)
     context = _context(cv, listing, match, analysis)
     language = (
         f"Document language: {LANGUAGE_NAMES[lang]}. "

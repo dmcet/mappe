@@ -13,6 +13,7 @@ from application_crew.domain.match import (
 from application_crew.domain.models import ParsedListing, RequirementResult
 from application_crew.llm import client
 from application_crew.llm.pricing import cost_usd
+from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.common import run_cv
@@ -27,6 +28,7 @@ async def match(ctx: StepContext) -> RunStatus:
         RequirementResult.model_validate(r) for r in run.state.get("requirement_results", [])
     ]
 
+    activity.update("Comparing your skills with the listing (Python)")
     analysis = analyze_skills(cv, listing)
     ctx.emit(
         "step_progress",

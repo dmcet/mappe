@@ -2,7 +2,6 @@ from application_crew.checks.requirements import check_requirements, failed_must
 from application_crew.domain.listing import FuzzyCheck, from_job_posting, merge_listing
 from application_crew.domain.models import ParsedListing, Requirement
 from application_crew.llm.demo import demo_listing
-from application_crew.web.forms import form_defaults, requirements_from_form
 
 POSTING = {
     "@type": "JobPosting",
@@ -159,25 +158,3 @@ def test_only_failed_must_haves_stop_the_run():
     results = check_requirements(reqs, listing(), LISTING_TEXT, [])
     failed = failed_must_haves(results)
     assert [r.requirement.kind for r in failed] == ["salary_min"]  # unknown never fails
-
-
-def test_requirement_form_round_trip():
-    form = {
-        "salary_min": "75000",
-        "salary_min_must": "on",
-        "max_onsite_days": "",
-        "location": "Berlin",
-        "must_other": "30 vacation days\n",
-        "nice_other": "Jobrad\nTraining budget",
-    }
-    reqs = requirements_from_form(form)
-    assert [(r.kind, r.value, r.must_have) for r in reqs] == [
-        ("salary_min", "75000", True),
-        ("location", "Berlin", False),
-        ("other", "30 vacation days", True),
-        ("other", "Jobrad", False),
-        ("other", "Training budget", False),
-    ]
-    defaults = form_defaults([r.model_dump() for r in reqs])
-    assert defaults["salary_min"] == "75000" and defaults["salary_min_must"] is True
-    assert defaults["nice_other"] == "Jobrad\nTraining budget"

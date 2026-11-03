@@ -12,6 +12,7 @@ from application_crew.domain.models import ParsedListing, Requirement
 from application_crew.fetch.listing import detect_language, fetch_listing
 from application_crew.llm import client
 from application_crew.llm.pricing import cost_usd
+from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.common import run_cv
@@ -33,6 +34,7 @@ async def fetch(ctx: StepContext) -> RunStatus:
         ctx.emit("step_progress", "no URL given, waiting for pasted text")
         return RunStatus.WAITING_FOR_LISTING_TEXT
 
+    activity.update(f"Downloading {run.listing_url}")
     result = await fetch_listing(run.listing_url)
     if not result.ok:
         ctx.emit("step_progress", result.error or "fetch failed")
@@ -112,6 +114,7 @@ async def check(ctx: StepContext) -> RunStatus:
     requirements = [Requirement.model_validate(r) for r in run.requirements]
     listing = ParsedListing.model_validate(run.state["listing"])
     fuzzy_checks = [FuzzyCheck.model_validate(c) for c in run.state.get("fuzzy_checks", [])]
+    activity.update(f"Checking {len(requirements)} requirement(s) (Python)")
     results = check_requirements(requirements, listing, run.listing_text or "", fuzzy_checks)
 
     run.state = run.state | {"requirement_results": [r.model_dump(mode="json") for r in results]}

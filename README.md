@@ -20,6 +20,7 @@ CV is parsed as the same sample data:
 
 ```bash
 APP_DEMO=1 docker compose up --build
+# optional: APP_DEMO_DELAY=4 makes every demo "Claude call" take 4 s, so the live status is visible
 ```
 
 ## Test
@@ -31,13 +32,18 @@ docker run --rm application-crew:test
 
 ## Local development (optional)
 
-Requires Python 3.12+, [uv](https://docs.astral.sh/uv/), and for rendering `typst` and `pdftotext`.
+Backend: Python 3.12+, [uv](https://docs.astral.sh/uv/), `typst` and `pdftotext`.
+Frontend: Node 24+.
 
 ```bash
 uv sync
-APP_DATA_DIR=./data uv run uvicorn application_crew.web.app:app --reload
-uv run pytest
+APP_DATA_DIR=./data uv run uvicorn application_crew.web.app:app --reload   # API on :8000
+cd frontend && npm install && npm run dev                                 # UI on :5173, proxies /api
+uv run pytest && (cd frontend && npm run typecheck && npm test)
 ```
+
+The database schema is managed with Alembic (`application_crew/migrations/`); migrations
+run automatically at startup. To add one, create a new file in `migrations/versions/`.
 
 ## Status
 
@@ -46,8 +52,11 @@ requirement checks, matching with an apply decision, authoring of the tailored C
 cover letter, the review loop (fact check, claims check, ATS check, recruiter review),
 final review with an editor, and delivery of named PDFs plus a ZIP of all intermediates.
 
+The UI is a React app (performative-ui components) with a live status indicator for every
+running job and an always-visible model-cost meter; CVs and applications can be deleted
+(their cost history is kept).
+
 Known gaps:
-- No database migrations yet: schema changes need a fresh `crew-data` volume.
 - No AI repair of Typst errors: content is inserted as plain text, so a failed render
   points to a template bug and is shown as an error instead.
 - Edits in the final review are checked by the fact and ATS checks only, not by the

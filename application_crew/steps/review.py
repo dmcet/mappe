@@ -33,6 +33,7 @@ from application_crew.render.documents import (
     render_letter,
 )
 from application_crew.render.typst import pdf_to_text
+from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.author import cv_language, load_analysis
@@ -99,6 +100,7 @@ async def review(ctx: StepContext) -> RunStatus:
     doc = AuthorCV.model_validate(draft["cv"])
     letter = AuthorLetter.model_validate(draft["letter"]) if draft["letter"] else None
 
+    activity.update(f"Fact check (Python) · draft {iteration}", draft=iteration)
     # 1. Fact check
     checker = FactChecker(cv, analysis)
     cv_report = checker.check_cv(doc)
@@ -106,6 +108,7 @@ async def review(ctx: StepContext) -> RunStatus:
     feedback_cv, feedback_letter = list(cv_report.violations), list(letter_report.violations)
 
     # 2. Render
+    activity.update(f"Rendering PDFs (Typst) · draft {iteration}")
     out_dir = settings.runs_dir / str(run.id) / f"draft-{iteration}"
     files = render_draft(cv, listing, draft, out_dir)
     cv_text = pdf_to_text(out_dir / "cv.pdf")
@@ -131,6 +134,7 @@ async def review(ctx: StepContext) -> RunStatus:
             (feedback_letter if p.item.startswith("L") else feedback_cv).append(message)
 
     # 4. ATS check (always: it's free and shows template problems early)
+    activity.update(f"ATS check on the PDF text · draft {iteration}")
     ats = check_ats(cv_text, cv, analysis, LABELS[lang])
     if not ats.passed:
         feedback_cv += ats.feedback()

@@ -16,6 +16,7 @@ import unicodedata
 import zipfile
 from pathlib import Path
 
+from pydantic import BaseModel, Field
 from rapidfuzz import fuzz
 
 from application_crew.checks.ats import check_ats
@@ -32,6 +33,7 @@ from application_crew.domain.author import (
 from application_crew.domain.models import ParsedCV, ParsedListing
 from application_crew.render.documents import LABELS
 from application_crew.render.typst import pdf_to_text
+from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.author import load_analysis
@@ -47,8 +49,19 @@ def final_draft(state: dict) -> dict:
     return next(d for d in drafts if d["iteration"] == wanted)
 
 
-def _lines(text: str) -> list[str]:
-    return [line.strip(" \t-•") for line in text.splitlines() if line.strip(" \t-•")]
+class LetterEdit(BaseModel):
+    subject: str
+    paragraphs: list[str]
+
+
+class DocumentEdit(BaseModel):
+    """The user's edits of the final draft (sent by the editor)."""
+
+    profile: str
+    titles: dict[str, str] = Field(default_factory=dict)  # pos/edu/cert ID -> title
+    bullets: dict[str, list[str]] = Field(default_factory=dict)  # position ID -> lines
+    skill_groups: list[SkillGroup] = Field(default_factory=list)
+    letter: LetterEdit | None = None
 
 
 def _match_ids(text: str, previous: list[tuple[str, list[str]]], fallback: list[str]) -> list[str]:
@@ -61,36 +74,35 @@ def _match_ids(text: str, previous: list[tuple[str, list[str]]], fallback: list[
     return best if best is not None and best_score >= MATCH_THRESHOLD else fallback
 
 
-def apply_edits(cv: ParsedCV, doc: AuthorCV, letter: AuthorLetter | None, form) -> tuple:
-    """Build new documents from the edit form, keeping fact IDs where text was kept."""
+def _clean(text: str) -> str:
+    return " ".join(text.strip(" \t-•").split())
+
+
+def apply_edits(
+    cv: ParsedCV, doc: AuthorCV, letter: AuthorLetter | None, edit: DocumentEdit
+) -> tuple[AuthorCV, AuthorLetter | None]:
+    """Build new documents from the edits, keeping fact IDs where text was kept."""
     bullets: list[AuthorBullet] = []
     for p in cv.positions:
         previous = [(b.text, b.fact_ids) for b in doc.bullets if b.position_id == p.id]
         all_ids = [p.id] + [f.id for f in p.responsibilities + p.achievements]
-        for text in _lines(str(form.get(f"bullets_{p.id}", ""))):
-            bullets.append(
-                AuthorBullet(
-                    position_id=p.id, text=text, fact_ids=_match_ids(text, previous, all_ids)
-                )
-            )
+        for line in edit.bullets.get(p.id, []):
+            text = _clean(line)
+            if text:
+                ids = _match_ids(text, previous, all_ids)
+                bullets.append(AuthorBullet(position_id=p.id, text=text, fact_ids=ids))
 
-    titles = []
-    for t in doc.titles:
-        value = str(form.get(f"title_{t.id}", t.title)).strip() or t.title
-        titles.append(Title(id=t.id, title=value))
-
-    groups = []
-    n = 1
-    while f"skills_{n}_category" in form:
-        category = str(form.get(f"skills_{n}_category", "")).strip()
-        items = [s.strip() for s in str(form.get(f"skills_{n}_items", "")).split(",") if s.strip()]
-        if category and items:
-            groups.append(SkillGroup(category=category, skills=items))
-        n += 1
-
+    titles = [
+        Title(id=t.id, title=(edit.titles.get(t.id) or "").strip() or t.title) for t in doc.titles
+    ]
+    groups = [
+        SkillGroup(category=g.category.strip(), skills=[s.strip() for s in g.skills if s.strip()])
+        for g in edit.skill_groups
+        if g.category.strip() and any(s.strip() for s in g.skills)
+    ]
     new_doc = doc.model_copy(
         update={
-            "profile": str(form.get("profile", doc.profile)).strip(),
+            "profile": edit.profile.strip(),
             "titles": titles,
             "bullets": bullets,
             "skill_groups": groups,
@@ -98,21 +110,22 @@ def apply_edits(cv: ParsedCV, doc: AuthorCV, letter: AuthorLetter | None, form) 
     )
 
     new_letter = None
-    if letter is not None:
+    if letter is not None and edit.letter is not None:
         previous = [(p.text, p.fact_ids) for p in letter.paragraphs]
-        body = str(form.get("letter_body", ""))
-        paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
         new_letter = AuthorLetter(
-            subject=str(form.get("letter_subject", letter.subject)).strip() or letter.subject,
+            subject=edit.letter.subject.strip() or letter.subject,
             paragraphs=[
-                LetterParagraph(text=" ".join(p.split()), fact_ids=_match_ids(p, previous, []))
-                for p in paragraphs
+                LetterParagraph(text=_clean(p), fact_ids=_match_ids(_clean(p), previous, []))
+                for p in edit.letter.paragraphs
+                if _clean(p)
             ],
         )
+    elif letter is not None:
+        new_letter = letter
     return new_doc, new_letter
 
 
-def save_user_draft(settings: Settings, run, form) -> dict:
+def save_user_draft(settings: Settings, run, edit: DocumentEdit) -> dict:
     """Store the user's edits as a new draft, rendered and checked without Claude."""
     state = run.state
     cv = ParsedCV.model_validate(state["cv"])
@@ -121,7 +134,7 @@ def save_user_draft(settings: Settings, run, form) -> dict:
     base = final_draft(state)
     doc = AuthorCV.model_validate(base["cv"])
     letter = AuthorLetter.model_validate(base["letter"]) if base["letter"] else None
-    new_doc, new_letter = apply_edits(cv, doc, letter, form)
+    new_doc, new_letter = apply_edits(cv, doc, letter, edit)
 
     iteration = max(d["iteration"] for d in state["drafts"]) + 1
     draft = {
@@ -201,6 +214,7 @@ async def deliver(ctx: StepContext) -> RunStatus:
     target = run_dir / "final"
     target.mkdir(parents=True, exist_ok=True)
 
+    activity.update("Naming and packaging the final documents")
     names = delivery_names(cv, listing, draft["lang"])
     delivered = {}
     for original, name in names.items():

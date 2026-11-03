@@ -13,6 +13,7 @@ from application_crew.db import CV, get_engine
 from application_crew.domain.extraction import ExtractedCV, to_parsed_cv
 from application_crew.llm import client
 from application_crew.llm.pricing import cost_usd
+from application_crew.runner import activity
 from application_crew.runner.engine import cv_job
 from application_crew.runner.states import CVStatus
 
@@ -25,6 +26,7 @@ async def parse_cv(cv_id: int, settings: Settings) -> None:
         cv = session.get(CV, cv_id)
         if cv is None or cv.status != CVStatus.PARSING:
             return
+        activity.update("Reading your CV", phase="parsing", title=f"CV · {cv.label}")
         try:
             extracted, usage = await client.structured(
                 settings,
@@ -40,6 +42,7 @@ async def parse_cv(cv_id: int, settings: Settings) -> None:
         else:
             parsed = to_parsed_cv(extracted)
             cv.parsed = parsed.model_dump(mode="json")
+            activity.update("Checking completeness (Python)")
             cv.warnings = check_cv(parsed)
             cv.cost_usd += cost_usd(settings.llm_for("parse_cv").model, usage)
             cv.status = CVStatus.WAITING_FOR_CONFIRMATION

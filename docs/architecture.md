@@ -9,7 +9,9 @@ Companion to [requirements.md](requirements.md). This document records the techn
 | D1 | Orchestration | **Plain Python state machine + Anthropic Python SDK.** No CrewAI/LangGraph. | The workflow is a fixed pipeline with user gates and bounded loops. Control flow belongs in code; Claude only fills individual steps. A framework would add a dependency, version churn and debugging indirection without solving the hard part (pause/resume across restarts), which we need to persist ourselves anyway. |
 | D2 | Deployment | Local, single-user, one Docker container, one mounted volume | No auth, no multi-tenancy. GDPR scope is limited to data sent to the Anthropic API. |
 | D3 | Persistence | SQLite (via SQLModel) + files on the volume | A single file DB is enough for one user; survives container rebuilds. |
-| D4 | Web UI | FastAPI + Jinja2 + HTMX + Server-Sent Events | Stays in Python, no JS build chain; SSE gives live progress. |
+| D4 | Web UI | React + TypeScript (Vite) SPA with performative-ui (MIT), served by FastAPI; JSON API under `/api`, one SSE stream (`/api/stream`) for live status, costs and change notifications | A live status indicator and an always-visible cost meter need a real client; the SSE stream avoids polling. The frontend is built in a Node stage of the Docker build, so the container stays self-contained. |
+| D10 | Migrations | Alembic, run at startup; databases from before migrations are stamped at the baseline revision | Schema changes no longer need a fresh volume. |
+| D11 | Cost tracking | Usage ledger: one row per Claude call (model, step, tokens, cost), kept when runs or CVs are deleted | Exact cost per model, step, run and day; the header shows today's and total spend. |
 | D5 | Rendering | **Typst**; CV via RenderCV-based single-column template, cover letter via a DIN 5008 Typst template | Small image, fast compiles, readable errors, ATS-friendly single-column layouts. |
 | D6 | LLM output | Claude produces **content** as flat Pydantic models (`client.messages.parse()` structured outputs), never markup | No syntax/escaping errors; deterministic checks on fixed structure. |
 | D7 | Listing fetch | `httpx` → JSON-LD `JobPosting` (`extruct`) → `trafilatura` main text → paste fallback in UI | Covers career pages/ATS portals (Personio, Greenhouse, Workday, ...) cheaply; no headless browser in v1. Playwright can be added later if needed. |
@@ -21,9 +23,12 @@ Companion to [requirements.md](requirements.md). This document records the techn
 ```
 ┌──────────────────────────── Docker container ────────────────────────────┐
 │                                                                          │
+│  React SPA (frontend/dist, built with Vite)                               │
 │  FastAPI app                                                             │
-│   ├── web/        HTMX pages, SSE endpoint, downloads                    │
-│   ├── runner/     run queue (asyncio, semaphore=2), state machine        │
+│   ├── web/        JSON API (/api), SSE stream, downloads, SPA fallback   │
+│   ├── runner/     run queue (asyncio, 2 workers), state machine,         │
+│   │               activity registry (what each job is doing right now)   │
+│   ├── migrations/ Alembic migrations                                     │
 │   ├── steps/      one module per pipeline step (pure functions of state) │
 │   ├── llm/        Anthropic client wrapper, prompts, usage/cost tracking │
 │   ├── domain/     Pydantic models (CV, Listing, Match, Draft, Reports)   │

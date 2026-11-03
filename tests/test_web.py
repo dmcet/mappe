@@ -1,3 +1,5 @@
+"""API tests: the flows the frontend drives, end to end with a fake Claude."""
+
 import time
 
 from fastapi.testclient import TestClient
@@ -5,54 +7,151 @@ from fastapi.testclient import TestClient
 from application_crew.config import get_settings
 
 
-def wait_for(client, url, text, timeout=5.0):
+def wait_for(client, url, predicate, timeout=10.0):
+    """Poll a JSON endpoint until ``predicate(data)`` is true."""
     deadline = time.monotonic() + timeout
+    data = None
     while time.monotonic() < deadline:
-        page = client.get(url)
-        if text in page.text:
-            return page
+        data = client.get(url).json()
+        if predicate(data):
+            return data
         time.sleep(0.05)
-    raise AssertionError(f"{text!r} not found on {url}")
+    raise AssertionError(f"condition not met on {url}: {data}")
 
 
-def test_health_and_index(client):
+def status_is(*statuses):
+    return lambda d: d.get("status") in statuses
+
+
+def confirmed_cv(client) -> int:
+    cv = client.post("/api/cvs", json={"label": "Main CV", "markdown": "# Jane Doe"}).json()
+    wait_for(client, f"/api/cvs/{cv['id']}", status_is("waiting_for_confirmation"))
+    client.post(f"/api/cvs/{cv['id']}/confirm")
+    return cv["id"]
+
+
+def start_run(client, cv_id, **body) -> int:
+    body = {"cv_id": cv_id, "listing_text": "Wir suchen ...", **body}
+    resp = client.post("/api/runs", json=body)
+    assert resp.status_code == 201, resp.text
+    return resp.json()[0]["id"]
+
+
+def test_health_and_unknown_api_path(client):
     assert client.get("/health").json()["status"] == "ok"
-    page = client.get("/")
-    assert page.status_code == 200
-    assert "Add and confirm a CV first." in page.text
+    assert client.get("/api/does-not-exist").status_code == 404
 
 
 def test_cv_parse_fix_and_confirm_flow(client, fake_llm):
     fake_llm.result.phone = ""
-    resp = client.post("/cvs", data={"label": "Main CV", "markdown": "# Jane Doe"})
-    assert resp.status_code == 200  # followed redirect to the CV page
-    cv_url = str(resp.url.path)
+    cv = client.post("/api/cvs", json={"label": "Main CV", "markdown": "# Jane Doe"}).json()
+    data = wait_for(client, f"/api/cvs/{cv['id']}", status_is("waiting_for_confirmation"))
+    assert data["parsed"]["positions"][0]["role"] == "Senior Backend Engineer"
+    assert "Contact: no phone number found." in data["warnings"]
+    assert data["summary"]["current_role"] == "Senior Backend Engineer at Acme GmbH"
 
-    page = wait_for(client, cv_url, "waiting_for_confirmation")
-    assert "Senior Backend Engineer · Acme GmbH" in page.text
-    assert "Contact: no phone number found." in page.text
+    # Starting an application with an unconfirmed CV is refused.
+    resp = client.post("/api/runs", json={"cv_id": cv["id"], "listing_text": "x"})
+    assert resp.status_code == 409
 
-    # Starting a run with an unconfirmed CV is refused.
-    cv_id = cv_url.rsplit("/", 1)[1]
-    assert client.post("/runs", data={"cv_id": cv_id, "listing_text": "x"}).status_code == 409
+    data = client.patch(f"/api/cvs/{cv['id']}/fields", json={"contact.phone": "+49 40 999"}).json()
+    assert "Contact: no phone number found." not in data["warnings"]
+    assert data["quick_values"]["contact.phone"] == "+49 40 999"
 
-    page = client.post(f"{cv_url}/fields", data={"contact.phone": "+49 40 999"})
-    assert "Contact: no phone number found." not in page.text
-    assert "+49 40 999" in page.text
-
-    client.post(f"{cv_url}/confirm")
-    assert "Main CV</option>" in client.get("/").text
+    assert client.post(f"/api/cvs/{cv['id']}/confirm").json()["status"] == "confirmed"
+    assert [c["label"] for c in client.get("/api/cvs").json()] == ["Main CV"]
 
 
 def test_failed_parse_can_be_retried(client, fake_llm):
     fake_llm.error = RuntimeError("API unavailable")
-    resp = client.post("/cvs", data={"label": "Main CV", "markdown": "# Jane Doe"})
-    cv_url = str(resp.url.path)
-    wait_for(client, cv_url, "API unavailable")
+    cv = client.post("/api/cvs", json={"label": "Main CV", "markdown": "# Jane Doe"}).json()
+    data = wait_for(client, f"/api/cvs/{cv['id']}", status_is("failed"))
+    assert data["error"] == "API unavailable"
 
     fake_llm.error = None
-    client.post(f"{cv_url}/markdown", data={"markdown": "# Jane Doe\nfixed"})
-    wait_for(client, cv_url, "waiting_for_confirmation")
+    client.put(f"/api/cvs/{cv['id']}/markdown", json={"markdown": "# Jane Doe\nfixed"})
+    wait_for(client, f"/api/cvs/{cv['id']}", status_is("waiting_for_confirmation"))
+
+
+def test_run_stops_on_must_have_then_continues_to_documents(client):
+    cv_id = confirmed_cv(client)
+    requirements = [
+        {"kind": "salary_min", "value": "100000", "must_have": True},
+        {"kind": "other", "value": "Jobrad", "must_have": False},
+    ]
+    run_id = start_run(client, cv_id, requirements=requirements)
+    data = wait_for(client, f"/api/runs/{run_id}", status_is("stopped_by_requirements"))
+    assert data["title"] == "Senior Python Developer (m/w/d) · Beispiel Mobility GmbH"
+    results = data["state"]["requirement_results"]
+    assert results[0]["note"] == "Band 70,000–85,000 EUR/year is below 100,000 EUR/year"
+    stages = {s["key"]: s["state"] for s in data["pipeline"]}
+    assert stages["parse"] == "done" and stages["requirements"] == "waiting"
+
+    data = client.post(f"/api/runs/{run_id}/decline").json()
+    assert data["status"] == "declined"
+    assert {s["key"]: s["state"] for s in data["pipeline"]}["requirements"] == "declined"
+    assert client.post(f"/api/runs/{run_id}/continue").status_code == 409  # declined is final
+
+    # The requirements of the last run pre-fill the form.
+    assert client.get("/api/runs/requirements/last").json() == requirements
+
+    run_id = start_run(client, cv_id, requirements=requirements)
+    wait_for(client, f"/api/runs/{run_id}", status_is("stopped_by_requirements"))
+    client.post(f"/api/runs/{run_id}/continue")
+    data = wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_apply_decision"))
+    assert data["state"]["match"]["score"] == 78
+    assert (
+        data["facts"]["pos1.resp1"] == "Senior Backend Engineer · Acme GmbH: Own the payments API"
+    )
+    assert data["state"]["cover_letter_suggested"] is True  # German listing
+
+    client.post(f"/api/runs/{run_id}/apply", json={"cover_letter": False})
+    data = wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_final_review"), 20)
+    draft = data["state"]["drafts"][-1]
+    assert draft["accepted"] and draft["letter"] is None
+    assert data["state"]["review_stop_reason"] == "all checks passed"
+    assert draft["recruiter"]["average"] == 4.2  # no cover letter: its score is ignored
+    pdf = client.get(f"/api/runs/{run_id}/drafts/1/cv.pdf")
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+    assert client.get(f"/api/runs/{run_id}/drafts/1/cover-letter.pdf").status_code == 404
+    assert client.get(f"/api/runs/{run_id}/drafts/1/..%2F..%2Fapp.db").status_code == 404
+
+
+def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):
+    from application_crew.fetch.listing import FetchResult
+
+    async def blocked(url):
+        return FetchResult(ok=False, error="403 Forbidden")
+
+    monkeypatch.setattr("application_crew.steps.listing.fetch_listing", blocked)
+    cv_id = confirmed_cv(client)
+    resp = client.post("/api/runs", json={"cv_id": cv_id, "urls": ["https://x.test/job"]})
+    run_id = resp.json()[0]["id"]
+    data = wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_listing_text"))
+    assert any("403 Forbidden" in e["message"] for e in data["events"])
+
+    client.post(f"/api/runs/{run_id}/listing-text", json={"listing_text": "Wir suchen ..."})
+    wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_apply_decision"))
+
+
+def test_delete_run_and_cv(client):
+    cv_id = confirmed_cv(client)
+    run_id = start_run(client, cv_id)
+    wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_apply_decision"))
+    run_dir = get_settings().runs_dir / str(run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "x.pdf").write_bytes(b"%PDF")
+
+    # A CV with applications needs an explicit cascade.
+    assert client.delete(f"/api/cvs/{cv_id}").status_code == 409
+    assert client.delete(f"/api/runs/{run_id}").status_code == 204
+    assert client.get(f"/api/runs/{run_id}").status_code == 404
+    assert not run_dir.exists()
+
+    other = start_run(client, cv_id)
+    wait_for(client, f"/api/runs/{other}", status_is("waiting_for_apply_decision"))
+    assert client.delete(f"/api/cvs/{cv_id}?cascade=true").status_code == 204
+    assert client.get("/api/cvs").json() == [] and client.get("/api/runs").json() == []
 
 
 def test_demo_mode_parses_sample_cv_without_api(tmp_path, monkeypatch):
@@ -65,81 +164,10 @@ def test_demo_mode_parses_sample_cv_without_api(tmp_path, monkeypatch):
     try:
         with TestClient(app) as client:
             assert client.get("/health").json()["demo"] is True
-            resp = client.post("/cvs", data={"label": "Mine", "markdown": "# Somebody Else"})
-            page = wait_for(client, str(resp.url.path), "waiting_for_confirmation")
-            assert "Demo mode" in page.text
-            assert "Jane Doe" in page.text
-            assert "Contact: no phone number found." in page.text
+            assert client.get("/api/status").json()["demo"] is True
+            cv = client.post("/api/cvs", json={"label": "Mine", "markdown": "# Somebody"}).json()
+            data = wait_for(client, f"/api/cvs/{cv['id']}", status_is("waiting_for_confirmation"))
+            assert data["parsed"]["contact"]["name"] == "Jane Doe"
+            assert "Contact: no phone number found." in data["warnings"]
     finally:
         get_settings.cache_clear()
-
-
-def confirmed_cv(client) -> str:
-    resp = client.post("/cvs", data={"label": "Main CV", "markdown": "# Jane Doe"})
-    cv_url = str(resp.url.path)
-    wait_for(client, cv_url, "waiting_for_confirmation")
-    client.post(f"{cv_url}/confirm")
-    return cv_url.rsplit("/", 1)[1]
-
-
-def test_run_stops_on_must_have_and_can_be_declined_or_continued(client):
-    cv_id = confirmed_cv(client)
-    form = {
-        "cv_id": cv_id,
-        "listing_text": "Wir suchen ...",
-        "salary_min": "100000",
-        "salary_min_must": "on",
-        "nice_other": "Jobrad",
-    }
-
-    resp = client.post("/runs", data=form)
-    run_url = str(resp.url.path)
-    page = wait_for(client, run_url, "stopped_by_requirements")
-    assert "A must-have requirement isn't met" in page.text
-    assert "Senior Python Developer (m/w/d)" in page.text
-    assert "Band 70,000–85,000 EUR/year is below 100,000 EUR/year" in page.text
-
-    page = client.post(f"{run_url}/decline")
-    assert "status-declined" in page.text
-    assert client.post(f"{run_url}/continue").status_code == 409  # declined is final
-
-    # The form is pre-filled from the last run.
-    index = client.get("/").text
-    assert 'value="100000"' in index and ">Jobrad</textarea>" in index
-
-    run_url = str(client.post("/runs", data=form).url.path)
-    wait_for(client, run_url, "stopped_by_requirements")
-    client.post(f"{run_url}/continue")
-    page = wait_for(client, run_url, "waiting_for_apply_decision")
-    assert "78/100" in page.text
-    assert 'title="Senior Backend Engineer · Acme GmbH: Own the payments API"' in page.text
-    assert 'name="cover_letter" checked' in page.text  # German listing -> suggested
-
-    client.post(f"{run_url}/apply", data={})  # unchecked -> no cover letter
-    page = wait_for(client, run_url, "waiting_for_final_review", timeout=20)
-    assert "You decided to apply." in page.text
-    assert "Every statement cites your CV" in page.text
-    assert "No embellishments found." in page.text
-    assert "4.2/5 · invite" in page.text  # no cover letter: its score is ignored
-    assert "all checks passed" in page.text
-    pdf = client.get(f"{run_url}/drafts/1/cv.pdf")
-    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
-    assert client.get(f"{run_url}/drafts/1/cover-letter.pdf").status_code == 404
-    assert client.get(f"{run_url}/drafts/1/..%2F..%2Fapp.db").status_code == 404
-
-
-def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):
-    from application_crew.fetch.listing import FetchResult
-
-    async def blocked(url):
-        return FetchResult(ok=False, error="403 Forbidden")
-
-    monkeypatch.setattr("application_crew.steps.listing.fetch_listing", blocked)
-    cv_id = confirmed_cv(client)
-    run_url = str(
-        client.post("/runs", data={"cv_id": cv_id, "urls": "https://x.test/job"}).url.path
-    )
-    wait_for(client, run_url, "Paste the listing")
-
-    client.post(f"{run_url}/listing-text", data={"listing_text": "Wir suchen ..."})
-    wait_for(client, run_url, "Senior Python Developer (m/w/d)")

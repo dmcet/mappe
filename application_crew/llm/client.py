@@ -12,8 +12,10 @@ from functools import lru_cache
 
 import anthropic
 from pydantic import BaseModel
+from sqlmodel import Session
 
 from application_crew.config import PROJECT_ROOT, Settings
+from application_crew.runner import activity
 
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
@@ -53,12 +55,17 @@ async def structured[T: BaseModel](
     and is cached; ``task`` holds the per-call part (e.g. reviewer feedback).
     """
     if settings.demo:
+        import asyncio
+
         from application_crew.llm.demo import demo_response
 
+        activity.update(f"Claude · {activity.LABELS.get(step, step)} (demo)", model="demo")
+        await asyncio.sleep(settings.demo_delay_s)  # so the live status is visible in demo
         return demo_response(step, output), Usage(0, 0, 0, 0)  # type: ignore[return-value]
 
     cfg = settings.llm_for(step)
     system = system_prompt if system_prompt is not None else load_prompt(step)
+    activity.update(f"Claude · {activity.LABELS.get(step, step)}", model=cfg.model)
 
     response = await get_client().messages.parse(
         model=cfg.model,
@@ -95,4 +102,29 @@ async def structured[T: BaseModel](
         cache_read_input_tokens=u.cache_read_input_tokens or 0,
         cache_creation_input_tokens=u.cache_creation_input_tokens or 0,
     )
+    record_usage(step, cfg.model, usage)
+    activity.update("Processing the answer")
     return response.parsed_output, usage
+
+
+def record_usage(step: str, model: str, usage: Usage) -> None:
+    """Write one row to the usage ledger, attributed to the current run or CV."""
+    from application_crew.db import Usage as UsageRow
+    from application_crew.db import get_engine
+    from application_crew.llm.pricing import cost_usd
+
+    job = activity.current()
+    row = UsageRow(
+        run_id=job[1] if job and job[0] == "run" else None,
+        cv_id=job[1] if job and job[0] == "cv" else None,
+        step=step,
+        model=model,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        cache_read_tokens=usage.cache_read_input_tokens,
+        cache_write_tokens=usage.cache_creation_input_tokens,
+        cost_usd=cost_usd(model, usage),
+    )
+    with Session(get_engine()) as session:
+        session.add(row)
+        session.commit()

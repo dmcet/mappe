@@ -6,7 +6,7 @@ from application_crew.domain.listing import merge_listing
 from application_crew.llm.demo import demo_author_cv, demo_author_letter, demo_listing
 from application_crew.steps.final import apply_edits, delivery_names, file_part
 from tests.conftest import make_extracted
-from tests.test_web import confirmed_cv, wait_for
+from tests.test_web import confirmed_cv, start_run, status_is, wait_for
 
 
 def test_file_names():
@@ -22,21 +22,33 @@ def test_file_names():
 
 
 def test_edits_keep_fact_ids_of_kept_text():
+    from application_crew.domain.author import SkillGroup
+    from application_crew.steps.final import DocumentEdit, LetterEdit
+
     cv = to_parsed_cv(make_extracted())
-    form = {
-        "profile": "Neues Profil.",
-        "bullets_pos1": "Verantwortung für die Payments-API in Python und FastAPI (überarbeitet)\n"
-        "- Komplett neue Zeile über Onboarding",
-        "bullets_pos2": "",
-        "skills_1_category": "Kern",
-        "skills_1_items": "Python, FastAPI",
-        "skills_2_category": "",
-        "skills_2_items": "Java",
-        "letter_subject": "Bewerbung",
-        "letter_body": "Erster Absatz.\n\nBei der Acme GmbH verantworte ich die Payments-API und "
-        "habe die p99-Latenz um 40 % gesenkt.",
-    }
-    doc, letter = apply_edits(cv, demo_author_cv(), demo_author_letter(), form)
+    edit = DocumentEdit(
+        profile="Neues Profil.",
+        bullets={
+            "pos1": [
+                "Verantwortung für die Payments-API in Python und FastAPI (überarbeitet)",
+                "- Komplett neue Zeile über Onboarding",
+            ],
+            "pos2": [],
+        },
+        skill_groups=[
+            SkillGroup(category="Kern", skills=["Python", "FastAPI"]),
+            SkillGroup(category="", skills=["Java"]),  # no category: dropped
+        ],
+        letter=LetterEdit(
+            subject="Bewerbung",
+            paragraphs=[
+                "Erster Absatz.",
+                "Bei der Acme GmbH verantworte ich die Payments-API und habe die "
+                "p99-Latenz um 40 % gesenkt.",
+            ],
+        ),
+    )
+    doc, letter = apply_edits(cv, demo_author_cv(), demo_author_letter(), edit)
     first, second = doc.bullets
     assert first.fact_ids == ["pos1.resp1"]  # similar to the original bullet
     assert second.text == "Komplett neue Zeile über Onboarding"
@@ -48,39 +60,46 @@ def test_edits_keep_fact_ids_of_kept_text():
 
 def test_final_review_edit_approve_and_deliver(client):
     cv_id = confirmed_cv(client)
-    run_url = str(
-        client.post("/runs", data={"cv_id": cv_id, "listing_text": "Wir suchen ..."}).url.path
-    )
-    wait_for(client, run_url, "waiting_for_apply_decision")
-    client.post(f"{run_url}/apply", data={"cover_letter": "on"})
-    wait_for(client, run_url, "waiting_for_final_review", timeout=20)
+    run_id = start_run(client, cv_id)
+    wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_apply_decision"))
+    client.post(f"/api/runs/{run_id}/apply", json={"cover_letter": True})
+    wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_final_review"), 20)
 
-    edit = client.get(f"{run_url}/edit")
-    assert edit.status_code == 200 and 'name="bullets_pos1"' in edit.text
-    form = {
+    data = client.get(f"/api/runs/{run_id}/edit-data").json()
+    assert data["draft"]["iteration"] == 1 and data["cv"]["positions"][0]["id"] == "pos1"
+    edit = {
         "profile": "Backend-Entwickler mit 25 Jahren Erfahrung.",  # invented number
-        "title_pos1": "Senior Backend Engineer",
-        "bullets_pos1": "Verantwortung für die Payments-API in Python und FastAPI\n"
-        "Senkung der p99-Latenz um 40 %",
-        "bullets_pos2": "Aufbau von Datenpipelines in Java",
-        "skills_1_category": "Sprachen & Frameworks",
-        "skills_1_items": "Python, FastAPI, Java, PostgreSQL, Kubernetes",
-        "letter_subject": "Bewerbung als Senior Python Developer (m/w/d)",
-        "letter_body": "Mein Interesse an Ihrer Plattform ist groß.",
-    }
-    page = client.post(f"{run_url}/edit", data=form)
-    assert "Your edit of draft 1" in page.text
-    assert "number(s) 25" in page.text  # shown, not blocking
-    assert "still has 1 open problem(s)" in page.text
+        "titles": {"pos1": "Senior Backend Engineer"},
+        "bullets": {
+            "pos1": [
+                "Verantwortung für die Payments-API in Python und FastAPI",
+                "Senkung der p99-Latenz um 40 %",
+            ],
+            "pos2": ["Aufbau von Datenpipelines in Java"],
+        },
+        "skill_groups": [
+            {"category": "Sprachen & Frameworks",
+             "skills": ["Python", "FastAPI", "Java", "PostgreSQL", "Kubernetes"]}
+        ],
+        "letter": {"subject": "Bewerbung als Senior Python Developer (m/w/d)",
+                   "paragraphs": ["Mein Interesse an Ihrer Plattform ist groß."]},
+    }  # fmt: skip
+    data = client.put(f"/api/runs/{run_id}/documents", json=edit).json()
+    user_draft = data["state"]["drafts"][-1]
+    assert user_draft["source"] == "user" and user_draft["based_on"] == 1
+    assert data["state"]["final_draft"] == 2
+    assert any("number(s) 25" in v for v in user_draft["cv_report"]["violations"])  # not blocking
 
-    page = client.post(f"{run_url}/approve")
-    page = wait_for(client, run_url, "Ready to send")
-    assert "Doe_Jane_Lebenslauf_Beispiel_Mobility_GmbH.pdf" in page.text
-    pdf = client.get(f"{run_url}/final/Doe_Jane_Lebenslauf_Beispiel_Mobility_GmbH.pdf")
+    client.post(f"/api/runs/{run_id}/approve")
+    data = wait_for(client, f"/api/runs/{run_id}", status_is("done"))
+    assert all(s["state"] == "done" for s in data["pipeline"])
+    files = data["state"]["delivery"]["files"]
+    assert "Doe_Jane_Lebenslauf_Beispiel_Mobility_GmbH.pdf" in files
+    pdf = client.get(f"/api/runs/{run_id}/final/Doe_Jane_Lebenslauf_Beispiel_Mobility_GmbH.pdf")
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
-    assert client.get(f"{run_url}/final/cv.pdf").status_code == 404
+    assert client.get(f"/api/runs/{run_id}/final/cv.pdf").status_code == 404
 
-    z = zipfile.ZipFile(io.BytesIO(client.get(f"{run_url}/bundle.zip").content))
+    z = zipfile.ZipFile(io.BytesIO(client.get(f"/api/runs/{run_id}/bundle.zip").content))
     names = set(z.namelist())
     assert "final/Doe_Jane_Anschreiben_Beispiel_Mobility_GmbH.pdf" in names
     assert {"draft-1/cv.pdf", "draft-2/cv.pdf", "intermediates/assessment.json"} <= names

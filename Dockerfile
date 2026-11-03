@@ -2,6 +2,7 @@
 ARG PYTHON_VERSION=3.12
 ARG TYPST_VERSION=0.15.1
 ARG UV_VERSION=0.13.7
+ARG NODE_VERSION=24.22.1
 
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
@@ -18,6 +19,14 @@ RUN case "${TARGETARCH}" in \
     esac \
     && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${arch}-unknown-linux-musl.tar.xz" \
        | tar -xJ --strip-components=1 -C /usr/local/bin "typst-${arch}-unknown-linux-musl/typst"
+
+# --- Frontend (React + Vite): type check, tests, build -----------------------
+FROM node:${NODE_VERSION}-bookworm-slim AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run typecheck && npm test && npx vite build
 
 # --- Python dependencies ----------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS builder
@@ -42,6 +51,7 @@ COPY --chown=app:app application_crew ./application_crew
 COPY --chown=app:app typst ./typst
 COPY --chown=app:app prompts ./prompts
 COPY --chown=app:app config.toml ./
+COPY --from=frontend --chown=app:app /frontend/dist ./frontend/dist
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     APP_DATA_DIR=/data

@@ -19,6 +19,7 @@ from sqlmodel import Session, select
 
 from application_crew.config import Settings
 from application_crew.db import CV, Event, Run, get_engine
+from application_crew.runner import activity
 from application_crew.runner.states import WORKING, CVStatus, RunStatus, can_transition
 
 log = logging.getLogger(__name__)
@@ -51,6 +52,26 @@ def step(status: RunStatus) -> Callable[[Step], Step]:
     return decorator
 
 
+STEP_LABELS = {
+    RunStatus.CREATED: "Starting",
+    RunStatus.FETCHING_LISTING: "Fetching the job listing",
+    RunStatus.PARSING_LISTING: "Reading the job listing",
+    RunStatus.CHECKING_REQUIREMENTS: "Checking your requirements",
+    RunStatus.MATCHING: "Assessing your fit",
+    RunStatus.AUTHORING: "Writing your documents",
+    RunStatus.REVIEWING: "Reviewing the draft",
+    RunStatus.DELIVERING: "Preparing the final documents",
+}
+
+
+def run_title(run: Run) -> str:
+    listing = (run.state or {}).get("listing") or {}
+    parts = [x for x in (listing.get("title"), listing.get("company")) if x]
+    if parts:
+        return " · ".join(parts)
+    return run.listing_url or "Pasted listing"
+
+
 class InvalidTransition(RuntimeError):
     pass
 
@@ -58,6 +79,8 @@ class InvalidTransition(RuntimeError):
 def set_status(session: Session, run: Run, target: RunStatus, error: str | None = None) -> None:
     if not can_transition(run.status, target):
         raise InvalidTransition(f"run {run.id}: {run.status} -> {target} not allowed")
+    # Remember where the run came from, so the UI can show where it failed or was declined.
+    run.state = (run.state or {}) | {"previous_status": str(run.status)}
     run.status = target
     run.error = error
     run.updated_at = datetime.now(UTC)
@@ -82,6 +105,7 @@ class Engine:
         self.settings = settings
         self.queue: asyncio.Queue[tuple[str, int]] = asyncio.Queue()
         self._queued: set[tuple[str, int]] = set()
+        self._running: set[tuple[str, int]] = set()
         self._workers: list[asyncio.Task[None]] = []
 
     async def start(self) -> None:
@@ -121,6 +145,8 @@ class Engine:
             job = await self.queue.get()
             self._queued.discard(job)
             kind, job_id = job
+            self._running.add(job)
+            activity.begin(kind, job_id, self._title(kind, job_id))
             try:
                 if kind == "cv":
                     await self.parse_cv(job_id)
@@ -129,7 +155,24 @@ class Engine:
             except Exception:  # noqa: BLE001 - a worker must never die
                 log.exception("worker %s: %s %s crashed", index, kind, job_id)
             finally:
+                activity.end()
+                self._running.discard(job)
                 self.queue.task_done()
+
+    def _title(self, kind: str, job_id: int) -> str:
+        with Session(get_engine()) as session:
+            if kind == "cv":
+                cv = session.get(CV, job_id)
+                return f"CV · {cv.label}" if cv else f"CV {job_id}"
+            run = session.get(Run, job_id)
+            return run_title(run) if run else f"Run {job_id}"
+
+    def queued(self) -> list[dict]:
+        """Jobs waiting for a free worker."""
+        return [{"kind": k, "id": i} for k, i in self._queued if (k, i) not in self._running]
+
+    def is_busy(self, kind: str, job_id: int) -> bool:
+        return (kind, job_id) in self._queued or (kind, job_id) in self._running
 
     async def parse_cv(self, cv_id: int) -> None:
         if _CV_JOB is None:
@@ -148,6 +191,11 @@ class Engine:
                     )
                     return
                 ctx = StepContext(run=run, session=session, settings=self.settings)
+                activity.update(
+                    STEP_LABELS.get(run.status, str(run.status)),
+                    phase=str(run.status),
+                    title=run_title(run),
+                )
                 ctx.emit("step_started", str(run.status))
                 try:
                     target = await handler(ctx)

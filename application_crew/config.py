@@ -35,6 +35,7 @@ class Settings:
     llm_default: StepLLMConfig
     llm_steps: dict[str, StepLLMConfig] = field(default_factory=dict)
     demo: bool = False  # canned Claude responses, no API calls (APP_DEMO=1)
+    demo_delay_s: float = 0.0  # pause per demo "Claude call" (APP_DEMO_DELAY), to see the status
 
     @property
     def db_path(self) -> Path:
@@ -71,6 +72,7 @@ def load_settings(path: Path | None = None) -> Settings:
         llm_default=llm_default,
         llm_steps=llm_steps,
         demo=os.environ.get("APP_DEMO", "").strip().lower() in {"1", "true", "yes"},
+        demo_delay_s=float(os.environ.get("APP_DEMO_DELAY", "0") or 0),
     )
 
 
