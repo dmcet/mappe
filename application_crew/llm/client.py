@@ -52,6 +52,11 @@ async def structured[T: BaseModel](
     ``stable_context`` (source CV, listing, ...) stays identical across loop iterations
     and is cached; ``task`` holds the per-call part (e.g. reviewer feedback).
     """
+    if settings.demo:
+        from application_crew.llm.demo import demo_response
+
+        return demo_response(step, output), Usage(0, 0, 0, 0)  # type: ignore[return-value]
+
     cfg = settings.llm_for(step)
     system = system_prompt if system_prompt is not None else load_prompt(step)
 

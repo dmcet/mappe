@@ -11,6 +11,7 @@
 </head>
 <body>
   <header><a href="/">Application Crew</a></header>
+  {% if demo %}<div class="demo-banner" role="status">Demo mode: Claude is not called. Every CV is parsed as the same sample data (Jane Doe), not your CV.</div>{% endif %}
   <main>{% block content %}{% endblock %}</main>
 </body>
 </html>

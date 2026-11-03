@@ -7,9 +7,10 @@ services:
     ports:
       - "127.0.0.1:8000:8000"   # local only
     environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # not needed with APP_DEMO=1
+      APP_DEMO: ${APP_DEMO:-0}
     volumes:
-      - app-data:/data
+      - crew-data:/data
 
 volumes:
-  app-data:
+  crew-data:   # not "app-data": that name collides with an older, unrelated volume

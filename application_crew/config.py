@@ -34,6 +34,7 @@ class Settings:
     review: ReviewConfig
     llm_default: StepLLMConfig
     llm_steps: dict[str, StepLLMConfig] = field(default_factory=dict)
+    demo: bool = False  # canned Claude responses, no API calls (APP_DEMO=1)
 
     @property
     def db_path(self) -> Path:
@@ -69,6 +70,7 @@ def load_settings(path: Path | None = None) -> Settings:
         review=ReviewConfig(**raw.get("review", {})),
         llm_default=llm_default,
         llm_steps=llm_steps,
+        demo=os.environ.get("APP_DEMO", "").strip().lower() in {"1", "true", "yes"},
     )
 
 

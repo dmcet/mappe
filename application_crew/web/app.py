@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -26,6 +28,7 @@ from application_crew.render.typst import typst_available
 from application_crew.runner.engine import Engine
 from application_crew.runner.states import CVStatus
 
+log = logging.getLogger(__name__)
 WEB_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=WEB_DIR / "templates")
 
@@ -38,6 +41,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.runs_dir.mkdir(parents=True, exist_ok=True)
     init_engine(f"sqlite:///{settings.db_path}")
+    templates.env.globals["demo"] = settings.demo
+    if settings.demo:
+        log.warning("Demo mode: Claude is replaced by canned sample data")
+    elif not os.environ.get("ANTHROPIC_API_KEY"):
+        log.warning("ANTHROPIC_API_KEY is not set; Claude calls will fail (use APP_DEMO=1)")
     engine = Engine(settings)
     await engine.start()
     app.state.engine = engine
@@ -51,7 +59,7 @@ app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
 
 @app.get("/health")
 def health() -> dict[str, object]:
-    return {"status": "ok", "typst": typst_available()}
+    return {"status": "ok", "typst": typst_available(), "demo": get_settings().demo}
 
 
 @app.get("/", response_class=HTMLResponse)

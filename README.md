@@ -13,7 +13,14 @@ export ANTHROPIC_API_KEY=sk-ant-...
 docker compose up --build
 ```
 
-Open http://127.0.0.1:8000. Data (SQLite DB, generated files) lives in the `app-data` volume.
+Open http://127.0.0.1:8000. Data (SQLite DB, generated files) lives in the `crew-data` volume.
+
+To explore the UI without an API key, start in demo mode. Claude is not called, and every
+CV is parsed as the same sample data:
+
+```bash
+APP_DEMO=1 docker compose up --build
+```
 
 ## Test
 

@@ -49,3 +49,5 @@ a { color: var(--accent); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tags span { padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: .85rem; }
 code { font-size: .8rem; color: var(--muted); }
+.demo-banner { padding: 8px 16px; background: #fff4ce; color: #5c4400; border-bottom: 1px solid #e8d48a; text-align: center; }
+@media (prefers-color-scheme: dark) { .demo-banner { background: #3d3214; color: #f3e2a9; border-color: #5c4a1a; } }

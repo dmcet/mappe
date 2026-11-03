@@ -65,3 +65,22 @@ def test_failed_parse_can_be_retried(client, fake_llm):
     fake_llm.error = None
     client.post(f"{cv_url}/markdown", data={"markdown": "# Jane Doe\nfixed"})
     wait_for(client, cv_url, "waiting_for_confirmation")
+
+
+def test_demo_mode_parses_sample_cv_without_api(tmp_path, monkeypatch):
+    monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("APP_DEMO", "1")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    get_settings.cache_clear()
+    from application_crew.web.app import app
+
+    try:
+        with TestClient(app) as client:
+            assert client.get("/health").json()["demo"] is True
+            resp = client.post("/cvs", data={"label": "Mine", "markdown": "# Somebody Else"})
+            page = wait_for(client, str(resp.url.path), "waiting_for_confirmation")
+            assert "Demo mode" in page.text
+            assert "Jane Doe" in page.text
+            assert "Contact: no phone number found." in page.text
+    finally:
+        get_settings.cache_clear()
