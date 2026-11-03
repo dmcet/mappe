@@ -26,9 +26,11 @@ effort = "low"
 [llm.steps.match]
 effort = "high"
 
-[llm.steps.author]
+[llm.steps.author_cv]
 effort = "high"
-max_tokens = 32000
+
+[llm.steps.author_letter]
+effort = "medium"
 
 [llm.steps.ats_judge]
 effort = "low"

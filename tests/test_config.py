@@ -6,9 +6,9 @@ def test_step_overrides_inherit_defaults(monkeypatch, tmp_path):
     settings = load_settings(DEFAULT_CONFIG_PATH)
 
     assert settings.data_dir == tmp_path
-    author = settings.llm_for("author")
+    author = settings.llm_for("author_cv")
     assert author.model == settings.llm_default.model
     assert author.effort == "high"
-    assert author.max_tokens == 32000
+    assert author.max_tokens == settings.llm_default.max_tokens == 16000
     assert settings.llm_for("unknown_step") == settings.llm_default
     assert settings.review.max_iterations == 4

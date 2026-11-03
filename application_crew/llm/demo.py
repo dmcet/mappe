@@ -8,6 +8,14 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from application_crew.domain.author import (
+    AuthorBullet,
+    AuthorCV,
+    AuthorLetter,
+    LetterParagraph,
+    PositionTitle,
+    SkillGroup,
+)
 from application_crew.domain.extraction import (
     ExtractedCertification,
     ExtractedCV,
@@ -172,6 +180,66 @@ def demo_match() -> MatchResult:
     )
 
 
+def demo_author_cv() -> AuthorCV:
+    """German CV content for the demo listing, using demo CV fact IDs."""
+    return AuthorCV(
+        profile=(
+            "Senior Backend Engineer mit 9+ Jahren Erfahrung in der Backend-Entwicklung. "
+            "Schwerpunkt auf Python-APIs mit FastAPI und PostgreSQL."
+        ),
+        profile_fact_ids=["pos1", "pos2"],
+        titles=[
+            PositionTitle(position_id="pos1", title="Senior Backend Engineer"),
+            PositionTitle(position_id="pos2", title="Backend Engineer"),
+        ],
+        bullets=[
+            AuthorBullet(
+                position_id="pos1",
+                text="Verantwortung für die Payments-API in Python und FastAPI",
+                fact_ids=["pos1.resp1"],
+            ),
+            AuthorBullet(
+                position_id="pos1",
+                text="Senkung der p99-Latenz um 40 %",
+                fact_ids=["pos1.ach1"],
+            ),
+            AuthorBullet(
+                position_id="pos2",
+                text="Aufbau von Datenpipelines in Java",
+                fact_ids=["pos2.resp1"],
+            ),
+        ],
+        skill_groups=[
+            SkillGroup(category="Sprachen & Frameworks", skills=["Python", "FastAPI", "Java"]),
+            SkillGroup(category="Datenbanken & Plattformen", skills=["PostgreSQL", "Kubernetes"]),
+        ],
+        extra=[],
+    )
+
+
+def demo_author_letter() -> AuthorLetter:
+    return AuthorLetter(
+        subject="Bewerbung als Senior Python Developer (m/w/d)",
+        paragraphs=[
+            LetterParagraph(
+                text="Ihre Plattform für Flottenmanagement passt genau zu meinem Schwerpunkt: "
+                "Backend-Services in Python, die zuverlässig im Betrieb laufen.",
+                fact_ids=[],
+            ),
+            LetterParagraph(
+                text="Bei der Acme GmbH verantworte ich die Payments-API und habe die "
+                "p99-Latenz um 40 % gesenkt.",
+                fact_ids=["pos1.resp1", "pos1.ach1"],
+            ),
+            LetterParagraph(
+                text="Über die Einladung zu einem persönlichen Gespräch freue ich mich. "
+                "Meine Kündigungsfrist beträgt 3 Monate.",
+                fact_ids=[],
+            ),
+        ],
+    )
+
+
 def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
     if step == "parse_cv" and output is ExtractedCV:
         return demo_cv()
@@ -179,4 +247,8 @@ def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
         return demo_listing()
     if step == "match" and output is MatchResult:
         return demo_match()
+    if step == "author_cv" and output is AuthorCV:
+        return demo_author_cv()
+    if step == "author_letter" and output is AuthorLetter:
+        return demo_author_letter()
     raise NotImplementedError(f"demo mode has no sample response for step '{step}'")

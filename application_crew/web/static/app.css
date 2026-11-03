@@ -69,3 +69,6 @@ blockquote { margin: 4px 0 0; padding-left: 8px; border-left: 3px solid var(--bo
 .verdict-consider { border-left: 4px solid #d4a017; }
 .verdict-dont_apply { border-left: 4px solid var(--error); }
 code.fact { margin-left: 4px; padding: 0 4px; border: 1px solid var(--border); border-radius: 4px; cursor: help; }
+a.button { display: inline-block; padding: 8px 16px; color: #fff; background: var(--accent); border-radius: 6px; text-decoration: none; }
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--accent); }

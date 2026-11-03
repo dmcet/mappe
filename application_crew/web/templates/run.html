@@ -32,6 +32,48 @@
 
 {% macro fact_refs(ids) %}{% for i in ids %}<code class="fact" title="{{ facts.get(i, 'unknown fact') }}">{{ i }}</code>{% endfor %}{% endmacro %}
 
+{% if drafts %}
+{% set d = drafts[-1] %}
+<section class="card">
+  <h2>Documents · draft {{ d.iteration }}{% if run.status == "waiting_for_final_review" %} (ready for your review){% endif %}</h2>
+  <p class="actions">
+    {% for name in ["cv.pdf", "cover-letter.pdf"] if name in d.files %}
+      <a class="button" href="/runs/{{ run.id }}/drafts/{{ d.iteration }}/{{ name }}">{{ "CV" if name == "cv.pdf" else "Cover letter" }} (PDF)</a>
+    {% endfor %}
+  </p>
+  {% set violations = d.cv_report.violations + d.letter_report.violations %}
+  {% set warnings = d.cv_report.warnings + d.letter_report.warnings %}
+  {% if violations %}
+    <p class="error">The fact check still found {{ violations | length }} problem(s) after {{ d.iteration }} draft(s):</p>
+    <ul>{% for v in violations %}<li>{{ v }}</li>{% endfor %}</ul>
+  {% else %}
+    <p><span class="outcome outcome-passed">fact check passed</span> Every bullet is backed by your CV.</p>
+  {% endif %}
+  {% if warnings %}<ul class="muted">{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+  <details>
+    <summary>Content with sources</summary>
+    <p><strong>Profile:</strong> {{ d.cv.profile }} {{ fact_refs(d.cv.profile_fact_ids) }}</p>
+    {% for t in d.cv.titles %}
+      <h4>{{ t.title }} <span class="muted">({{ facts.get(t.position_id, t.position_id) }})</span></h4>
+      <ul>{% for b in d.cv.bullets if b.position_id == t.position_id %}<li>{{ b.text }} {{ fact_refs(b.fact_ids) }}</li>{% endfor %}</ul>
+    {% endfor %}
+    {% if d.letter %}
+      <h4>Cover letter: {{ d.letter.subject }}</h4>
+      {% for p in d.letter.paragraphs %}<p>{{ p.text }} {{ fact_refs(p.fact_ids) }}</p>{% endfor %}
+    {% endif %}
+  </details>
+  {% if drafts | length > 1 %}
+  <details>
+    <summary>Earlier drafts</summary>
+    <ul>{% for e in drafts[:-1] %}
+      <li>Draft {{ e.iteration }}: {{ (e.cv_report.violations + e.letter_report.violations) | length }} problem(s) ·
+        {% for name in e.files %}<a href="/runs/{{ run.id }}/drafts/{{ e.iteration }}/{{ name }}">{{ name }}</a> {% endfor %}</li>
+    {% endfor %}</ul>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
 {% if match %}
 <section class="card verdict verdict-{{ match.verdict }}">
   <h2>{{ {"apply": "Apply", "consider": "Consider applying", "dont_apply": "Don't apply"}[match.verdict] }} <span class="score">{{ match.score }}/100</span></h2>

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
@@ -272,6 +272,7 @@ def run_detail(request: Request, run_id: int, session: SessionDep) -> HTMLRespon
         "analysis": run.state.get("analysis"),
         "match_warnings": run.state.get("match_warnings", []),
         "facts": _fact_texts(run.state.get("cv")),
+        "drafts": run.state.get("drafts", []),
     }
     return templates.TemplateResponse(request, "run.html", context)
 
@@ -307,6 +308,21 @@ async def apply_run(request: Request, run_id: int, session: SessionDep) -> Redir
 @app.post("/runs/{run_id}/decline")
 def decline_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
     return _resume(request, session, _get_run(session, run_id), RunStatus.DECLINED)
+
+
+@app.get("/runs/{run_id}/drafts/{iteration}/{name}")
+def download_draft_file(
+    run_id: int, iteration: int, name: str, session: SessionDep
+) -> FileResponse:
+    """Serve a file of a draft. Only names recorded in the run state are served."""
+    run = _get_run(session, run_id)
+    draft = next((d for d in run.state.get("drafts", []) if d["iteration"] == iteration), None)
+    if draft is None or name not in draft.get("files", {}):
+        raise HTTPException(404, "File not found")
+    path = get_settings().runs_dir / str(run_id) / f"draft-{iteration}" / draft["files"][name]
+    if not path.is_file():
+        raise HTTPException(404, "File not found")
+    return FileResponse(path, filename=f"run-{run_id}-draft-{iteration}-{name}")
 
 
 @app.get("/runs/{run_id}/events")

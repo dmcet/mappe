@@ -2,7 +2,13 @@ import pytest
 
 from application_crew.domain.extraction import ExtractedCV
 from application_crew.llm.client import Usage
-from application_crew.llm.demo import demo_listing, demo_match, sample_cv
+from application_crew.llm.demo import (
+    demo_author_cv,
+    demo_author_letter,
+    demo_listing,
+    demo_match,
+    sample_cv,
+)
 
 make_extracted = sample_cv
 
@@ -27,10 +33,18 @@ def fake_llm(monkeypatch):
                 raise self.error
             if step == "parse_cv":
                 return self.result, USAGE
-            return self.results[step], USAGE
+            result = self.results[step]
+            if isinstance(result, list):  # a sequence of answers, e.g. draft 1, draft 2
+                result = result.pop(0)
+            return result, USAGE
 
     fake = Fake()
     fake.calls = []
-    fake.results = {"parse_listing": demo_listing(), "match": demo_match()}
+    fake.results = {
+        "parse_listing": demo_listing(),
+        "match": demo_match(),
+        "author_cv": demo_author_cv(),
+        "author_letter": demo_author_letter(),
+    }
     monkeypatch.setattr("application_crew.llm.client.structured", fake.structured)
     return fake
