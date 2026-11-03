@@ -101,6 +101,7 @@ export function ActivityPanel({ run }: { run: RunDetail }) {
                 <th>Step</th>
                 <th>Model</th>
                 <th>Tokens in / out</th>
+                <th>Cache write / read</th>
                 <th>Cost</th>
               </tr>
             </thead>
@@ -111,7 +112,9 @@ export function ActivityPanel({ run }: { run: RunDetail }) {
                   <td>{u.model}</td>
                   <td className="mono">
                     {u.input_tokens.toLocaleString()} / {u.output_tokens.toLocaleString()}
-                    {u.cache_read_tokens > 0 && <span className="muted"> · {u.cache_read_tokens.toLocaleString()} cached</span>}
+                  </td>
+                  <td className="mono">
+                    {u.cache_write_tokens.toLocaleString()} / {u.cache_read_tokens.toLocaleString()}
                   </td>
                   <td className="mono">{usd(u.cost_usd)}</td>
                 </tr>

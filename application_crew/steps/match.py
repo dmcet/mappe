@@ -6,17 +6,16 @@ from application_crew.checks.skills import analyze_skills
 from application_crew.domain.match import (
     MatchResult,
     render_analysis,
-    render_cv,
-    render_listing,
     validate_fact_ids,
 )
 from application_crew.domain.models import ParsedListing, RequirementResult
 from application_crew.llm import client
+from application_crew.llm.client import Block, instructions
 from application_crew.llm.pricing import cost_usd
 from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
-from application_crew.steps.common import run_cv
+from application_crew.steps.common import run_cv, shared_blocks
 
 
 @step(RunStatus.MATCHING)
@@ -36,16 +35,16 @@ async def match(ctx: StepContext) -> RunStatus:
         f"related of {analysis.required_total}; {analysis.total_years} years of experience",
     )
 
-    context = (
-        f"<cv>\n{render_cv(cv)}\n</cv>\n\n"
-        f"<listing>\n{render_listing(listing)}\n</listing>\n\n"
-        f"<analysis>\n{render_analysis(analysis, results)}\n</analysis>"
-    )
     result, usage = await client.structured(
         ctx.settings,
         step="match",
         output=MatchResult,
-        stable_context=context,
+        blocks=[
+            # Called once per run, and no other step shares its schema: no cache markers.
+            *shared_blocks(cv, listing, cache=False),
+            instructions("match"),
+            Block(f"<analysis>\n{render_analysis(analysis, results)}\n</analysis>"),
+        ],
         task="Assess whether the candidate should apply for this position.",
     )
     result, warnings = validate_fact_ids(result, cv)

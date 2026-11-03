@@ -12,6 +12,7 @@ from application_crew.config import Settings
 from application_crew.db import CV, get_engine
 from application_crew.domain.extraction import ExtractedCV, to_parsed_cv
 from application_crew.llm import client
+from application_crew.llm.client import Block, instructions
 from application_crew.llm.pricing import cost_usd
 from application_crew.runner import activity
 from application_crew.runner.engine import cv_job
@@ -32,7 +33,8 @@ async def parse_cv(cv_id: int, settings: Settings) -> None:
                 settings,
                 step="parse_cv",
                 output=ExtractedCV,
-                stable_context=f"<cv>\n{cv.markdown}\n</cv>",
+                # One call per CV: nothing is read again, so no cache markers.
+                blocks=[Block(f"<cv>\n{cv.markdown}\n</cv>"), instructions("parse_cv")],
                 task="Extract the CV above.",
             )
         except Exception as exc:  # noqa: BLE001 - shown to the user, who can retry

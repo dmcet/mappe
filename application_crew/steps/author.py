@@ -9,17 +9,17 @@ from __future__ import annotations
 import json
 
 from application_crew.checks.skills import SkillAnalysis, SkillCoverage
-from application_crew.domain import match as match_render
 from application_crew.domain.author import AuthorCV, AuthorLetter
 from application_crew.domain.match import MatchResult
 from application_crew.domain.models import ParsedCV, ParsedListing
 from application_crew.fetch.listing import detect_language
 from application_crew.llm import client
+from application_crew.llm.client import Block, instructions
 from application_crew.llm.pricing import cost_usd
 from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
-from application_crew.steps.common import run_cv
+from application_crew.steps.common import run_cv, shared_blocks
 
 LANGUAGE_NAMES = {"de": "German", "en": "English"}
 
@@ -36,7 +36,8 @@ def cv_language(cv: ParsedCV) -> str:
     return detect_language(" ".join(texts)) if texts else "en"
 
 
-def _context(cv: ParsedCV, listing: ParsedListing, match: MatchResult, analysis: SkillAnalysis):
+def _step_context(match: MatchResult, analysis: SkillAnalysis) -> Block:
+    """Assessment and experience: identical for every draft of a run, so cached."""
     assessment = [
         "Strengths:",
         *[f"  - {e.point} {e.fact_ids}" for e in match.strengths],
@@ -54,11 +55,10 @@ def _context(cv: ParsedCV, listing: ParsedListing, match: MatchResult, analysis:
         "Listing skills the CV does NOT have (never mention them): "
         + (", ".join(missing) or "none"),
     ]
-    return (
-        f"<cv>\n{match_render.render_cv(cv)}\n</cv>\n\n"
-        f"<listing>\n{match_render.render_listing(listing)}\n</listing>\n\n"
-        f"<assessment>\n" + "\n".join(assessment) + "\n</assessment>\n\n"
-        "<experience>\n" + "\n".join(experience) + "\n</experience>"
+    return Block(
+        "<assessment>\n" + "\n".join(assessment) + "\n</assessment>\n\n"
+        "<experience>\n" + "\n".join(experience) + "\n</experience>",
+        cache=True,
     )
 
 
@@ -96,7 +96,8 @@ async def author(ctx: StepContext) -> RunStatus:
     wants_letter = run.state.get("decision", {}).get("cover_letter", False)
 
     activity.update(f"Preparing draft {iteration}", draft=iteration)
-    context = _context(cv, listing, match, analysis)
+    shared = shared_blocks(cv, listing)
+    step_context = _step_context(match, analysis)
     language = (
         f"Document language: {LANGUAGE_NAMES[lang]}. "
         f"CV language: {LANGUAGE_NAMES[cv_language(cv)]}."
@@ -109,7 +110,11 @@ async def author(ctx: StepContext) -> RunStatus:
         if last is not None:
             task = f"{language}\n" + _feedback(cv_feedback(last), last["cv"], "CV draft")
         doc, usage = await client.structured(
-            ctx.settings, step="author_cv", output=AuthorCV, stable_context=context, task=task
+            ctx.settings,
+            step="author_cv",
+            output=AuthorCV,
+            blocks=[*shared, instructions("author_cv"), step_context],
+            task=task,
         )
         total_cost += cost_usd(ctx.settings.llm_for("author_cv").model, usage)
         ctx.emit("usage", f"author_cv (draft {iteration}) ≈ ${total_cost:.4f}", **usage.__dict__)
@@ -119,7 +124,8 @@ async def author(ctx: StepContext) -> RunStatus:
     letter = None
     if wants_letter:
         if last is None or last.get("letter") is None or letter_feedback(last):
-            letter_context = f"{context}\n\n<tailored_cv>\n{doc.model_dump_json()}\n</tailored_cv>"
+            # The tailored CV changes with every draft, so it comes after the cached part.
+            tailored = Block(f"<tailored_cv>\n{doc.model_dump_json()}\n</tailored_cv>")
             task = f"{language}\nWrite the cover letter."
             if last is not None and last.get("letter") is not None:
                 task = f"{language}\n" + _feedback(
@@ -129,7 +135,7 @@ async def author(ctx: StepContext) -> RunStatus:
                 ctx.settings,
                 step="author_letter",
                 output=AuthorLetter,
-                stable_context=letter_context,
+                blocks=[*shared, instructions("author_letter"), step_context, tailored],
                 task=task,
             )
             cost = cost_usd(ctx.settings.llm_for("author_letter").model, usage)

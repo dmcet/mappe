@@ -131,3 +131,37 @@ def test_old_drafts_are_normalised_for_the_frontend():
     old = [{"iteration": 1, "cv": {"titles": [{"position_id": "pos1", "title": "Engineer"}]}}]
     assert _drafts(old)[0]["cv"]["titles"] == [{"id": "pos1", "title": "Engineer"}]
     assert _drafts(None) is None
+
+
+async def test_prompt_layout_and_cache_markers(tmp_path, monkeypatch, fake_llm):
+    """CV and listing come first, byte-identical in every step that uses them. Only blocks
+    that a later call with the same schema reads again carry a cache marker (the schema
+    is part of the cached prefix, so steps can't share entries)."""
+    from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
+    from application_crew.llm.client import COMMON_SYSTEM, _content
+    from tests.test_author import drive_to_documents, make_run
+
+    monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
+    db, run_id = make_run(tmp_path, cover_letter=True)
+    await drive_to_documents(db, run_id, load_settings(DEFAULT_CONFIG_PATH), cover_letter=True)
+    calls = {c["step"]: c["blocks"] for c in fake_llm.calls}
+
+    shared_steps = ["match", "author_cv", "author_letter", "recruiter"]
+    first_two = {step: [b.text for b in calls[step][:2]] for step in shared_steps}
+    assert all(texts == first_two["match"] for texts in first_two.values())
+    assert first_two["match"][0].startswith("<cv>") and first_two["match"][1].startswith(
+        "<listing>"
+    )
+    reused = ["author_cv", "author_letter", "recruiter"]  # reworks / further review rounds
+    assert all(calls[step][0].cache and calls[step][1].cache for step in reused)
+    # One-off calls carry no markers at all.
+    one_off = calls["parse_listing"] + calls["claims_check"] + calls["match"]
+    assert not any(b.cache for b in one_off)
+    # The cover letter's changing part (the tailored CV) comes after the cached context.
+    letter = calls["author_letter"]
+    assert letter[-1].text.startswith("<tailored_cv>") and not letter[-1].cache
+    assert letter[-2].cache  # assessment and experience, reused by reworks
+    # The system prompt is the same for every step.
+    assert "Application Crew" in COMMON_SYSTEM
+    content = _content(calls["author_cv"], "task")
+    assert [("cache_control" in c) for c in content] == [True, True, False, True, False]

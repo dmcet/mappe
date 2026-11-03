@@ -19,11 +19,11 @@ from pathlib import Path
 
 from application_crew.checks.ats import check_ats
 from application_crew.checks.facts import FactChecker, FactReport
-from application_crew.domain import match as match_render
 from application_crew.domain.author import AuthorCV, AuthorLetter
 from application_crew.domain.models import ParsedCV, ParsedListing
 from application_crew.domain.review import ClaimsResult, RecruiterResult, render_claims
 from application_crew.llm import client
+from application_crew.llm.client import Block, instructions
 from application_crew.llm.pricing import cost_usd
 from application_crew.render.documents import (
     LABELS,
@@ -37,7 +37,7 @@ from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.author import cv_language, load_analysis
-from application_crew.steps.common import run_cv
+from application_crew.steps.common import run_cv, shared_blocks
 
 
 def render_draft(
@@ -121,7 +121,11 @@ async def review(ctx: StepContext) -> RunStatus:
             settings,
             step="claims_check",
             output=ClaimsResult,
-            stable_context=render_claims(cv, doc, letter, checker.unverified_terms),
+            # Changes with every draft: nothing is read again, so no cache markers.
+            blocks=[
+                Block(render_claims(cv, doc, letter, checker.unverified_terms)),
+                instructions("claims_check"),
+            ],
             task="Check every item against the facts it cites.",
         )
         _track(ctx, "claims_check", usage)
@@ -146,16 +150,15 @@ async def review(ctx: StepContext) -> RunStatus:
         documents = f"=== CV ===\n{cv_text}"
         if letter_text:
             documents += f"\n\n=== Cover letter ===\n{letter_text}"
-        context = (
-            f"<listing>\n{match_render.render_listing(listing)}\n</listing>\n\n"
-            f"<cv>\n{match_render.render_cv(cv)}\n</cv>\n\n"
-            f"<documents>\n{documents}\n</documents>"
-        )
         recruiter, usage = await client.structured(
             settings,
             step="recruiter",
             output=RecruiterResult,
-            stable_context=context,
+            blocks=[
+                *shared_blocks(cv, listing),
+                instructions("recruiter"),
+                Block(f"<documents>\n{documents}\n</documents>"),
+            ],
             task="Screen this application.",
         )
         _track(ctx, "recruiter", usage)

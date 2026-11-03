@@ -11,6 +11,7 @@ from application_crew.domain.listing import ExtractedListing, FuzzyCheck, merge_
 from application_crew.domain.models import ParsedListing, Requirement
 from application_crew.fetch.listing import detect_language, fetch_listing
 from application_crew.llm import client
+from application_crew.llm.client import Block, instructions
 from application_crew.llm.pricing import cost_usd
 from application_crew.runner import activity
 from application_crew.runner.engine import StepContext, step
@@ -82,7 +83,8 @@ async def parse(ctx: StepContext) -> RunStatus:
         ctx.settings,
         step="parse_listing",
         output=ExtractedListing,
-        stable_context=f"<listing>\n{text}\n</listing>",
+        # One call per listing: nothing is read again, so no cache markers.
+        blocks=[Block(f"<listing>\n{text}\n</listing>"), instructions("parse_listing")],
         task=task,
     )
     listing = merge_listing(extracted, job_posting, language=detect_language(text))

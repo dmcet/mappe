@@ -141,6 +141,7 @@ def run_detail(session: Session, run: Run) -> dict:
                 "input_tokens": u.input_tokens,
                 "output_tokens": u.output_tokens,
                 "cache_read_tokens": u.cache_read_tokens,
+                "cache_write_tokens": u.cache_write_tokens,
                 "at": u.created_at,
             }
             for u in usage

@@ -29,8 +29,9 @@ def fake_llm(monkeypatch):
         error: Exception | None = None
         calls: list[dict] = []
 
-        async def structured(self, settings, step, output, stable_context, task, **kw):
-            self.calls.append({"step": step, "context": stable_context, "task": task})
+        async def structured(self, settings, step, output, blocks, task, **kw):
+            context = "\n".join(b.text for b in blocks)
+            self.calls.append({"step": step, "context": context, "task": task, "blocks": blocks})
             if self.error:
                 raise self.error
             if step == "parse_cv":
