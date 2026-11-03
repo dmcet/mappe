@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    image: application-crew:dev
+    ports:
+      - "127.0.0.1:8000:8000"   # local only
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+    volumes:
+      - app-data:/data
+
+volumes:
+  app-data:

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Run {{ run.id }} · Application Crew{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Run {{ run.id }}</h2>
+  <p>{{ run.listing_url or "pasted listing" }}</p>
+  <p>Status: <span class="status status-{{ run.status }}">{{ run.status }}</span></p>
+  {% if run.error %}<p class="error">{{ run.error }}</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Events</h2>
+  <ol id="events" hx-ext="sse" sse-connect="/runs/{{ run.id }}/events" sse-swap="run-event" hx-swap="beforeend">
+  </ol>
+</section>
+{% endblock %}

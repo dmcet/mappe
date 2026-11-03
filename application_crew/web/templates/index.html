@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid">
+  <form class="card" method="post" action="/cvs">
+    <h2>Add CV</h2>
+    <label>Label <input name="label" required placeholder="Backend CV 2026"></label>
+    <label>CV (Markdown) <textarea name="markdown" rows="10" required></textarea></label>
+    <button type="submit">Save CV</button>
+  </form>
+
+  <form class="card" method="post" action="/runs">
+    <h2>New application</h2>
+    <label>CV
+      <select name="cv_id" required>
+        {% for cv in cvs %}<option value="{{ cv.id }}">{{ cv.label }} ({{ cv.status }})</option>{% endfor %}
+      </select>
+    </label>
+    <label>Job listing URLs (one per line) <textarea name="urls" rows="4"></textarea></label>
+    <label>…or paste a listing <textarea name="listing_text" rows="4"></textarea></label>
+    <button type="submit" {% if not cvs %}disabled{% endif %}>Start</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Runs</h2>
+  <table>
+    <thead><tr><th>#</th><th>Listing</th><th>Status</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for run in runs %}
+      <tr>
+        <td><a href="/runs/{{ run.id }}">{{ run.id }}</a></td>
+        <td>{{ run.listing_url or "pasted listing" }}</td>
+        <td><span class="status status-{{ run.status }}">{{ run.status }}</span></td>
+        <td>{{ run.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4">No runs yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

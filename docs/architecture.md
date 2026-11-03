@@ -156,7 +156,7 @@ config.toml
 - Base: `python:3.12-slim`
 - Adds: `typst` binary (pinned version), `poppler-utils`, fonts used by the templates
 - Runtime: `ANTHROPIC_API_KEY` via env, `/data` volume, port 8000
-- Target image size: < 500 MB
+- Image size: ~1.1 GB, accepted. Most of it is `lingua` (~300 MB), kept for reliable language detection
 
 ## 10. Open points / risks
 
