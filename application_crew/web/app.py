@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
@@ -22,12 +22,14 @@ import application_crew.steps  # noqa: F401 - registers steps
 from application_crew.checks.completeness import check_cv
 from application_crew.config import get_settings
 from application_crew.db import CV, Event, Run, get_engine, get_session, init_engine
+from application_crew.domain.author import AuthorCV
 from application_crew.domain.match import MatchResult
 from application_crew.domain.models import ParsedCV, ParsedListing, RequirementResult
 from application_crew.domain.summary import summarize
 from application_crew.render.typst import typst_available
 from application_crew.runner.engine import Engine, InvalidTransition, set_status
 from application_crew.runner.states import WORKING, CVStatus, RunStatus
+from application_crew.steps.final import bundle, final_draft, save_user_draft
 from application_crew.web.forms import form_defaults, requirements_from_form
 
 log = logging.getLogger(__name__)
@@ -308,6 +310,69 @@ async def apply_run(request: Request, run_id: int, session: SessionDep) -> Redir
 @app.post("/runs/{run_id}/decline")
 def decline_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
     return _resume(request, session, _get_run(session, run_id), RunStatus.DECLINED)
+
+
+@app.get("/runs/{run_id}/edit", response_class=HTMLResponse)
+def edit_run(request: Request, run_id: int, session: SessionDep) -> HTMLResponse:
+    run = _get_run(session, run_id)
+    if run.status != RunStatus.WAITING_FOR_FINAL_REVIEW:
+        raise HTTPException(409, "Run is not waiting for the final review")
+    cv = ParsedCV.model_validate(run.state["cv"])
+    draft = final_draft(run.state)
+    doc = AuthorCV.model_validate(draft["cv"])
+    titles = {t.id: t.title for t in doc.titles}
+    context = {
+        "run": run,
+        "cv": cv,
+        "doc": doc,
+        "letter": draft["letter"],
+        "titles": titles,
+        "bullets": {
+            p.id: "\n".join(b.text for b in doc.bullets if b.position_id == p.id)
+            for p in cv.positions
+        },
+        "draft": draft,
+    }
+    return templates.TemplateResponse(request, "edit.html", context)
+
+
+@app.post("/runs/{run_id}/edit")
+async def save_edit(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
+    run = _get_run(session, run_id)
+    if run.status != RunStatus.WAITING_FOR_FINAL_REVIEW:
+        raise HTTPException(409, "Run is not waiting for the final review")
+    try:
+        save_user_draft(get_settings(), run, await request.form())
+    except RuntimeError as exc:  # rendering failed: keep the previous draft
+        raise HTTPException(422, str(exc)) from exc
+    run.updated_at = datetime.now(UTC)
+    session.add(run)
+    session.commit()
+    return RedirectResponse(f"/runs/{run_id}#documents", status_code=303)
+
+
+@app.post("/runs/{run_id}/approve")
+def approve_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
+    return _resume(request, session, _get_run(session, run_id), RunStatus.DELIVERING)
+
+
+@app.get("/runs/{run_id}/final/{name}")
+def download_final(run_id: int, name: str, session: SessionDep) -> FileResponse:
+    run = _get_run(session, run_id)
+    if name not in run.state.get("delivery", {}).get("files", {}):
+        raise HTTPException(404, "File not found")
+    path = get_settings().runs_dir / str(run_id) / "final" / name
+    if not path.is_file():
+        raise HTTPException(404, "File not found")
+    return FileResponse(path, filename=name)
+
+
+@app.get("/runs/{run_id}/bundle.zip")
+def download_bundle(run_id: int, session: SessionDep) -> Response:
+    run = _get_run(session, run_id)
+    data = bundle(get_settings(), run)
+    headers = {"Content-Disposition": f'attachment; filename="application-{run_id}.zip"'}
+    return Response(data, media_type="application/zip", headers=headers)
 
 
 @app.get("/runs/{run_id}/drafts/{iteration}/{name}")

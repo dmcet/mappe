@@ -1,20 +1,8 @@
 import time
 
-import pytest
 from fastapi.testclient import TestClient
 
 from application_crew.config import get_settings
-
-
-@pytest.fixture
-def client(tmp_path, monkeypatch, fake_llm):
-    monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
-    get_settings.cache_clear()
-    from application_crew.web.app import app
-
-    with TestClient(app) as c:
-        yield c
-    get_settings.cache_clear()
 
 
 def wait_for(client, url, text, timeout=5.0):

@@ -41,5 +41,14 @@ uv run pytest
 
 ## Status
 
-Scaffold only: the run engine, listing fetch and Typst rendering work; parsing, matching,
-authoring, the review loop and the user gates are not implemented yet.
+The full pipeline works end to end: CV parsing and confirmation, listing fetch and parsing,
+requirement checks, matching with an apply decision, authoring of the tailored CV and
+cover letter, the review loop (fact check, claims check, ATS check, recruiter review),
+final review with an editor, and delivery of named PDFs plus a ZIP of all intermediates.
+
+Known gaps:
+- No database migrations yet: schema changes need a fresh `crew-data` volume.
+- No AI repair of Typst errors: content is inserted as plain text, so a failed render
+  points to a template bug and is shown as an error instead.
+- Edits in the final review are checked by the fact and ATS checks only, not by the
+  AI claims check or recruiter.

@@ -52,3 +52,18 @@ def fake_llm(monkeypatch):
     }
     monkeypatch.setattr("application_crew.llm.client.structured", fake.structured)
     return fake
+
+
+@pytest.fixture
+def client(tmp_path, monkeypatch, fake_llm):
+    from fastapi.testclient import TestClient
+
+    from application_crew.config import get_settings
+    from application_crew.web.app import app
+
+    monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
+    get_settings.cache_clear()
+
+    with TestClient(app) as c:
+        yield c
+    get_settings.cache_clear()

@@ -39,7 +39,9 @@ from application_crew.steps.author import cv_language, load_analysis
 from application_crew.steps.common import run_cv
 
 
-def _render(cv: ParsedCV, listing: ParsedListing, draft: dict, out_dir: Path) -> dict[str, str]:
+def render_draft(
+    cv: ParsedCV, listing: ParsedListing, draft: dict, out_dir: Path
+) -> dict[str, str]:
     doc = AuthorCV.model_validate(draft["cv"])
     lang = draft["lang"]
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -105,7 +107,7 @@ async def review(ctx: StepContext) -> RunStatus:
 
     # 2. Render
     out_dir = settings.runs_dir / str(run.id) / f"draft-{iteration}"
-    files = _render(cv, listing, draft, out_dir)
+    files = render_draft(cv, listing, draft, out_dir)
     cv_text = pdf_to_text(out_dir / "cv.pdf")
     letter_text = pdf_to_text(out_dir / "cover-letter.pdf") if letter else ""
 

@@ -32,12 +32,33 @@
 
 {% macro fact_refs(ids) %}{% for i in ids %}<code class="fact" title="{{ facts.get(i, 'unknown fact') }}">{{ i }}</code>{% endfor %}{% endmacro %}
 
+{% if run.state.get("delivery") %}
+<section class="card verdict verdict-apply">
+  <h2>Ready to send</h2>
+  <p class="actions">
+    {% for name in run.state.delivery.files %}<a class="button" href="/runs/{{ run.id }}/final/{{ name }}">{{ name }}</a>{% endfor %}
+  </p>
+  <p><a href="/runs/{{ run.id }}/bundle.zip">Download everything as ZIP</a> <span class="muted">(final documents, all drafts, parsed CV, listing and assessment)</span></p>
+</section>
+{% endif %}
+
 {% if drafts %}
 {% set final_it = run.state.get("final_draft") %}
 {% set d = (drafts | selectattr("iteration", "equalto", final_it) | first) if final_it else drafts[-1] %}
-<section class="card">
+<section class="card" id="documents">
   <h2>Documents · draft {{ d.iteration }}{% if run.status == "waiting_for_final_review" %} (ready for your review){% endif %}</h2>
   {% if run.state.get("review_stop_reason") %}<p class="muted">Review finished after {{ drafts | length }} draft(s): {{ run.state.review_stop_reason }}.{% if final_it and final_it != drafts[-1].iteration %} Draft {{ final_it }} scored best and is used.{% endif %}</p>{% endif %}
+  {% if d.get("source") == "user" %}<p class="muted">Your edit of draft {{ d.based_on }}. Checked by the fact check and ATS check only (no AI review after your edits).</p>{% endif %}
+  {% if run.status == "waiting_for_final_review" %}
+  {% set open_problems = d.cv_report.violations | length + d.letter_report.violations | length + d.get("claims", []) | length %}
+  {% if open_problems %}
+  <p class="error"><strong>This draft still has {{ open_problems }} open problem(s)</strong> (see the checks below). Fix them in the editor before you send it, or approve anyway if you disagree.</p>
+  {% endif %}
+  <div class="actions final-actions">
+    <form method="post" action="/runs/{{ run.id }}/approve"><button type="submit">Approve and finish</button></form>
+    <a class="button secondary" href="/runs/{{ run.id }}/edit">Edit text</a>
+  </div>
+  {% endif %}
   <p class="actions">
     {% for name in ["cv.pdf", "cover-letter.pdf"] if name in d.files %}
       <a class="button" href="/runs/{{ run.id }}/drafts/{{ d.iteration }}/{{ name }}">{{ "CV" if name == "cv.pdf" else "Cover letter" }} (PDF)</a>

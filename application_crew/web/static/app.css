@@ -74,3 +74,9 @@ details { margin-top: 12px; }
 summary { cursor: pointer; color: var(--accent); }
 tr.current td { font-weight: 600; }
 td ul { margin: 0; padding-left: 18px; }
+.edit-row { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+@media (max-width: 800px) { .edit-row { grid-template-columns: 1fr; } }
+.source { border-left: 3px solid var(--border); padding-left: 12px; font-size: .9rem; }
+.source ul { padding-left: 18px; }
+a.button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.final-actions { margin-bottom: 12px; }
