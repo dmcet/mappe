@@ -24,6 +24,8 @@ class CV(SQLModel, table=True):
     status: CVStatus = CVStatus.PARSING
     parsed: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
     warnings: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    error: str | None = None
+    cost_usd: float = 0.0
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 

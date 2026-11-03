@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -16,10 +17,14 @@ from sqlmodel import Session, select
 from sse_starlette.sse import EventSourceResponse
 
 import application_crew.steps  # noqa: F401 - registers steps
+from application_crew.checks.completeness import check_cv
 from application_crew.config import get_settings
 from application_crew.db import CV, Event, Run, get_engine, get_session, init_engine
+from application_crew.domain.models import ParsedCV
+from application_crew.domain.summary import summarize
 from application_crew.render.typst import typst_available
 from application_crew.runner.engine import Engine
+from application_crew.runner.states import CVStatus
 
 WEB_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=WEB_DIR / "templates")
@@ -56,13 +61,121 @@ def index(request: Request, session: SessionDep) -> HTMLResponse:
     return templates.TemplateResponse(request, "index.html", {"cvs": cvs, "runs": runs})
 
 
+def _engine(request: Request) -> Engine:
+    return request.app.state.engine
+
+
+def _get_cv(session: Session, cv_id: int) -> CV:
+    cv = session.get(CV, cv_id)
+    if cv is None:
+        raise HTTPException(404, "CV not found")
+    return cv
+
+
+def _touch(session: Session, cv: CV) -> None:
+    cv.updated_at = datetime.now(UTC)
+    session.add(cv)
+    session.commit()
+
+
 @app.post("/cvs")
 def create_cv(
-    session: SessionDep, label: Annotated[str, Form()], markdown: Annotated[str, Form()]
+    request: Request,
+    session: SessionDep,
+    label: Annotated[str, Form()],
+    markdown: Annotated[str, Form()],
 ) -> RedirectResponse:
-    # TODO: trigger the CV parsing flow (parse -> confirmation gate).
-    session.add(CV(label=label, markdown=markdown))
+    cv = CV(label=label.strip(), markdown=markdown.strip())
+    session.add(cv)
     session.commit()
+    _engine(request).enqueue_cv(cv.id)  # type: ignore[arg-type]
+    return RedirectResponse(f"/cvs/{cv.id}", status_code=303)
+
+
+@app.get("/cvs/{cv_id}", response_class=HTMLResponse)
+def cv_detail(request: Request, cv_id: int, session: SessionDep) -> HTMLResponse:
+    cv = _get_cv(session, cv_id)
+    parsed = ParsedCV.model_validate(cv.parsed) if cv.parsed else None
+    context = {
+        "cv": cv,
+        "parsed": parsed,
+        "summary": summarize(parsed) if parsed else None,
+        "quick_fields": QUICK_FIELDS,
+        "quick_values": _quick_values(parsed) if parsed else {},
+    }
+    return templates.TemplateResponse(request, "cv.html", context)
+
+
+# Fields the user can fill in directly on the confirmation page. Everything else is
+# fixed by editing the Markdown CV and parsing again, so the CV stays the source of truth.
+QUICK_FIELDS: dict[str, str] = {
+    "contact.email": "Email",
+    "contact.phone": "Phone",
+    "contact.city": "City",
+    "contact.address": "Address",
+    "notice_period": "Notice period",
+    "earliest_start": "Earliest start",
+    "salary_expectation": "Salary expectation",
+    "work_permit": "Work permit / visa status",
+}
+
+
+def _quick_values(parsed: ParsedCV) -> dict[str, str]:
+    values = {}
+    for key in QUICK_FIELDS:
+        obj: object = parsed
+        for part in key.split("."):
+            obj = getattr(obj, part)
+        values[key] = obj or ""  # type: ignore[assignment]
+    return values
+
+
+@app.post("/cvs/{cv_id}/fields")
+async def update_cv_fields(request: Request, cv_id: int, session: SessionDep) -> RedirectResponse:
+    cv = _get_cv(session, cv_id)
+    if cv.status != CVStatus.WAITING_FOR_CONFIRMATION or not cv.parsed:
+        raise HTTPException(409, "CV is not waiting for confirmation")
+    form = await request.form()
+    data = dict(cv.parsed)
+    data["contact"] = dict(data["contact"])
+    for key in QUICK_FIELDS:
+        value = str(form.get(key, "")).strip() or None
+        if key.startswith("contact."):
+            data["contact"][key.removeprefix("contact.")] = value
+        else:
+            data[key] = value
+    parsed = ParsedCV.model_validate(data)
+    cv.parsed = parsed.model_dump(mode="json")
+    cv.warnings = check_cv(parsed)
+    _touch(session, cv)
+    return RedirectResponse(f"/cvs/{cv_id}", status_code=303)
+
+
+@app.post("/cvs/{cv_id}/markdown")
+def update_cv_markdown(
+    request: Request, cv_id: int, session: SessionDep, markdown: Annotated[str, Form()]
+) -> RedirectResponse:
+    """Save the edited Markdown CV and parse it again (also used to retry a failed parse)."""
+    cv = _get_cv(session, cv_id)
+    if cv.status == CVStatus.PARSING:
+        raise HTTPException(409, "CV is being parsed")
+    cv.markdown = markdown.strip()
+    cv.status = CVStatus.PARSING
+    cv.parsed = None
+    cv.warnings = []
+    cv.error = None
+    _touch(session, cv)
+    _engine(request).enqueue_cv(cv_id)
+    return RedirectResponse(f"/cvs/{cv_id}", status_code=303)
+
+
+@app.post("/cvs/{cv_id}/confirm")
+def confirm_cv(cv_id: int, session: SessionDep) -> RedirectResponse:
+    cv = _get_cv(session, cv_id)
+    if cv.status != CVStatus.WAITING_FOR_CONFIRMATION:
+        raise HTTPException(409, "CV is not waiting for confirmation")
+    cv.status = CVStatus.CONFIRMED
+    _touch(session, cv)
     return RedirectResponse("/", status_code=303)
 
 
@@ -74,9 +187,8 @@ def create_runs(
     urls: Annotated[str, Form()] = "",
     listing_text: Annotated[str, Form()] = "",
 ) -> RedirectResponse:
-    if session.get(CV, cv_id) is None:
-        raise HTTPException(404, "CV not found")
-    # TODO: require a confirmed CV once the parsing flow exists.
+    if _get_cv(session, cv_id).status != CVStatus.CONFIRMED:
+        raise HTTPException(409, "Confirm the CV before starting an application")
     new_runs = [Run(cv_id=cv_id, listing_url=u.strip()) for u in urls.splitlines() if u.strip()]
     if listing_text.strip():
         new_runs.append(Run(cv_id=cv_id, listing_text=listing_text.strip()))
@@ -84,9 +196,8 @@ def create_runs(
         raise HTTPException(400, "Provide at least one URL or a pasted listing")
     session.add_all(new_runs)
     session.commit()
-    engine: Engine = request.app.state.engine
     for run in new_runs:
-        engine.enqueue(run.id)  # type: ignore[arg-type]
+        _engine(request).enqueue(run.id)  # type: ignore[arg-type]
     return RedirectResponse("/", status_code=303)
 
 

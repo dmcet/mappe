@@ -12,13 +12,33 @@
     <h2>New application</h2>
     <label>CV
       <select name="cv_id" required>
-        {% for cv in cvs %}<option value="{{ cv.id }}">{{ cv.label }} ({{ cv.status }})</option>{% endfor %}
+        {% for cv in cvs if cv.status == "confirmed" %}<option value="{{ cv.id }}">{{ cv.label }}</option>{% endfor %}
       </select>
     </label>
     <label>Job listing URLs (one per line) <textarea name="urls" rows="4"></textarea></label>
     <label>…or paste a listing <textarea name="listing_text" rows="4"></textarea></label>
-    <button type="submit" {% if not cvs %}disabled{% endif %}>Start</button>
+    {% set confirmed = cvs | selectattr("status", "equalto", "confirmed") | list %}
+    {% if not confirmed %}<p class="muted">Add and confirm a CV first.</p>{% endif %}
+    <button type="submit" {% if not confirmed %}disabled{% endif %}>Start</button>
   </form>
+</section>
+
+<section class="card">
+  <h2>CVs</h2>
+  <table>
+    <thead><tr><th>Label</th><th>Status</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for cv in cvs %}
+      <tr>
+        <td><a href="/cvs/{{ cv.id }}">{{ cv.label }}</a></td>
+        <td><span class="status status-{{ cv.status }}">{{ cv.status }}</span></td>
+        <td>{{ cv.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3">No CVs yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
 </section>
 
 <section class="card">

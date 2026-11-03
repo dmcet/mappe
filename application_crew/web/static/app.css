@@ -37,3 +37,15 @@ a { color: var(--accent); }
 .status { font-family: ui-monospace, monospace; font-size: .85rem; }
 .status-failed, .error { color: var(--error); }
 .event time { color: var(--muted); font-family: ui-monospace, monospace; }
+.muted { color: var(--muted); }
+.warnings { border-color: #d4a017; }
+.facts, .warnings ul { margin: 0; padding-left: 20px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.position + .position { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 4px; }
+.position h3 { margin-bottom: 0; font-size: 1rem; }
+.position h4 { margin: 8px 0 0; font-size: .85rem; color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tags span { padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: .85rem; }
+code { font-size: .8rem; color: var(--muted); }
