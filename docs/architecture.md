@@ -163,7 +163,7 @@ config.toml
 - Base: `python:3.12-slim`
 - Adds: `typst` binary (pinned version), `poppler-utils`, fonts used by the templates
 - Runtime: `ANTHROPIC_API_KEY` via env, `/data` volume, port 8000
-- Image size: ~1.1 GB, accepted. Most of it is `lingua` (~300 MB), kept for reliable language detection
+- Image size: ~2.4 GB, accepted. The job search embedding model is ~1.1 GB (fastembed runs it in fp32), `lingua` ~300 MB; both kept for reliability
 
 ## 10. Open points / risks
 

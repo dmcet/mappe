@@ -1,8 +1,9 @@
 """Filter and rank job hits against a CV, in Python only (no Claude).
 
-Score 0-100 = skill overlap (60) + title fit (30) + freshness (10). Hits without a
-description (Bundesagentur) are scored on title, occupations and freshness, rescaled, and
-marked as "title only".
+Score 0-100. Keywords only: skill overlap (60) + title fit (30) + freshness (10). With
+semantic similarity from the local embedding model: skills (40) + title (20) + meaning (30)
++ freshness (10). Hits without a description (Bundesagentur) are scored mostly on the
+title and marked as "title only".
 """
 
 from __future__ import annotations
@@ -56,6 +57,7 @@ class Ranked:
     score: float
     matched_skills: list[str] = field(default_factory=list)
     title_fit: float = 0.0
+    semantic_fit: float | None = None  # 0..1, None without the embedding model
     basis: str = "description"  # or "title only"
     hidden: str | None = None  # "dismissed" | "requirements" | "elsewhere" | "low_score"
     notes: list[str] = field(default_factory=list)  # failed must-haves
@@ -167,10 +169,13 @@ def rank(
     dismissed: set[str] | None = None,
     places: list[str] | None = None,
     located: set[str] | None = None,
+    semantic: dict[str, float] | None = None,
     today: date | None = None,
 ) -> list[Ranked]:
     """Rank ``hits``. ``places`` are the search's cities; sources in ``located`` already
-    searched around them (Bundesagentur's radius), so only the others are checked."""
+    searched around them (Bundesagentur's radius), so only the others are checked.
+    ``semantic`` maps hit keys to their semantic fit (0..1); hits without one are scored on
+    keywords only."""
     today = today or date.today()
     skills = cv_skills(cv, today)
     full = max(1.0, min(FULL_SKILL_WEIGHT, FULL_SKILL_SHARE * sum(s.weight for s in skills)))
@@ -186,11 +191,22 @@ def rank(
         skill_fit = min(1.0, sum(s.weight for s in matched) / full)
         tfit = title_fit(hit.title, titles)
         fresh = _freshness(hit, today, max_age_days)
-        if hit.description:
-            score, basis = 60 * skill_fit + 30 * tfit + 10 * fresh, "description"
+        meaning = (semantic or {}).get(hit.key)
+        basis = "description" if hit.description else "title only"
+        if meaning is None:
+            weights = (60, 30, 0, 10) if hit.description else (15, 75, 0, 10)
         else:
-            score, basis = 15 * skill_fit + 75 * tfit + 10 * fresh, "title only"
-        item = Ranked(hit, round(score, 1), [s.name for s in matched], round(tfit, 2), basis)
+            weights = (40, 20, 30, 10) if hit.description else (10, 50, 30, 10)
+        parts = (skill_fit, tfit, meaning or 0.0, fresh)
+        score = sum(w * p for w, p in zip(weights, parts, strict=True))
+        item = Ranked(
+            hit,
+            round(score, 1),
+            [s.name for s in matched],
+            round(tfit, 2),
+            basis=basis,
+            semantic_fit=None if meaning is None else round(meaning, 2),
+        )
 
         failed = failed_must_haves(check_requirements(checked, hit.as_listing(), "", []))
         if hit.key in dismissed:

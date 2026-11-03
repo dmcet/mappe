@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from collections.abc import AsyncIterator
@@ -17,6 +18,7 @@ from application_crew.config import PROJECT_ROOT, get_settings
 from application_crew.db import init_engine
 from application_crew.render.typst import typst_available
 from application_crew.runner.engine import Engine
+from application_crew.search import semantic
 from application_crew.web import cvs, live, runs, search
 
 log = logging.getLogger(__name__)
@@ -36,6 +38,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine = Engine(settings)
     await engine.start()
     app.state.engine = engine
+    # Load the semantic ranking model in the background (~20 s), not on the first search.
+    app.state.model_warmup = asyncio.create_task(
+        asyncio.to_thread(semantic.get_embedder, settings.search)
+    )
     yield
     await engine.stop()
 
@@ -55,6 +61,7 @@ def health() -> dict[str, object]:
         "typst": typst_available(),
         "demo": settings.demo,
         "frontend": (FRONTEND_DIR / "index.html").is_file(),
+        "semantic_ranking": semantic.unavailable_reason(settings.search) or "ok",
     }
 
 

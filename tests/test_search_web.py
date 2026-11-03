@@ -1,55 +1,12 @@
 """Search API end to end, with the job APIs replaced by their recorded responses."""
 
-import json
 from datetime import date
 
 import httpx
-import pytest
 from sqlmodel import Session
 
 from application_crew.db import SavedSearch, get_engine
-from application_crew.search.sources.base import SAMPLES_DIR, clear_cache
 from tests.test_web import confirmed_cv, status_is, wait_for
-
-HOSTS = {
-    "rest.arbeitsagentur.de": "ba",
-    "www.arbeitnow.com": "arbeitnow",
-    "remotive.com": "remotive",
-    "jobicy.com": "jobicy",
-    "remoteok.com": "remoteok",
-    "api.adzuna.com": "adzuna",
-}
-
-
-@pytest.fixture
-def job_apis(monkeypatch):
-    """Serve the samples; ``job_apis.fail`` makes a source return HTTP 503."""
-
-    class Apis:
-        fail: set[str] = set()
-        requests: list[httpx.Request] = []
-
-    apis = Apis()
-    apis.fail, apis.requests = set(), []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        apis.requests.append(request)
-        key = HOSTS[request.url.host]
-        if key in apis.fail:
-            return httpx.Response(503)
-        payload = json.loads((SAMPLES_DIR / f"{key}.json").read_text(encoding="utf-8"))
-        if key == "arbeitnow":
-            payload["links"] = {"next": None}
-        return httpx.Response(200, json=payload)
-
-    apis.handler = handler
-    monkeypatch.setattr(
-        "application_crew.search.service.make_client",
-        lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(lambda r: apis.handler(r))),
-    )
-    clear_cache()
-    yield apis
-    clear_cache()
 
 
 def search(client, cv_id, **body):

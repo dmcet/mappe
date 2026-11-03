@@ -89,19 +89,19 @@ async def _run(
     activity.begin("search", next(_search_ids), f"Job search: {', '.join(query.titles[:2])}")
     try:
         hits, statuses = await collect(settings, query, keys)
+        return await save_search(
+            session,
+            cv_id=cv_id,
+            cv=parsed,
+            query=query,
+            requirements=requirements,
+            hits=hits,
+            statuses=statuses,
+            settings=settings,
+            saved_id=saved_id,
+        )
     finally:
         activity.end()
-    return save_search(
-        session,
-        cv_id=cv_id,
-        cv=parsed,
-        query=query,
-        requirements=requirements,
-        hits=hits,
-        statuses=statuses,
-        settings=settings,
-        saved_id=saved_id,
-    )
 
 
 @router.post("/searches", status_code=201)

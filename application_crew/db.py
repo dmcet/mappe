@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import JSON, Column, UniqueConstraint, inspect
+from sqlalchemy import JSON, Column, LargeBinary, UniqueConstraint, inspect
 from sqlalchemy.engine import Engine
 from sqlmodel import Field, Session, SQLModel, create_engine
 
@@ -95,6 +95,8 @@ class Search(SQLModel, table=True):
     requirements: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     # Per source: {"label", "count", "error", "seconds"}.
     sources: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    # How results were ranked: {"semantic": bool, "model", "embedded", "reused", "note"}.
+    ranking: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=_now, index=True)
 
 
@@ -110,6 +112,9 @@ class JobHitRecord(SQLModel, table=True):
     data: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))  # JobHit
     status: str = "new"  # new | dismissed | applied
     run_id: int | None = None  # plain ID: the run may be deleted
+    # Semantic ranking: the listing's vector (float16) and what it was computed from.
+    embedding: bytes | None = Field(default=None, sa_column=Column(LargeBinary))
+    embedding_key: str | None = None  # "<model>:<hash of the embedded text>"
     first_seen_at: datetime = Field(default_factory=_now)
     last_seen_at: datetime = Field(default_factory=_now)
 

@@ -384,6 +384,7 @@ export interface SearchResultItem {
     score: number;
     matched_skills: string[];
     title_fit: number;
+    semantic_fit: number | null;
     basis: "description" | "title only";
     hidden: HiddenReason | null;
     notes: string[];
@@ -406,9 +407,18 @@ export interface SearchSummary {
   new: number;
 }
 
+export interface Ranking {
+  semantic: boolean;
+  model?: string;
+  embedded?: number;
+  reused?: number;
+  note: string | null;
+}
+
 export interface SearchDetail extends SearchSummary {
   requirements: Requirement[];
   sources: Record<string, SourceStatus>;
+  ranking: Ranking;
   results: SearchResultItem[];
 }
 

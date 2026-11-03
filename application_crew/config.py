@@ -37,6 +37,10 @@ class SearchConfig:
     cache_minutes: int = 60
     list_pages: int = 3  # for sources without search (Arbeitnow): newest N pages
     min_score: float = 30.0  # hits below are hidden behind "show low matches"
+    semantic: bool = True  # local embedding model (no API calls); off = keywords only
+    semantic_model: str = "jinaai/jina-embeddings-v2-base-de"
+    semantic_max_listings: int = 200  # best keyword candidates embedded per search
+    semantic_chars: int = 800  # of each description; longer is slower, barely better
 
 
 @dataclass(frozen=True)

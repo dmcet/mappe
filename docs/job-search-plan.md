@@ -1,7 +1,8 @@
 # Job search: plan
 
 Find job listings that fit a confirmed CV, rank them without AI costs, and turn the ones the
-user picks into applications. Status: phases 1 and 2 implemented on branch `feat/job-search`.
+user picks into applications. Status: phases 1 and 2 implemented; from phase 3 saved searches, live progress and
+semantic ranking (scheduled searches are not built).
 
 **Changes during implementation:**
 - Query chips are a plain "one title per line" field; places and remote-only come from the
@@ -223,8 +224,26 @@ cache_minutes = 60            # for sources without server-side search (Arbeitno
 1. **Core:** models, BA + Arbeitnow adapters, queries, dedupe, filtering, ranking, migration,
    API, Search page, apply → runs. Covers most German listings.
 2. **More sources:** Remotive, Jobicy, Remote OK (off by default), Adzuna (with keys).
-3. **Later:** saved searches with "new since last time", optional embeddings ranking, SSE
-   progress per source.
+3. **Later:** saved searches with "new since last time" (done), embeddings ranking (done, see
+   below), SSE progress per source (done, via the activity registry), scheduled searches
+   (open).
+
+### Semantic ranking (phase 3)
+
+Measured on 227 live listings (Berlin, sample CV), 8-core laptop CPU:
+
+| Model | Size | Time for 227 | Top 10 |
+|---|---|---|---|
+| `jinaai/jina-embeddings-v2-base-de` (DE/EN) | 0.64 GB | 86 s at 1,500 chars; ~38 s at 800 | all backend / platform roles |
+| `minishlab/potion-multilingual-128M` (static) | 0.5 GB | 0.1 s | some noise (e.g. "System Engineer (Token Factory)") |
+
+Chosen: Jina, at 800 characters (vectors 97 % identical to 1,500), via fastembed (ONNX, no
+PyTorch). Speed comes from storing each listing's vector (`job_hit.embedding`, float16,
+keyed by model + text hash): the first search pays, later ones read only new listings. Only
+the best 200 candidates that passed the filters are embedded. Score with meaning: skills 40,
+title 20, meaning 30, freshness 10 (title-only hits: 10 / 50 / 30 / 10). Cosine similarity
+is mapped to 0..1 with a per-model calibration (Jina: 0.40 → 0, 0.70 → 1; measured: unrelated
+jobs ~0.20, generic tech jobs ~0.50, close matches 0.65–0.73).
 
 ## 10. Open points
 

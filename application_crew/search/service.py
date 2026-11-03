@@ -16,6 +16,7 @@ from application_crew.db import JobHitRecord, SavedSearch, Search, SearchResult
 from application_crew.domain.models import ParsedCV, Requirement
 from application_crew.fetch.listing import USER_AGENT
 from application_crew.runner import activity
+from application_crew.search import semantic
 from application_crew.search.dedupe import dedupe
 from application_crew.search.models import JobHit, SearchQuery
 from application_crew.search.queries import places_from, remote_only
@@ -163,7 +164,7 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def save_search(
+async def save_search(
     session: Session,
     *,
     cv_id: int,
@@ -175,8 +176,8 @@ def save_search(
     settings: Settings,
     saved_id: int | None = None,
 ) -> Search:
-    """Store a search. "New" means first seen ever, or, for a saved search, not found by
-    any of its earlier runs."""
+    """Rank and store a search. "New" means first seen ever, or, for a saved search, not
+    found by any of its earlier runs."""
     hits = dedupe(hits)
     seen_before: set[int] | None = None
     if saved_id is not None:
@@ -198,16 +199,22 @@ def save_search(
         else {}
     )
     dismissed = {f"{s}:{e}" for (s, e), r in records.items() if r.status == "dismissed"}
-    ranked = rank(
-        hits,
-        cv,
-        requirements,
+    options = dict(
         max_age_days=settings.search.max_age_days,
         min_score=settings.search.min_score,
         dismissed=dismissed,
         places=query.places,
         located={k for k, s in SOURCES.items() if s.searches_places},
     )
+    ranked = rank(hits, cv, requirements, **options)
+
+    # Semantic ranking for the best candidates that passed the filters.
+    candidates = [r.hit for r in ranked if r.hidden in (None, "low_score")]
+    candidates = candidates[: settings.search.semantic_max_listings]
+    ranking, fresh = await _semantic(cv, candidates, records, settings)
+    if ranking.get("fits"):
+        ranked = rank(hits, cv, requirements, semantic=ranking.pop("fits"), **options)
+    ranking.pop("fits", None)
 
     search = Search(
         cv_id=cv_id,
@@ -217,6 +224,7 @@ def save_search(
         remote_only=query.remote_only,
         requirements=[r.model_dump(mode="json") for r in requirements],
         sources={k: s.to_dict() for k, s in statuses.items()},
+        ranking=ranking,
     )
     session.add(search)
     session.flush()
@@ -228,6 +236,8 @@ def save_search(
         is_new = record.id is None if seen_before is None else record.id not in seen_before
         record.data = hit.model_dump(mode="json")
         record.last_seen_at = _now()
+        if hit.key in fresh:
+            record.embedding_key, record.embedding = fresh[hit.key]
         session.add(record)
         session.flush()
         session.add(
@@ -243,6 +253,48 @@ def save_search(
     session.commit()
     session.refresh(search)
     return search
+
+
+async def _semantic(
+    cv: ParsedCV,
+    hits: list[JobHit],
+    records: dict[tuple[str, str], JobHitRecord],
+    settings: Settings,
+) -> tuple[dict, dict[str, tuple[str, bytes]]]:
+    """Semantic fits for ``hits`` (in a worker thread) and the vectors to store."""
+    cfg = settings.search
+    if not hits or not cfg.semantic:
+        note = "turned off in config.toml" if not cfg.semantic else None
+        return {"semantic": False, "note": note}, {}
+    activity.update("Ranking by meaning · loading the model")
+    embedder = await asyncio.to_thread(semantic.get_embedder, cfg)
+    if embedder is None:
+        return {"semantic": False, "note": semantic.unavailable_reason(cfg)}, {}
+    cached = {
+        f"{s}:{e}": (r.embedding_key, r.embedding)
+        for (s, e), r in records.items()
+        if r.embedding and r.embedding_key
+    }
+
+    def progress(done: int, total: int) -> None:
+        activity.update(f"Ranking by meaning · {done}/{total} new listings")
+
+    try:
+        fits, fresh = await asyncio.to_thread(
+            semantic.similarities, embedder, cv, hits, cached, cfg.semantic_chars, progress
+        )
+    except Exception as exc:  # keywords still work
+        log.warning("Semantic ranking failed", exc_info=True)
+        return {"semantic": False, "note": f"{type(exc).__name__}: {exc}"[:200]}, {}
+    ranking = {
+        "semantic": True,
+        "model": embedder.name,
+        "embedded": len(fresh),
+        "reused": len(fits) - len(fresh),
+        "note": None,
+        "fits": fits,
+    }
+    return ranking, fresh
 
 
 def search_summary(session: Session, search: Search) -> dict:
@@ -304,6 +356,7 @@ def search_detail(session: Session, search: Search) -> dict:
     return search_summary(session, search) | {
         "requirements": search.requirements,
         "sources": search.sources,
+        "ranking": search.ranking or {"semantic": False, "note": None},
         "results": results,
     }
 

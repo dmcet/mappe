@@ -56,6 +56,14 @@ export function groupResults(results: SearchResultItem[], shown: Set<HiddenReaso
   return { visible, counts };
 }
 
+export function rankingText(r: SearchDetail["ranking"]): string {
+  if (r.semantic) {
+    const reused = r.reused ? `, ${r.reused} from earlier searches` : "";
+    return `Ranked by meaning and keywords (${r.embedded ?? 0} listings read now${reused}).`;
+  }
+  return r.note ? `Ranked by keywords only: ${r.note}.` : "Ranked by keywords.";
+}
+
 function SourceLine({ sources }: { sources: Record<string, SourceStatus> }) {
   return (
     <p className="source-line">
@@ -110,7 +118,15 @@ function HitCard({
   const dismissed = hit.status === "dismissed";
   return (
     <GlassCard className={`hit${selected ? " hit--selected" : ""}${item.hidden ? " hit--hidden" : ""}`}>
-      <div className="hit__score" title={`title fit ${Math.round(reasons.title_fit * 100)}%`}>
+      <div
+        className="hit__score"
+        title={[
+          `title fit ${Math.round(reasons.title_fit * 100)}%`,
+          reasons.semantic_fit !== null && `meaning ${Math.round(reasons.semantic_fit * 100)}%`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      >
         <span className="mono">{Math.round(item.score)}</span>
       </div>
       <div className="hit__body">
@@ -227,6 +243,7 @@ function Results({
           <span className="muted">Saved search</span>
         )}
       </div>
+      <p className="hint ranking-note">{rankingText(search.ranking)}</p>
       <ErrorNote error={save.error} />
       <div className="hidden-toggles">
         <span className="muted">

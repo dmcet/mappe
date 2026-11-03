@@ -1,7 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { LiveContext } from "../live";
-import { SearchPage, SearchProgress, groupResults, salaryText, workMode } from "../pages/Search";
+import {
+  SearchPage,
+  SearchProgress,
+  groupResults,
+  rankingText,
+  salaryText,
+  workMode,
+} from "../pages/Search";
 import type { JobHit, SearchDetail, SearchResultItem } from "../types";
 
 const hit = (over: Partial<JobHit> = {}): JobHit => ({
@@ -33,7 +40,7 @@ const hit = (over: Partial<JobHit> = {}): JobHit => ({
 
 const item = (h: JobHit, over: Partial<SearchResultItem> = {}): SearchResultItem => ({
   score: 80,
-  reasons: { score: 80, matched_skills: ["Python", "PostgreSQL"], title_fit: 1, basis: "description", hidden: null, notes: [] },
+  reasons: { score: 80, matched_skills: ["Python", "PostgreSQL"], title_fit: 1, semantic_fit: 0.8, basis: "description", hidden: null, notes: [] },
   hidden: null,
   is_new: true,
   hit: h,
@@ -47,6 +54,15 @@ describe("search helpers", () => {
     expect(salaryText(hit({ salary_min: 18, salary_max: 18, salary_currency: "EUR", salary_period: "hour" }))).toBe("18 EUR / hour");
     expect(workMode(hit({ remote: "hybrid", onsite_days_per_week: 2 }))).toBe("Hybrid · 2 day(s) onsite");
     expect(workMode(hit())).toBeNull();
+  });
+
+  it("explains how results were ranked", () => {
+    expect(rankingText({ semantic: true, embedded: 3, reused: 40, note: null })).toBe(
+      "Ranked by meaning and keywords (3 listings read now, 40 from earlier searches).",
+    );
+    expect(rankingText({ semantic: false, note: "turned off in config.toml" })).toBe(
+      "Ranked by keywords only: turned off in config.toml.",
+    );
   });
 
   it("hides results per reason until shown", () => {
@@ -70,6 +86,7 @@ describe("search page", () => {
     shown: 1,
     new: 1,
     requirements: [],
+    ranking: { semantic: true, model: "jinaai/jina-embeddings-v2-base-de", embedded: 2, reused: 0, note: null },
     sources: {
       ba: { label: "Bundesagentur für Arbeit", count: 12, error: null, seconds: 0.3 },
       jobicy: { label: "Jobicy", count: 0, error: "HTTP 503", seconds: 0.1 },
