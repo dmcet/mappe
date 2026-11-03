@@ -7,6 +7,7 @@
 
 #set text(lang: d.lang, size: 11pt, font: "New Computer Modern")
 #set par(spacing: 1.4em)
+#set text(hyphenate: false)
 
 #show: letter-simple.with(
   sender: (

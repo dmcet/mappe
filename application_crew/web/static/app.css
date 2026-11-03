@@ -72,3 +72,5 @@ code.fact { margin-left: 4px; padding: 0 4px; border: 1px solid var(--border); b
 a.button { display: inline-block; padding: 8px 16px; color: #fff; background: var(--accent); border-radius: 6px; text-decoration: none; }
 details { margin-top: 12px; }
 summary { cursor: pointer; color: var(--accent); }
+tr.current td { font-weight: 600; }
+td ul { margin: 0; padding-left: 18px; }

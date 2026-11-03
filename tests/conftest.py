@@ -5,8 +5,10 @@ from application_crew.llm.client import Usage
 from application_crew.llm.demo import (
     demo_author_cv,
     demo_author_letter,
+    demo_claims,
     demo_listing,
     demo_match,
+    demo_recruiter,
     sample_cv,
 )
 
@@ -45,6 +47,8 @@ def fake_llm(monkeypatch):
         "match": demo_match(),
         "author_cv": demo_author_cv(),
         "author_letter": demo_author_letter(),
+        "claims_check": demo_claims(),
+        "recruiter": demo_recruiter(),
     }
     monkeypatch.setattr("application_crew.llm.client.structured", fake.structured)
     return fake

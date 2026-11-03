@@ -20,6 +20,10 @@
   lang: d.lang,
 )
 
+// ATS: no hyphenation (it splits keywords across lines) and no justification.
+#set text(hyphenate: false)
+#set par(justify: false)
+
 #if d.headline != "" [
   #v(-0.4em)
   #text(size: 11pt)[#d.headline]

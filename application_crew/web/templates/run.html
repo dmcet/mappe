@@ -33,29 +33,58 @@
 {% macro fact_refs(ids) %}{% for i in ids %}<code class="fact" title="{{ facts.get(i, 'unknown fact') }}">{{ i }}</code>{% endfor %}{% endmacro %}
 
 {% if drafts %}
-{% set d = drafts[-1] %}
+{% set final_it = run.state.get("final_draft") %}
+{% set d = (drafts | selectattr("iteration", "equalto", final_it) | first) if final_it else drafts[-1] %}
 <section class="card">
   <h2>Documents · draft {{ d.iteration }}{% if run.status == "waiting_for_final_review" %} (ready for your review){% endif %}</h2>
+  {% if run.state.get("review_stop_reason") %}<p class="muted">Review finished after {{ drafts | length }} draft(s): {{ run.state.review_stop_reason }}.{% if final_it and final_it != drafts[-1].iteration %} Draft {{ final_it }} scored best and is used.{% endif %}</p>{% endif %}
   <p class="actions">
     {% for name in ["cv.pdf", "cover-letter.pdf"] if name in d.files %}
       <a class="button" href="/runs/{{ run.id }}/drafts/{{ d.iteration }}/{{ name }}">{{ "CV" if name == "cv.pdf" else "Cover letter" }} (PDF)</a>
     {% endfor %}
   </p>
+
   {% set violations = d.cv_report.violations + d.letter_report.violations %}
   {% set warnings = d.cv_report.warnings + d.letter_report.warnings %}
-  {% if violations %}
-    <p class="error">The fact check still found {{ violations | length }} problem(s) after {{ d.iteration }} draft(s):</p>
-    <ul>{% for v in violations %}<li>{{ v }}</li>{% endfor %}</ul>
-  {% else %}
-    <p><span class="outcome outcome-passed">fact check passed</span> Every bullet is backed by your CV.</p>
-  {% endif %}
+  {% set claims = d.get("claims", []) %}
+  {% set ats = d.get("ats") %}
+  {% set rec = d.get("recruiter") %}
+  <table>
+    <tbody>
+      <tr><td>Fact check</td>
+        <td>{% if violations %}<span class="outcome outcome-failed">{{ violations | length }} problem(s)</span>{% else %}<span class="outcome outcome-passed">passed</span>{% endif %}</td>
+        <td>{% if violations %}<ul>{% for v in violations %}<li>{{ v }}</li>{% endfor %}</ul>{% else %}Every statement cites your CV; numbers and skills come from it.{% endif %}</td></tr>
+      {% if ats is not none or claims %}
+      <tr><td>Claims check</td>
+        <td>{% if claims %}<span class="outcome outcome-failed">{{ claims | length }} problem(s)</span>{% elif violations %}<span class="outcome outcome-unknown">skipped</span>{% else %}<span class="outcome outcome-passed">passed</span>{% endif %}</td>
+        <td>{% if claims %}<ul>{% for c in claims %}<li><strong>{{ c.kind }}</strong>: “{{ c.text[:120] }}” — {{ c.explanation }}</li>{% endfor %}</ul>{% elif not violations %}No embellishments found.{% endif %}</td></tr>
+      {% endif %}
+      {% if ats %}
+      <tr><td>ATS</td>
+        <td><span class="outcome outcome-{{ 'passed' if ats.passed else 'failed' }}">{{ (ats.coverage * 100) | round | int }}% keywords</span></td>
+        <td>{{ ats.keywords_found | length }} of {{ (ats.keywords_found + ats.keywords_missing) | length }} required skills you have are visible.
+          {% if ats.keywords_missing %} Missing: {{ ats.keywords_missing | join(", ") }}.{% endif %}
+          {% for p in ats.parse_problems %}<br><span class="error">{{ p }}</span>{% endfor %}
+          {% if ats.stuffing %}<br>Repeated too often: {{ ats.stuffing | join(", ") }}.{% endif %}</td></tr>
+      {% endif %}
+      {% if rec %}
+      <tr><td>Recruiter</td>
+        <td><span class="outcome outcome-{{ 'passed' if d.get('accepted') else 'unknown' }}">{{ rec.average }}/5{% if rec.invite %} · invite{% endif %}</span></td>
+        <td>{{ rec.summary }}
+          <p class="muted">relevance {{ rec.relevance }} · keywords {{ rec.keywords }} · evidence {{ rec.evidence }} · clarity {{ rec.clarity }} · seniority {{ rec.seniority }}{% if rec.cover_letter %} · cover letter {{ rec.cover_letter }}{% endif %}</p>
+          {% if rec.feedback %}<ul>{% for f in rec.feedback %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
   {% if warnings %}<ul class="muted">{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+
   <details>
     <summary>Content with sources</summary>
     <p><strong>Profile:</strong> {{ d.cv.profile }} {{ fact_refs(d.cv.profile_fact_ids) }}</p>
-    {% for t in d.cv.titles %}
-      <h4>{{ t.title }} <span class="muted">({{ facts.get(t.position_id, t.position_id) }})</span></h4>
-      <ul>{% for b in d.cv.bullets if b.position_id == t.position_id %}<li>{{ b.text }} {{ fact_refs(b.fact_ids) }}</li>{% endfor %}</ul>
+    {% for t in d.cv.titles if (t.get("id") or t.get("position_id", "")).startswith("pos") %}
+      {% set tid = t.get("id") or t.position_id %}
+      <h4>{{ t.title }} <span class="muted">({{ facts.get(tid, tid) }})</span></h4>
+      <ul>{% for b in d.cv.bullets if b.position_id == tid %}<li>{{ b.text }} {{ fact_refs(b.fact_ids) }}</li>{% endfor %}</ul>
     {% endfor %}
     {% if d.letter %}
       <h4>Cover letter: {{ d.letter.subject }}</h4>
@@ -64,11 +93,20 @@
   </details>
   {% if drafts | length > 1 %}
   <details>
-    <summary>Earlier drafts</summary>
-    <ul>{% for e in drafts[:-1] %}
-      <li>Draft {{ e.iteration }}: {{ (e.cv_report.violations + e.letter_report.violations) | length }} problem(s) ·
-        {% for name in e.files %}<a href="/runs/{{ run.id }}/drafts/{{ e.iteration }}/{{ name }}">{{ name }}</a> {% endfor %}</li>
-    {% endfor %}</ul>
+    <summary>All drafts</summary>
+    <table>
+      <thead><tr><th>Draft</th><th>Fact</th><th>Claims</th><th>ATS</th><th>Recruiter</th><th>Files</th></tr></thead>
+      <tbody>{% for e in drafts %}
+        <tr{% if e.iteration == d.iteration %} class="current"{% endif %}>
+          <td>{{ e.iteration }}{% if e.iteration == d.iteration %} ✓{% endif %}</td>
+          <td>{{ (e.cv_report.violations + e.letter_report.violations) | length }}</td>
+          <td>{{ e.get("claims", []) | length }}</td>
+          <td>{% if e.get("ats") %}{{ (e.ats.coverage * 100) | round | int }}%{% endif %}</td>
+          <td>{% if e.get("recruiter") %}{{ e.recruiter.average }}{% else %}—{% endif %}</td>
+          <td>{% for name in e.files if name.endswith(".pdf") %}<a href="/runs/{{ run.id }}/drafts/{{ e.iteration }}/{{ name }}">{{ name }}</a> {% endfor %}</td>
+        </tr>
+      {% endfor %}</tbody>
+    </table>
   </details>
   {% endif %}
 </section>

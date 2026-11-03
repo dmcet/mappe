@@ -15,10 +15,20 @@ from application_crew.domain.author import AuthorCV, AuthorLetter
 from application_crew.domain.extraction import ExtractedCV
 from application_crew.domain.listing import ExtractedListing
 from application_crew.domain.match import MatchResult
+from application_crew.domain.review import ClaimsResult, RecruiterResult
 
 
 @pytest.mark.parametrize(
-    "model", [ExtractedCV, ExtractedListing, MatchResult, AuthorCV, AuthorLetter]
+    "model",
+    [
+        ExtractedCV,
+        ExtractedListing,
+        MatchResult,
+        AuthorCV,
+        AuthorLetter,
+        ClaimsResult,
+        RecruiterResult,
+    ],
 )
 def test_claude_facing_models_have_no_optional_fields(model):
     schema = json.dumps(transform_schema(TypeAdapter(model).json_schema()))

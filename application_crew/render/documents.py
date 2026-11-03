@@ -148,10 +148,10 @@ def _links(cv: ParsedCV) -> dict[str, str]:
 
 def cv_data(cv: ParsedCV, doc: AuthorCV, lang: str, translate_titles: bool) -> dict[str, Any]:
     labels = LABELS[lang]
-    titles = {t.position_id: t.title for t in doc.titles}
+    titles = {t.id: t.title for t in doc.titles} if translate_titles else {}
     positions = []
     for p in cv.positions:
-        title = titles.get(p.id) if translate_titles else None
+        title = titles.get(p.id)
         positions.append(
             {
                 "title": title or p.role,
@@ -183,7 +183,7 @@ def cv_data(cv: ParsedCV, doc: AuthorCV, lang: str, translate_titles: bool) -> d
         "education": [
             {
                 "institution": e.institution,
-                "degree": e.qualification,
+                "degree": titles.get(e.id) or e.qualification,
                 "location": e.location or "",
                 "dates": _dates(e.start, e.end, lang, ongoing=False),
             }
@@ -191,7 +191,8 @@ def cv_data(cv: ParsedCV, doc: AuthorCV, lang: str, translate_titles: bool) -> d
         ],
         "certifications": [
             {
-                "name": f"{c.name} ({c.abbreviation})" if c.abbreviation else c.name,
+                "name": f"{titles.get(c.id) or c.name}"
+                + (f" ({c.abbreviation})" if c.abbreviation else ""),
                 "issuer": c.issuer or "",
                 "date": str(c.year or ""),
             }

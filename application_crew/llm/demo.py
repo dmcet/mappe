@@ -13,8 +13,8 @@ from application_crew.domain.author import (
     AuthorCV,
     AuthorLetter,
     LetterParagraph,
-    PositionTitle,
     SkillGroup,
+    Title,
 )
 from application_crew.domain.extraction import (
     ExtractedCertification,
@@ -26,6 +26,7 @@ from application_crew.domain.extraction import (
 )
 from application_crew.domain.listing import ExtractedListing
 from application_crew.domain.match import Evidence, MatchResult, TransferableSkill
+from application_crew.domain.review import ClaimsResult, RecruiterResult
 
 
 def sample_cv(**overrides) -> ExtractedCV:
@@ -189,8 +190,10 @@ def demo_author_cv() -> AuthorCV:
         ),
         profile_fact_ids=["pos1", "pos2"],
         titles=[
-            PositionTitle(position_id="pos1", title="Senior Backend Engineer"),
-            PositionTitle(position_id="pos2", title="Backend Engineer"),
+            Title(id="pos1", title="Senior Backend Engineer"),
+            Title(id="pos2", title="Backend Engineer"),
+            Title(id="edu1", title="M.Sc. Informatik"),
+            Title(id="cert1", title="Certified Kubernetes Administrator"),
         ],
         bullets=[
             AuthorBullet(
@@ -240,6 +243,24 @@ def demo_author_letter() -> AuthorLetter:
     )
 
 
+def demo_claims() -> ClaimsResult:
+    return ClaimsResult(problems=[])
+
+
+def demo_recruiter() -> RecruiterResult:
+    return RecruiterResult(
+        relevance=4,
+        keywords=4,
+        evidence=4,
+        clarity=5,
+        seniority=4,
+        cover_letter=4,
+        invite=True,
+        summary="Clear backend profile with a concrete payments result; a good first call.",
+        feedback=[],
+    )
+
+
 def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
     if step == "parse_cv" and output is ExtractedCV:
         return demo_cv()
@@ -251,4 +272,8 @@ def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
         return demo_author_cv()
     if step == "author_letter" and output is AuthorLetter:
         return demo_author_letter()
+    if step == "claims_check" and output is ClaimsResult:
+        return demo_claims()
+    if step == "recruiter" and output is RecruiterResult:
+        return demo_recruiter()
     raise NotImplementedError(f"demo mode has no sample response for step '{step}'")

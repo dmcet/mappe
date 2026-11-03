@@ -1,17 +1,13 @@
-"""Authoring and review loop.
+"""AUTHORING: Claude writes the CV content (and the cover letter if chosen).
 
-AUTHORING: Claude writes the CV content (and the cover letter if chosen).
-REVIEWING: Python fact check + Typst rendering. Violations go back to AUTHORING with
-concrete feedback, up to ``review.max_iterations`` drafts. ATS and recruiter checks are
-added to REVIEWING in the next step.
+The first draft is written from scratch; later drafts rework the previous one using the
+feedback of the review step (see review.py). A document without feedback is reused.
 """
 
 from __future__ import annotations
 
 import json
-from datetime import date
 
-from application_crew.checks.facts import FactChecker, FactReport
 from application_crew.checks.skills import SkillAnalysis, SkillCoverage
 from application_crew.domain import match as match_render
 from application_crew.domain.author import AuthorCV, AuthorLetter
@@ -20,7 +16,6 @@ from application_crew.domain.models import ParsedCV, ParsedListing
 from application_crew.fetch.listing import detect_language
 from application_crew.llm import client
 from application_crew.llm.pricing import cost_usd
-from application_crew.render.documents import cv_data, letter_data, render_cv, render_letter
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
 from application_crew.steps.common import run_cv
@@ -66,11 +61,22 @@ def _context(cv: ParsedCV, listing: ParsedListing, match: MatchResult, analysis:
     )
 
 
-def _feedback(report: dict, previous: dict, what: str) -> str:
-    problems = "\n".join(f"- {v}" for v in report["violations"])
+def cv_feedback(draft: dict) -> list[str]:
+    # Drafts from before the review loop only have the fact-check report.
+    return draft.get("feedback_cv", draft["cv_report"]["violations"])
+
+
+def letter_feedback(draft: dict) -> list[str]:
+    return draft.get("feedback_letter", draft["letter_report"]["violations"])
+
+
+def _feedback(items: list[str], previous: dict, what: str) -> str:
+    problems = "\n".join(f"- {v}" for v in items)
     return (
         f"Rework your previous {what}. Fix every one of these problems and keep everything "
-        f"else unchanged:\n{problems}\n\n"
+        f"else unchanged. Items marked 'Recruiter:' are suggestions: apply them only as far "
+        f"as the CV facts support them, and never add scope, adoption or impact the facts "
+        f"don't state. The fact and claims problems always take precedence.\n{problems}\n\n"
         f"Previous {what} (JSON):\n{json.dumps(previous, ensure_ascii=False)}"
     )
 
@@ -96,10 +102,10 @@ async def author(ctx: StepContext) -> RunStatus:
     total_cost = 0.0
 
     # CV: first draft, or rework when the last review found problems with it.
-    if last is None or last["cv_report"]["violations"]:
+    if last is None or cv_feedback(last):
         task = f"{language}\nWrite the tailored CV content."
         if last is not None:
-            task = f"{language}\n" + _feedback(last["cv_report"], last["cv"], "CV draft")
+            task = f"{language}\n" + _feedback(cv_feedback(last), last["cv"], "CV draft")
         doc, usage = await client.structured(
             ctx.settings, step="author_cv", output=AuthorCV, stable_context=context, task=task
         )
@@ -110,12 +116,12 @@ async def author(ctx: StepContext) -> RunStatus:
 
     letter = None
     if wants_letter:
-        if last is None or last.get("letter") is None or last["letter_report"]["violations"]:
+        if last is None or last.get("letter") is None or letter_feedback(last):
             letter_context = f"{context}\n\n<tailored_cv>\n{doc.model_dump_json()}\n</tailored_cv>"
             task = f"{language}\nWrite the cover letter."
             if last is not None and last.get("letter") is not None:
                 task = f"{language}\n" + _feedback(
-                    last["letter_report"], last["letter"], "cover letter"
+                    letter_feedback(last), last["letter"], "cover letter"
                 )
             letter, usage = await client.structured(
                 ctx.settings,
@@ -143,63 +149,3 @@ async def author(ctx: StepContext) -> RunStatus:
     ctx.session.commit()
     ctx.emit("step_progress", f"draft {iteration} written")
     return RunStatus.REVIEWING
-
-
-@step(RunStatus.REVIEWING)
-async def review(ctx: StepContext) -> RunStatus:
-    run = ctx.run
-    cv = run_cv(ctx)
-    listing = ParsedListing.model_validate(run.state["listing"])
-    analysis = load_analysis(run.state["analysis"])
-    draft = run.state["draft"]
-    iteration, lang = draft["iteration"], draft["lang"]
-    doc = AuthorCV.model_validate(draft["cv"])
-    letter = AuthorLetter.model_validate(draft["letter"]) if draft["letter"] else None
-
-    checker = FactChecker(cv, analysis)
-    cv_report = checker.check_cv(doc)
-    letter_report = checker.check_letter(letter) if letter else FactReport()
-
-    out_dir = ctx.settings.runs_dir / str(run.id) / f"draft-{iteration}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    files = {}
-    data = cv_data(cv, doc, lang, translate_titles=cv_language(cv) != lang)
-    (out_dir / "cv.json").write_text(json.dumps(draft["cv"], ensure_ascii=False, indent=2))
-    result = render_cv(data, out_dir / "cv.pdf")
-    if not result.ok:
-        raise RuntimeError(f"CV rendering failed: {result.error}")
-    files["cv.pdf"] = "cv.pdf"
-    files["cv.json"] = "cv.json"
-    if letter:
-        ldata = letter_data(cv, listing, letter, lang, date.today())
-        (out_dir / "cover-letter.json").write_text(
-            json.dumps(draft["letter"], ensure_ascii=False, indent=2)
-        )
-        result = render_letter(ldata, out_dir / "cover-letter.pdf")
-        if not result.ok:
-            raise RuntimeError(f"Cover letter rendering failed: {result.error}")
-        files["cover-letter.pdf"] = "cover-letter.pdf"
-        files["cover-letter.json"] = "cover-letter.json"
-
-    entry = {
-        **draft,
-        "cv_report": {"violations": cv_report.violations, "warnings": cv_report.warnings},
-        "letter_report": {
-            "violations": letter_report.violations,
-            "warnings": letter_report.warnings,
-        },
-        "files": files,
-    }
-    # Idempotent on restart: a re-run of this step replaces its own entry.
-    previous = [d for d in run.state.get("drafts", []) if d["iteration"] != iteration]
-    run.state = run.state | {"drafts": [*previous, entry]}
-    ctx.session.add(run)
-    ctx.session.commit()
-
-    problems = len(cv_report.violations) + len(letter_report.violations)
-    ctx.emit("iteration_result", f"draft {iteration}: {problems} fact-check problem(s)")
-    for v in cv_report.violations + letter_report.violations:
-        ctx.emit("step_progress", v)
-    if problems and iteration < ctx.settings.review.max_iterations:
-        return RunStatus.AUTHORING
-    return RunStatus.WAITING_FOR_FINAL_REVIEW

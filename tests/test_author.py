@@ -88,6 +88,7 @@ def test_document_data_comes_from_the_cv():
     assert data["languages"] == "Deutsch (Muttersprache) · Englisch (C1)"  # translated for "de"
     assert data["contact"]["github"] == "github.com/janedoe"
     assert data["certifications"][0]["name"] == "Certified Kubernetes Administrator (CKA)"
+    assert data["education"][0]["degree"] == "M.Sc. Informatik"  # translated title used
 
     en = cv_data(cv, demo_author_cv(), "en", translate_titles=False)
     assert en["positions"][0]["dates"] == "04/2021 – Present"
@@ -211,3 +212,29 @@ def test_list_sections_render_one_entry_per_line(tmp_path):
     lines = pdf_to_text(tmp_path / "cv.pdf").splitlines()
     for a, b in [("Cert Alpha", "Cert Beta"), ("Uni One", "Uni Two")]:
         assert not any(a in line and b in line for line in lines), f"{a} and {b} on one line"
+
+
+def test_multi_word_missing_skills_are_left_to_the_claims_check():
+    cv = to_parsed_cv(make_extracted())
+    listing = merge_listing(
+        demo_listing().model_copy(update={"required_skills": ["Python", "AI agents", "Kafka"]}),
+        None,
+        "en",
+    )
+    checker = FactChecker(cv, analyze_skills(cv, listing, TODAY))
+    assert "Kafka" in checker.forbidden and "AI agents" not in checker.forbidden
+    assert checker.unverified_terms == ["AI agents"]
+    doc = demo_author_cv().model_copy(
+        update={"profile": "Backend engineer who works with AI agents and Kafka."}
+    )
+    violations = checker.check_cv(doc).violations
+    assert any("'Kafka'" in v for v in violations)
+    assert not any("AI agents" in v for v in violations)
+
+
+def test_old_drafts_with_position_titles_still_load():
+    from application_crew.domain.author import AuthorCV
+
+    data = demo_author_cv().model_dump()
+    data["titles"] = [{"position_id": "pos1", "title": "Engineer"}]
+    assert AuthorCV.model_validate(data).titles[0].id == "pos1"

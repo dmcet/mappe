@@ -130,7 +130,10 @@ def test_run_stops_on_must_have_and_can_be_declined_or_continued(client):
     client.post(f"{run_url}/apply", data={})  # unchecked -> no cover letter
     page = wait_for(client, run_url, "waiting_for_final_review", timeout=20)
     assert "You decided to apply." in page.text
-    assert "fact check passed" in page.text
+    assert "Every statement cites your CV" in page.text
+    assert "No embellishments found." in page.text
+    assert "4.2/5 · invite" in page.text  # no cover letter: its score is ignored
+    assert "all checks passed" in page.text
     pdf = client.get(f"{run_url}/drafts/1/cv.pdf")
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
     assert client.get(f"{run_url}/drafts/1/cover-letter.pdf").status_code == 404

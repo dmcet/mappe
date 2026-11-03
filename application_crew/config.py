@@ -23,7 +23,7 @@ class StepLLMConfig:
 class ReviewConfig:
     max_iterations: int = 4
     stop_after_no_improvement: int = 2
-    recruiter_pass_score: float = 4.0
+    recruiter_pass_score: float = 3.5
     cost_limit_usd: float = 2.0
 
 

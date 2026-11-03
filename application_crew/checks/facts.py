@@ -7,7 +7,8 @@ Rules:
 2. Every number in a bullet appears in the facts it cites. Profile and cover letter may use
    numbers from anywhere in the CV, and the years of experience computed by Python.
 3. Every listed skill exists in the CV (skills section or a position's technologies).
-4. Listing skills the CV doesn't have must not be mentioned anywhere.
+4. Single-word listing skills the CV doesn't have must not be mentioned anywhere
+   (multi-word terms are left to the claims check, which can judge paraphrases).
 """
 
 from __future__ import annotations
@@ -99,11 +100,18 @@ class FactChecker:
         self.global_numbers = all_fact_numbers | self.free_numbers | _experience_numbers(analysis)
         cv_text = " ".join(self.texts.values())
         # Missing listing skills that the CV text doesn't mention under the same name either.
-        self.forbidden = [
-            c.skill
-            for c in analysis.coverage
-            if c.coverage == "missing" and not _mentions(c.skill, cv_text)
-        ]
+        # Single-word names (Kafka, Dagger, NodeJS) are banned outright. Multi-word terms
+        # ("AI agents", "Background Services") may be described in other words or another
+        # language, so the claims check judges them instead.
+        missing = list(
+            dict.fromkeys(
+                c.skill
+                for c in analysis.coverage
+                if c.coverage == "missing" and not _mentions(c.skill, cv_text)
+            )
+        )
+        self.forbidden = [s for s in missing if len(s.split()) == 1]
+        self.unverified_terms = [s for s in missing if len(s.split()) > 1]
 
     # --- shared rules ---
 

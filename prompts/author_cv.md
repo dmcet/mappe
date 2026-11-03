@@ -21,7 +21,7 @@ Bullets:
 - Quantify only with numbers that are in the cited facts.
 - One line to two lines each. No first person.
 
-Titles: one entry per position, the job title in the document language. If the document language is the CV's language, copy the title unchanged.
+Titles: one entry per position (`pos…`), education entry (`edu…`) and certification (`cert…`), with the job title, degree or certification name in the document language. If the document language is the CV's language, copy them unchanged. Translate degree names the usual way (e.g. "M.Sc. Informatik" → "M.Sc. Computer Science") and keep official certification names that are already in English.
 
 Skills: 3-5 groups with clear category names (e.g. "Languages & Frameworks", "Architecture & Methods", "Tools"). Only skill names that appear in the CV, spelled as in the CV. Listing-relevant skills first. Leave out skills the CV marks as basic unless the listing asks for them. Don't list soft skills here.
 

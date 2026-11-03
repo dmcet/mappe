@@ -7,7 +7,9 @@ Nesting stays at two levels (document -> bullet -> fact IDs); no optional fields
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from typing import Any
+
+from pydantic import BaseModel, Field, model_validator
 
 
 class AuthorBullet(BaseModel):
@@ -16,9 +18,21 @@ class AuthorBullet(BaseModel):
     fact_ids: list[str] = Field(description="IDs of the CV facts this bullet is based on")
 
 
-class PositionTitle(BaseModel):
-    position_id: str
-    title: str = Field(description="Job title in the document language")
+class Title(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def _from_position_title(cls, value: Any) -> Any:
+        # Drafts written before education/certification titles used "position_id".
+        if isinstance(value, dict) and "id" not in value and "position_id" in value:
+            return {"id": value["position_id"], "title": value.get("title", "")}
+        return value
+
+    id: str = Field(
+        description="A position ('pos1'), education ('edu1') or certification ('cert1') ID"
+    )
+    title: str = Field(
+        description="Job title, degree or certification name in the document language"
+    )
 
 
 class SkillGroup(BaseModel):
@@ -29,7 +43,9 @@ class SkillGroup(BaseModel):
 class AuthorCV(BaseModel):
     profile: str = Field(description="2-3 sentences: target role, years of experience, top skills")
     profile_fact_ids: list[str]
-    titles: list[PositionTitle] = Field(description="One entry per position, in CV order")
+    titles: list[Title] = Field(
+        description="One entry per position, education entry and certification, in CV order"
+    )
     bullets: list[AuthorBullet] = Field(description="Grouped by position, most relevant first")
     skill_groups: list[SkillGroup]
     extra: list[AuthorBullet] = Field(
