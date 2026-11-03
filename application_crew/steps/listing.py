@@ -14,10 +14,13 @@ from application_crew.llm import client
 from application_crew.llm.pricing import cost_usd
 from application_crew.runner.engine import StepContext, step
 from application_crew.runner.states import RunStatus
+from application_crew.steps.common import run_cv
 
 
 @step(RunStatus.CREATED)
 async def start(ctx: StepContext) -> RunStatus:
+    # Snapshot the parsed CV: re-parsing the CV later must not change this run's fact IDs.
+    run_cv(ctx)
     if ctx.run.listing_text:
         return RunStatus.PARSING_LISTING
     return RunStatus.FETCHING_LISTING

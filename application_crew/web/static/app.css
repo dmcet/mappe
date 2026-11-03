@@ -63,3 +63,9 @@ label.check input { width: auto; margin: 0; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
 blockquote { margin: 4px 0 0; padding-left: 8px; border-left: 3px solid var(--border); color: var(--muted); }
+.verdict h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.verdict .score { font-family: ui-monospace, monospace; font-size: 1rem; color: var(--muted); }
+.verdict-apply { border-left: 4px solid #1a7f37; }
+.verdict-consider { border-left: 4px solid #d4a017; }
+.verdict-dont_apply { border-left: 4px solid var(--error); }
+code.fact { margin-left: 4px; padding: 0 4px; border: 1px solid var(--border); border-radius: 4px; cursor: help; }

@@ -3,8 +3,10 @@ from sqlmodel import Session, select
 import application_crew.steps  # noqa: F401 - registers steps
 from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
 from application_crew.db import CV, Event, Run, init_engine
+from application_crew.domain.extraction import to_parsed_cv
 from application_crew.runner.engine import Engine
 from application_crew.runner.states import CVStatus, RunStatus
+from tests.conftest import make_extracted
 
 LISTING = "Wir suchen eine Senior Python Developerin. Wir bieten 30 Urlaubstage und ein Jobrad."
 
@@ -12,7 +14,8 @@ LISTING = "Wir suchen eine Senior Python Developerin. Wir bieten 30 Urlaubstage 
 def make_run(tmp_path, requirements=()):
     db = init_engine(f"sqlite:///{tmp_path / 'test.db'}")
     with Session(db) as session:
-        cv = CV(label="test", markdown="# Jane Doe", status=CVStatus.CONFIRMED)
+        parsed = to_parsed_cv(make_extracted()).model_dump(mode="json")
+        cv = CV(label="test", markdown="# Jane Doe", status=CVStatus.CONFIRMED, parsed=parsed)
         session.add(cv)
         session.commit()
         run = Run(cv_id=cv.id, listing_text=LISTING, requirements=list(requirements))
@@ -30,9 +33,10 @@ async def test_listing_is_parsed_and_checked_until_matching(tmp_path, fake_llm):
 
     with Session(db) as session:
         run = session.get(Run, run_id)
-        # Matching isn't implemented yet, so the run stops there.
-        assert run.status == RunStatus.FAILED
-        assert "matching" in run.error
+        assert run.status == RunStatus.WAITING_FOR_APPLY_DECISION
+        assert run.state["match"]["verdict"] == "apply"
+        assert run.state["analysis"]["required_total"] == 4
+        assert run.state["cv"]["positions"][0]["id"] == "pos1"  # snapshot taken at start
         assert run.state["listing"]["language"] == "de"
         assert run.state["listing"]["title"] == "Senior Python Developer (m/w/d)"
         assert run.state["requirement_results"][0]["outcome"] == "unknown"

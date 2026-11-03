@@ -17,6 +17,7 @@ from application_crew.domain.extraction import (
     ExtractedSkill,
 )
 from application_crew.domain.listing import ExtractedListing
+from application_crew.domain.match import Evidence, MatchResult, TransferableSkill
 
 
 def sample_cv(**overrides) -> ExtractedCV:
@@ -134,9 +135,48 @@ def demo_listing() -> ExtractedListing:
     )
 
 
+def demo_match() -> MatchResult:
+    """Uses fact IDs of the demo CV (sample_cv)."""
+    return MatchResult(
+        verdict="apply",
+        score=78,
+        rationale=(
+            "Your Python backend experience and ownership of a payments API match the core of "
+            "this role. Kubernetes is only listed at a basic level, and FastAPI isn't named in "
+            "your CV, but both are close to what you already do. Salary and hybrid model fit "
+            "your requirements."
+        ),
+        strengths=[
+            Evidence(point="Owns a production payments API in Python", fact_ids=["pos1.resp1"]),
+            Evidence(
+                point="Measurable performance work (p99 latency -40%)", fact_ids=["pos1.ach1"]
+            ),
+        ],
+        gaps=["FastAPI not named in the CV", "Kubernetes only at basic level", "No Kafka"],
+        transferable=[
+            TransferableSkill(
+                missing="FastAPI",
+                related_experience="Several years of Python API development",
+                fact_ids=["pos1.resp1"],
+            )
+        ],
+        highlights=[
+            Evidence(
+                point="Lead with the payments API and its latency result",
+                fact_ids=["pos1.resp1", "pos1.ach1"],
+            ),
+            Evidence(
+                point="Show data pipeline work for the platform side", fact_ids=["pos2.resp1"]
+            ),
+        ],
+    )
+
+
 def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
     if step == "parse_cv" and output is ExtractedCV:
         return demo_cv()
     if step == "parse_listing" and output is ExtractedListing:
         return demo_listing()
+    if step == "match" and output is MatchResult:
+        return demo_match()
     raise NotImplementedError(f"demo mode has no sample response for step '{step}'")

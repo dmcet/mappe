@@ -122,7 +122,14 @@ def test_run_stops_on_must_have_and_can_be_declined_or_continued(client):
     run_url = str(client.post("/runs", data=form).url.path)
     wait_for(client, run_url, "stopped_by_requirements")
     client.post(f"{run_url}/continue")
-    wait_for(client, run_url, "step &#39;matching&#39; not implemented")
+    page = wait_for(client, run_url, "waiting_for_apply_decision")
+    assert "78/100" in page.text
+    assert 'title="Senior Backend Engineer · Acme GmbH: Own the payments API"' in page.text
+    assert 'name="cover_letter" checked' in page.text  # German listing -> suggested
+
+    client.post(f"{run_url}/apply", data={})  # unchecked -> no cover letter
+    page = wait_for(client, run_url, "step &#39;authoring&#39; not implemented")
+    assert "You decided to apply." in page.text
 
 
 def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):

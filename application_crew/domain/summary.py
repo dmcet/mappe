@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from application_crew.checks.completeness import parse_month
-from application_crew.domain.models import ParsedCV
+from application_crew.domain.models import ParsedCV, Position
 
 
 @dataclass(frozen=True)
@@ -22,10 +22,15 @@ class CVSummary:
 
 
 def experience_months(cv: ParsedCV, today: date | None = None) -> int:
-    """Total months covered by positions, merging overlaps."""
+    """Total months covered by the CV's positions, merging overlaps."""
+    return merged_months(cv.positions, today)
+
+
+def merged_months(positions: list[Position], today: date | None = None) -> int:
+    """Months covered by ``positions``, counting overlapping periods once."""
     today = today or date.today()
     spans = []
-    for p in cv.positions:
+    for p in positions:
         start = parse_month(p.start)
         if start is None:
             continue

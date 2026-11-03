@@ -22,6 +22,7 @@ import application_crew.steps  # noqa: F401 - registers steps
 from application_crew.checks.completeness import check_cv
 from application_crew.config import get_settings
 from application_crew.db import CV, Event, Run, get_engine, get_session, init_engine
+from application_crew.domain.match import MatchResult
 from application_crew.domain.models import ParsedCV, ParsedListing, RequirementResult
 from application_crew.domain.summary import summarize
 from application_crew.render.typst import typst_available
@@ -219,6 +220,25 @@ async def create_runs(
     return RedirectResponse("/", status_code=303)
 
 
+def _fact_texts(cv_data: dict | None) -> dict[str, str]:
+    """Fact ID -> short label, so the UI can show what a fact ID refers to."""
+    if not cv_data:
+        return {}
+    cv = ParsedCV.model_validate(cv_data)
+    texts = {}
+    for p in cv.positions:
+        texts[p.id] = f"{p.role} · {p.company}"
+        for f in p.responsibilities + p.achievements:
+            texts[f.id] = f"{p.role} · {p.company}: {f.text}"
+    for e in cv.education:
+        texts[e.id] = f"{e.qualification}, {e.institution}"
+    for c in cv.certifications:
+        texts[c.id] = c.name
+    for f in cv.projects + cv.publications + cv.volunteering:
+        texts[f.id] = f.text
+    return texts
+
+
 def _get_run(session: Session, run_id: int) -> Run:
     run = session.get(Run, run_id)
     if run is None:
@@ -248,6 +268,10 @@ def run_detail(request: Request, run_id: int, session: SessionDep) -> HTMLRespon
         "results": [
             RequirementResult.model_validate(r) for r in run.state.get("requirement_results", [])
         ],
+        "match": MatchResult.model_validate(run.state["match"]) if "match" in run.state else None,
+        "analysis": run.state.get("analysis"),
+        "match_warnings": run.state.get("match_warnings", []),
+        "facts": _fact_texts(run.state.get("cv")),
     }
     return templates.TemplateResponse(request, "run.html", context)
 
@@ -267,6 +291,17 @@ def submit_listing_text(
 def continue_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
     """Override failed must-have requirements and continue with matching."""
     return _resume(request, session, _get_run(session, run_id), RunStatus.MATCHING)
+
+
+@app.post("/runs/{run_id}/apply")
+async def apply_run(request: Request, run_id: int, session: SessionDep) -> RedirectResponse:
+    """The user decided to apply: record the cover-letter choice and start authoring."""
+    run = _get_run(session, run_id)
+    if run.status != RunStatus.WAITING_FOR_APPLY_DECISION:
+        raise HTTPException(409, "Run is not waiting for an apply decision")
+    form = await request.form()
+    run.state = run.state | {"decision": {"cover_letter": form.get("cover_letter") == "on"}}
+    return _resume(request, session, run, RunStatus.AUTHORING)
 
 
 @app.post("/runs/{run_id}/decline")

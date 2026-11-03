@@ -2,7 +2,7 @@ import pytest
 
 from application_crew.domain.extraction import ExtractedCV
 from application_crew.llm.client import Usage
-from application_crew.llm.demo import demo_listing, sample_cv
+from application_crew.llm.demo import demo_listing, demo_match, sample_cv
 
 make_extracted = sample_cv
 
@@ -31,6 +31,6 @@ def fake_llm(monkeypatch):
 
     fake = Fake()
     fake.calls = []
-    fake.results = {"parse_listing": demo_listing()}
+    fake.results = {"parse_listing": demo_listing(), "match": demo_match()}
     monkeypatch.setattr("application_crew.llm.client.structured", fake.structured)
     return fake

@@ -13,9 +13,10 @@ from pydantic import TypeAdapter
 
 from application_crew.domain.extraction import ExtractedCV
 from application_crew.domain.listing import ExtractedListing
+from application_crew.domain.match import MatchResult
 
 
-@pytest.mark.parametrize("model", [ExtractedCV, ExtractedListing])
+@pytest.mark.parametrize("model", [ExtractedCV, ExtractedListing, MatchResult])
 def test_claude_facing_models_have_no_optional_fields(model):
     schema = json.dumps(transform_schema(TypeAdapter(model).json_schema()))
     assert "anyOf" not in schema
