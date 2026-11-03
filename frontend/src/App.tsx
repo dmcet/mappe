@@ -7,6 +7,7 @@ import { Cvs } from "./pages/Cvs";
 import { Dashboard } from "./pages/Dashboard";
 import { EditPage } from "./pages/EditPage";
 import { RunPage } from "./pages/run/RunPage";
+import { SearchPage } from "./pages/Search";
 
 export function App() {
   return (
@@ -15,6 +16,7 @@ export function App() {
         <Shell>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/search" element={<SearchPage />} />
             <Route path="/cvs" element={<Cvs />} />
             <Route path="/cvs/:id" element={<CvDetailPage />} />
             <Route path="/runs/:id" element={<RunPage />} />

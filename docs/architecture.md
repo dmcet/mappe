@@ -12,6 +12,7 @@ Companion to [requirements.md](requirements.md). This document records the techn
 | D4 | Web UI | React + TypeScript (Vite) SPA with performative-ui (MIT), served by FastAPI; JSON API under `/api`, one SSE stream (`/api/stream`) for live status, costs and change notifications | A live status indicator and an always-visible cost meter need a real client; the SSE stream avoids polling. The frontend is built in a Node stage of the Docker build, so the container stays self-contained. |
 | D10 | Migrations | Alembic, run at startup; databases from before migrations are stamped at the baseline revision | Schema changes no longer need a fresh volume. |
 | D11 | Cost tracking | Usage ledger: one row per Claude call (model, step, tokens, cost), kept when runs or CVs are deleted | Exact cost per model, step, run and day; the header shows today's and total spend. |
+| D12 | Job search | Free job APIs (Bundesagentur, Arbeitnow, Remotive, Jobicy, Remote OK, Adzuna), queried in parallel; dedupe, requirement/area filter and ranking (skill overlap, title fit, freshness) in Python; **no Claude calls** | Searching hundreds of listings with Claude would cost per listing; keyword ranking against the parsed CV is good enough to pick candidates, and the existing match step judges the chosen ones. Details: [job-search-plan.md](job-search-plan.md). |
 | D5 | Rendering | **Typst**; CV via RenderCV-based single-column template, cover letter via a DIN 5008 Typst template | Small image, fast compiles, readable errors, ATS-friendly single-column layouts. |
 | D6 | LLM output | Claude produces **content** as flat Pydantic models (`client.messages.parse()` structured outputs), never markup | No syntax/escaping errors; deterministic checks on fixed structure. |
 | D7 | Listing fetch | `httpx` → JSON-LD `JobPosting` (`extruct`) → `trafilatura` main text → paste fallback in UI | Covers career pages/ATS portals (Personio, Greenhouse, Workday, ...) cheaply; no headless browser in v1. Playwright can be added later if needed. |
@@ -34,7 +35,8 @@ Companion to [requirements.md](requirements.md). This document records the techn
 │   ├── domain/     Pydantic models (CV, Listing, Match, Draft, Reports)   │
 │   ├── checks/     fact check, ATS rules, requirement checks              │
 │   ├── render/     Typst templates + compile wrapper                      │
-│   └── fetch/      HTTP fetch, JSON-LD, text extraction, language detect  │
+│   ├── fetch/      HTTP fetch, JSON-LD, text extraction, language detect  │
+│   └── search/     job APIs, query building, dedupe, ranking (no Claude)  │
 │                                                                          │
 │  Binaries: typst, pdftotext (poppler-utils)                              │
 └──────────────────────────────┬───────────────────────────────────────────┘
@@ -144,7 +146,7 @@ Translation (English CV → German listing) is allowed; rules 2–4 work on numb
 
 ```
 application_crew/
-  web/ runner/ steps/ llm/ domain/ checks/ render/ fetch/
+  web/ runner/ steps/ llm/ domain/ checks/ render/ fetch/ search/
   templates/          # Jinja2 (UI)
   typst/              # CV + cover letter templates (open source, licenses kept)
   prompts/            # one prompt file per Claude step

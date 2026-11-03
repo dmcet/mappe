@@ -6,6 +6,9 @@ import type {
   Requirement,
   RunDetail,
   RunSummary,
+  SearchDetail,
+  SearchSource,
+  SearchSummary,
 } from "./types";
 
 export class ApiError extends Error {
@@ -79,6 +82,25 @@ export const api = {
   deleteRun: (id: number) => request<void>("DELETE", `/api/runs/${id}`),
 
   costs: () => request<CostSummary>("GET", "/api/costs"),
+
+  searchSuggestions: (cvId: number) =>
+    request<{ titles: string[]; sources: SearchSource[] }>(
+      "GET",
+      `/api/search/suggestions?cv_id=${cvId}`,
+    ),
+  searches: () => request<SearchSummary[]>("GET", "/api/searches"),
+  search: (id: number) => request<SearchDetail>("GET", `/api/searches/${id}`),
+  createSearch: (body: {
+    cv_id: number;
+    titles: string[];
+    requirements: Requirement[];
+    sources: string[];
+  }) => request<SearchDetail>("POST", "/api/searches", body),
+  deleteSearch: (id: number) => request<void>("DELETE", `/api/searches/${id}`),
+  dismissHit: (id: number) => request<{ status: string }>("POST", `/api/job-hits/${id}/dismiss`),
+  restoreHit: (id: number) => request<{ status: string }>("POST", `/api/job-hits/${id}/restore`),
+  applyHits: (searchId: number, hitIds: number[]) =>
+    request<RunSummary[]>("POST", `/api/searches/${searchId}/apply`, { hit_ids: hitIds }),
 };
 
 export const files = {

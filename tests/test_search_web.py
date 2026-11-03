@@ -1,6 +1,7 @@
 """Search API end to end, with the job APIs replaced by their recorded responses."""
 
 import json
+from datetime import date
 
 import httpx
 import pytest
@@ -163,3 +164,26 @@ def test_deleting_the_cv_deletes_its_searches(client, job_apis):
     data = search(client, cv_id, sources=["ba"])
     assert client.delete(f"/api/cvs/{cv_id}").status_code == 204
     assert client.get(f"/api/searches/{data['id']}").status_code == 404
+
+
+def test_demo_mode_uses_samples_dated_as_of_today(client, monkeypatch):
+    from application_crew.config import get_settings
+
+    cv_id = confirmed_cv(client)
+    monkeypatch.setenv("APP_DEMO", "1")
+    get_settings.cache_clear()
+    requests = []
+
+    def no_network(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(500)
+
+    monkeypatch.setattr(
+        "application_crew.search.service.make_client",
+        lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(no_network)),
+    )
+    data = search(client, cv_id, sources=["ba", "adzuna"])
+    assert data["sources"]["ba"]["count"] > 0 and data["sources"]["adzuna"]["error"] is None
+    newest = max(r["hit"]["posted_at"] for r in data["results"])
+    assert newest == date.today().isoformat()
+    assert requests == []  # demo mode never calls the job APIs

@@ -63,6 +63,9 @@ def client(tmp_path, monkeypatch, fake_llm):
     from application_crew.web.app import app
 
     monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
+    # Independent of the shell: no demo mode, no optional job source keys.
+    for name in ("APP_DEMO", "ADZUNA_APP_ID", "ADZUNA_APP_KEY"):
+        monkeypatch.delenv(name, raising=False)
     get_settings.cache_clear()
 
     with TestClient(app) as c:

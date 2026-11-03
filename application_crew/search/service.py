@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import httpx
 from sqlmodel import Session, col, delete, select
@@ -75,6 +75,17 @@ def build_query(settings: Settings, titles: list[str], reqs: list[Requirement]) 
     )
 
 
+def _as_of_today(hits: list[JobHit]) -> list[JobHit]:
+    """Demo samples were recorded once; shift their dates so the newest one is today."""
+    dates = [h.posted_at for h in hits if h.posted_at]
+    if not dates:
+        return hits
+    shift = date.today() - max(dates)
+    return [
+        h.model_copy(update={"posted_at": h.posted_at + shift}) if h.posted_at else h for h in hits
+    ]
+
+
 async def _run_source(
     source: Source, client: httpx.AsyncClient, query: SearchQuery, settings: Settings
 ) -> SourceStatus:
@@ -90,6 +101,8 @@ async def _run_source(
             )
         for payload in payloads:
             status.hits += source.parse(payload)
+        if settings.demo:
+            status.hits = _as_of_today(status.hits)
         status.count = len({h.external_id for h in status.hits})
     except TimeoutError:
         status.error = "timed out"

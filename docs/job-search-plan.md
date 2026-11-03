@@ -1,7 +1,23 @@
 # Job search: plan
 
 Find job listings that fit a confirmed CV, rank them without AI costs, and turn the ones the
-user picks into applications. Status: plan, branch `feat/job-search`.
+user picks into applications. Status: phases 1 and 2 implemented on branch `feat/job-search`.
+
+**Changes during implementation:**
+- Query chips are a plain "one title per line" field; places and remote-only come from the
+  requirements form, so there is one place to enter cities.
+- `RunCreate` is unchanged: `POST /api/searches/{id}/apply` creates the runs itself (URL plus
+  text when the source has the full listing).
+- New filter "outside your area": onsite/hybrid hits from sources that can't search by place
+  (Arbeitnow, the remote boards) are hidden when their location isn't one of the searched
+  cities, or, without cities, when it names a place abroad. Bundesagentur and Adzuna search
+  around the cities themselves (radius) and are exempt.
+- Bundesagentur's `homeofficemoeglich: false` is treated as *unknown*, not onsite: it's often
+  just an unticked box, and unknown must never fail a must-have.
+- Hits from Bundesagentur use the employer's page (`externeURL`, ~1/3 of hits) as the
+  application URL when given; otherwise the BA detail page (likely the paste gate).
+- Skill score scales with the CV: full marks at matched weight 6 or 60 % of the CV's total,
+  whichever is lower, so short CVs aren't penalised.
 
 ## 1. Goals and non-goals
 

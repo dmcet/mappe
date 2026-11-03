@@ -323,3 +323,82 @@ export interface EditData {
   cv: ParsedCV;
   title: string;
 }
+
+// ---------- job search ----------
+
+export type HiddenReason = "dismissed" | "requirements" | "elsewhere" | "low_score";
+
+export interface SearchSource {
+  key: string;
+  label: string;
+  home: string;
+  remote_only: boolean;
+  default: boolean;
+  missing_env: string[];
+}
+
+export interface SourceStatus {
+  label: string;
+  count: number;
+  error: string | null;
+  seconds: number;
+}
+
+export interface JobHit {
+  id: number;
+  status: "new" | "dismissed" | "applied";
+  run_id: number | null;
+  source: string;
+  source_label: string;
+  source_home: string | null;
+  full_text: boolean;
+  first_seen_at: string;
+  url: string;
+  view_url: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  remote: "remote" | "hybrid" | "onsite" | null;
+  onsite_days_per_week: number | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  salary_period: "year" | "month" | "hour" | null;
+  tags: string[];
+  posted_at: string | null;
+  also_on: string[];
+  excerpt: string;
+}
+
+export interface SearchResultItem {
+  score: number;
+  reasons: {
+    score: number;
+    matched_skills: string[];
+    title_fit: number;
+    basis: "description" | "title only";
+    hidden: HiddenReason | null;
+    notes: string[];
+  };
+  hidden: HiddenReason | null;
+  is_new: boolean;
+  hit: JobHit;
+}
+
+export interface SearchSummary {
+  id: number;
+  cv_id: number;
+  titles: string[];
+  places: string[];
+  remote_only: boolean;
+  created_at: string;
+  total: number;
+  shown: number;
+  new: number;
+}
+
+export interface SearchDetail extends SearchSummary {
+  requirements: Requirement[];
+  sources: Record<string, SourceStatus>;
+  results: SearchResultItem[];
+}
