@@ -1,6 +1,6 @@
-import { GradientText, WibblingSpinner } from "performative-ui";
+import { Button, GradientText, WibblingSpinner } from "performative-ui";
 import { useNavigate, useParams } from "react-router";
-import { api } from "../../api";
+import { api, files } from "../../api";
 import { Pipeline } from "../../components/Pipeline";
 import { ConfirmButton, ErrorNote, Section, StatusBadge } from "../../components/ui";
 import { duration, modelName, usd } from "../../format";
@@ -38,17 +38,30 @@ export function RunPage() {
             <span className="mono">{usd(data.cost_usd)}</span>
           </p>
         </div>
-        {!working && (
-          <ConfirmButton
-            label="Delete"
-            title="Delete this application?"
-            body={<p>All drafts and files of this application will be deleted. Its costs stay in the cost history.</p>}
-            onConfirm={async () => {
-              await api.deleteRun(id);
-              navigate("/");
-            }}
-          />
-        )}
+        <div className="panel__actions">
+          {data.state.match && (
+            <Button
+              as="a"
+              href={files.runExport(id)}
+              variant="ghost"
+              size="sm"
+              title="ZIP to pass on: a report with the assessment and review, plus the CV and cover letter"
+            >
+              Export ZIP
+            </Button>
+          )}
+          {!working && (
+            <ConfirmButton
+              label="Delete"
+              title="Delete this application?"
+              body={<p>All drafts and files of this application will be deleted. Its costs stay in the cost history.</p>}
+              onConfirm={async () => {
+                await api.deleteRun(id);
+                navigate("/");
+              }}
+            />
+          )}
+        </div>
       </div>
 
       <Section className="pipeline-panel">

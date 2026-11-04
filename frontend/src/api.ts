@@ -114,4 +114,11 @@ export const files = {
     `/api/runs/${run}/drafts/${iteration}/${name}`,
   final: (run: number, name: string) => `/api/runs/${run}/final/${encodeURIComponent(name)}`,
   bundle: (run: number) => `/api/runs/${run}/bundle.zip`,
+  /** PDF of the search list: the listings shown, plus the hidden reasons in ``show``. */
+  searchExport: (search: number, show: string[] = []) =>
+    `/api/searches/${search}/export.pdf${show.length ? `?show=${show.join(",")}` : ""}`,
+  /** ZIP: one report (list + each application's reasoning), plus every CV and cover letter. */
+  searchArchive: (search: number, show: string[] = []) =>
+    `/api/searches/${search}/export.zip${show.length ? `?show=${show.join(",")}` : ""}`,
+  runExport: (run: number) => `/api/runs/${run}/export.zip`,
 };

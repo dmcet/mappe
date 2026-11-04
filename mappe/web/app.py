@@ -19,7 +19,7 @@ from mappe.db import init_engine
 from mappe.render.typst import typst_available
 from mappe.runner.engine import Engine
 from mappe.search import semantic
-from mappe.web import cvs, live, runs, search
+from mappe.web import cvs, export, live, runs, search
 
 log = logging.getLogger(__name__)
 FRONTEND_DIR = Path(os.environ.get("APP_FRONTEND_DIR", PROJECT_ROOT / "frontend" / "dist"))
@@ -51,6 +51,7 @@ app.include_router(cvs.router)
 app.include_router(runs.router)
 app.include_router(live.router)
 app.include_router(search.router)
+app.include_router(export.router)
 
 
 @app.get("/health")
