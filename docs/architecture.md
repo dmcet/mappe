@@ -51,7 +51,7 @@ Each run (one job listing) is a row with a `status` and a JSON state blob. Every
 
 ```
 created
-  → fetching_listing ──(fetch failed)──→ waiting_for_listing_text [user gate]
+  → fetching_listing ──(fetch failed, timeout, abort)──→ waiting_for_listing_text [user gate]
   → parsing_listing
   → checking_requirements ──(must-have failed)──→ stopped_by_requirements [user may override]
   → matching
@@ -75,7 +75,7 @@ All steps default to `claude-opus-5-5`; effort is set explicitly per step (Opus 
 |---|---|---|---|
 | Parse CV | Markdown pre-split into sections, completeness check, fact ID assignment | Extract fields into `ParsedCV` | `low` |
 | Suggest roles (after CV confirmation) | Compact CV with fact IDs, computed years, titles already searched; drop suggestions with unknown fact IDs, duplicates of searched titles, more than 6 | Alternative roles (next step or neighbouring field) with reason and fact IDs; Sonnet | `low` |
-| Fetch listing | HTTP, JSON-LD, text extraction, language detection (`lingua`) | — | — |
+| Fetch listing | HTTP, JSON-LD, text extraction, language detection (`lingua`); one total timeout and a size cap (`[fetch]`), extraction in a thread; **Abort** in the UI (in-memory event, `runner/aborts.py`) | — | — |
 | Parse listing | Map JSON-LD fields directly when present | Extract remaining fields into `ParsedListing` | `low` |
 | Requirements | Must-have / nice-to-have checks (salary, onsite days, remote, location keywords) | Fuzzy items only (e.g. "benefit X mentioned?") folded into listing parse | — |
 | Match | Skill normalization + overlap, years of experience per skill | Transferable skills, verdict, score, highlight points | `high` |

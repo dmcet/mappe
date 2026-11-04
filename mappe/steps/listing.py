@@ -13,7 +13,7 @@ from mappe.fetch.listing import detect_language, fetch_listing
 from mappe.llm import client
 from mappe.llm.client import Block, instructions
 from mappe.llm.pricing import cost_usd
-from mappe.runner import activity
+from mappe.runner import aborts, activity
 from mappe.runner.engine import StepContext, step
 from mappe.runner.states import RunStatus
 from mappe.steps.common import run_cv
@@ -36,7 +36,14 @@ async def fetch(ctx: StepContext) -> RunStatus:
         return RunStatus.WAITING_FOR_LISTING_TEXT
 
     activity.update(f"Downloading {run.listing_url}")
-    result = await fetch_listing(run.listing_url)
+    cfg = ctx.settings.fetch
+    work = fetch_listing(
+        run.listing_url, timeout=cfg.timeout_seconds, max_bytes=int(cfg.max_mb * 1_000_000)
+    )
+    result, aborted = await aborts.abortable(run.id, work)  # type: ignore[arg-type]
+    if aborted or result is None:
+        ctx.emit("step_progress", "download aborted by you")
+        return RunStatus.WAITING_FOR_LISTING_TEXT
     if not result.ok:
         ctx.emit("step_progress", result.error or "fetch failed")
         return RunStatus.WAITING_FOR_LISTING_TEXT

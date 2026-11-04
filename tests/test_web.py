@@ -122,7 +122,7 @@ def test_run_stops_on_must_have_then_continues_to_documents(client):
 def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):
     from mappe.fetch.listing import FetchResult
 
-    async def blocked(url):
+    async def blocked(url, **kw):
         return FetchResult(ok=False, error="403 Forbidden")
 
     monkeypatch.setattr("mappe.steps.listing.fetch_listing", blocked)
@@ -134,6 +134,36 @@ def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):
 
     client.post(f"/api/runs/{run_id}/listing-text", json={"listing_text": "Wir suchen ..."})
     wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_apply_decision"))
+
+
+def test_listing_download_can_be_aborted(client, monkeypatch):
+    import asyncio
+
+    async def hangs(url, **kw):
+        await asyncio.sleep(3600)
+
+    monkeypatch.setattr("mappe.steps.listing.fetch_listing", hangs)
+    cv_id = confirmed_cv(client)
+    run_id = client.post("/api/runs", json={"cv_id": cv_id, "urls": ["https://x.test/job"]}).json()[
+        0
+    ]["id"]
+    wait_for(client, f"/api/runs/{run_id}", status_is("fetching_listing"))
+    assert client.post(f"/api/runs/{run_id}/abort-fetch").status_code == 202
+    data = wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_listing_text"))
+    assert any(e["message"] == "download aborted by you" for e in data["events"])
+    assert client.post(f"/api/runs/{run_id}/abort-fetch").status_code == 409  # nothing to abort
+
+
+async def test_abort_requested_before_the_step_starts():
+    import asyncio
+
+    from mappe.runner import aborts
+
+    aborts.request(7)
+    result, aborted = await aborts.abortable(7, asyncio.sleep(3600))
+    assert aborted and result is None
+    # The request is used up: the next fetch of the run is not aborted.
+    assert await aborts.abortable(7, asyncio.sleep(0, "ok")) == ("ok", False)
 
 
 def test_delete_run_and_cv(client):

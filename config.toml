@@ -11,6 +11,11 @@ stop_after_no_improvement = 2
 recruiter_pass_score = 3.5  # average rubric score (1-5); the recruiter must also invite
 cost_limit_usd = 2.0        # per run; 0 = no limit
 
+# Fetching a listing URL. On timeout or Abort, the run asks for the pasted text instead.
+[fetch]
+timeout_seconds = 30      # download and text extraction together
+max_mb = 5                # larger pages are not listings
+
 # Job search (no Claude calls). See docs/job-search-plan.md.
 [search]
 # Also available: "remoteok" (mostly US jobs). "adzuna" needs ADZUNA_APP_ID and ADZUNA_APP_KEY.

@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 from mappe.config import get_settings
 from mappe.db import CV, Event, Run, Usage
 from mappe.domain.models import ParsedCV, Requirement
+from mappe.runner import aborts
 from mappe.runner.engine import InvalidTransition, run_title, set_status
 from mappe.runner.states import WORKING, CVStatus, RunStatus
 from mappe.steps.final import DocumentEdit, bundle, final_draft, save_user_draft
@@ -218,6 +219,19 @@ def submit_listing_text(
         raise HTTPException(400, "Paste the listing text")
     run.listing_text = body.listing_text.strip()
     return _resume(request, session, run, RunStatus.PARSING_LISTING)
+
+
+@router.post("/{run_id}/abort-fetch", status_code=202)
+async def abort_fetch(run_id: int, session: SessionDep) -> dict:
+    """Stop downloading the listing; the run then asks for the pasted text.
+
+    Async on purpose: the abort event lives on the event loop the step runs on.
+    """
+    run = _get(session, run_id)
+    if run.status != RunStatus.FETCHING_LISTING:
+        raise HTTPException(409, "The listing is not being downloaded")
+    aborts.request(run_id)
+    return run_detail(session, run)
 
 
 @router.post("/{run_id}/continue")
