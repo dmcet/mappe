@@ -205,6 +205,7 @@ async def save_search(
         dismissed=dismissed,
         places=query.places,
         located={k for k, s in SOURCES.items() if s.searches_places},
+        titles=query.titles,
     )
     ranked = rank(hits, cv, requirements, **options)
 

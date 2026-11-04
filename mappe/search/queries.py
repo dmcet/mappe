@@ -6,8 +6,10 @@ import re
 
 from mappe.checks.skills import STUDENT_ROLES
 from mappe.domain.models import ParsedCV, Requirement
+from mappe.domain.roles import SuggestedRole
 
 MAX_TITLES = 8
+MAX_ROLES = 6
 
 _GENDER = re.compile(r"\(\s*[mwfdxi](?:\s*[/|,]\s*[mwfdxi]+)+\s*\)|\b[mwf]/[mwf]/[dx]\b", re.I)
 _SENIORITY = re.compile(
@@ -187,6 +189,49 @@ def _skill_title(cv: ParsedCV) -> str | None:
         iter(candidates), None
     )
     return f"{best.name} Developer" if best else None
+
+
+def fact_ids(cv: ParsedCV) -> set[str]:
+    ids = set()
+    for p in cv.positions:
+        ids.add(p.id)
+        ids |= {f.id for f in p.responsibilities + p.achievements}
+    ids |= {e.id for e in cv.education} | {c.id for c in cv.certifications}
+    ids |= {f.id for f in cv.projects + cv.publications + cv.volunteering}
+    return ids
+
+
+def _tidy(title: str) -> str:
+    """Strip gender suffixes and stray punctuation, but keep "Lead" and the like."""
+    return re.sub(r"\s+", " ", _GENDER.sub(" ", title)).strip(" -,/")
+
+
+def filter_roles(cv: ParsedCV, roles: list[SuggestedRole]) -> list[dict]:
+    """Keep suggestions that rest on real CV facts and add something new.
+
+    Dropped: unknown fact IDs (and suggestions left without any), titles the CV already
+    suggests on its own, duplicates. Alternative titles that repeat a known one are blanked.
+    """
+    known = fact_ids(cv)
+    taken = {clean_title(t).casefold() for t in suggest_titles(cv)}
+    kept: list[dict] = []
+    for role in roles:
+        title, alt = _tidy(role.title), _tidy(role.title_alt)
+        ids = [i for i in dict.fromkeys(role.fact_ids) if i in known]
+        key = clean_title(title).casefold()
+        if not title or not ids or key in taken:
+            continue
+        taken.add(key)
+        if alt and clean_title(alt).casefold() in taken:
+            alt = ""
+        elif alt:
+            taken.add(clean_title(alt).casefold())
+        kept.append(
+            {"title": title, "title_alt": alt, "reason": role.reason.strip(), "fact_ids": ids}
+        )
+        if len(kept) == MAX_ROLES:
+            break
+    return kept
 
 
 def places_from(requirements: list[Requirement]) -> list[str]:

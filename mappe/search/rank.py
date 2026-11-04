@@ -195,16 +195,18 @@ def rank(
     places: list[str] | None = None,
     located: set[str] | None = None,
     semantic: dict[str, float] | None = None,
+    titles: list[str] | None = None,
     today: date | None = None,
 ) -> list[Ranked]:
     """Rank ``hits``. ``places`` are the search's cities; sources in ``located`` already
     searched around them (Bundesagentur's radius), so only the others are checked.
     ``semantic`` maps hit keys to their semantic fit (0..1); hits without one are scored on
-    keywords only."""
+    keywords only. ``titles`` are the searched titles: they count for title fit next to the
+    CV's own, so a role the user chose to search for isn't ranked down."""
     today = today or date.today()
     skills = cv_skills(cv, today)
     full = max(1.0, min(FULL_SKILL_WEIGHT, FULL_SKILL_SHARE * sum(s.weight for s in skills)))
-    titles = cv_titles(cv)
+    titles = list(dict.fromkeys(cv_titles(cv) + (titles or [])))
     checked = [r for r in requirements if r.kind in CHECKED_KINDS]
     dismissed = dismissed or set()
     ranked = []

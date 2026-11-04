@@ -12,6 +12,7 @@ from mappe.llm.demo import (
     demo_listing,
     demo_match,
     demo_recruiter,
+    demo_roles,
     sample_cv,
 )
 from mappe.search.sources.base import SAMPLES_DIR, clear_cache
@@ -54,6 +55,7 @@ def fake_llm(monkeypatch):
         "author_letter": demo_author_letter(),
         "claims_check": demo_claims(),
         "recruiter": demo_recruiter(),
+        "suggest_roles": demo_roles(),
     }
     monkeypatch.setattr("mappe.llm.client.structured", fake.structured)
     return fake

@@ -27,6 +27,7 @@ from mappe.domain.extraction import (
 from mappe.domain.listing import ExtractedListing
 from mappe.domain.match import Evidence, MatchResult, TransferableSkill
 from mappe.domain.review import ClaimsResult, RecruiterResult
+from mappe.domain.roles import RoleSuggestions, SuggestedRole
 
 
 def sample_cv(**overrides) -> ExtractedCV:
@@ -261,9 +262,43 @@ def demo_recruiter() -> RecruiterResult:
     )
 
 
+def demo_roles() -> RoleSuggestions:
+    """Uses fact IDs of the demo CV (sample_cv)."""
+    return RoleSuggestions(
+        roles=[
+            SuggestedRole(
+                title="Platform Engineer",
+                title_alt="",
+                reason="You hold the CKA and run Python services in production.",
+                fact_ids=["cert1", "pos1.resp1"],
+            ),
+            SuggestedRole(
+                title="Data Engineer",
+                title_alt="",
+                reason="You built data pipelines for a bank and know PostgreSQL.",
+                fact_ids=["pos2.resp1"],
+            ),
+            SuggestedRole(
+                title="Tech Lead",
+                title_alt="",
+                reason="You own the payments API end to end and delivered measurable results.",
+                fact_ids=["pos1.resp1", "pos1.ach1"],
+            ),
+            SuggestedRole(
+                title="Site Reliability Engineer",
+                title_alt="",
+                reason="Your latency work and Kubernetes certificate are core SRE skills.",
+                fact_ids=["pos1.ach1", "cert1"],
+            ),
+        ]
+    )
+
+
 def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
     if step == "parse_cv" and output is ExtractedCV:
         return demo_cv()
+    if step == "suggest_roles" and output is RoleSuggestions:
+        return demo_roles()
     if step == "parse_listing" and output is ExtractedListing:
         return demo_listing()
     if step == "match" and output is MatchResult:

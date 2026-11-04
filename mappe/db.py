@@ -27,6 +27,10 @@ class CV(SQLModel, table=True):
     warnings: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     error: str | None = None
     cost_usd: float = 0.0
+    # Alternative roles for the job search, suggested by Claude after confirmation.
+    roles_status: str | None = None  # None | "suggesting" | "done" | "failed"
+    roles: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    roles_error: str | None = None
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 

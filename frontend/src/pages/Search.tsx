@@ -14,10 +14,12 @@ import { useLive, useResource } from "../live";
 import type {
   HiddenReason,
   JobHit,
+  RolesStatus,
   SearchDetail,
   SearchResultItem,
   SearchSource,
   SourceStatus,
+  SuggestedRole,
 } from "../types";
 
 export const HIDDEN_LABELS: Record<HiddenReason, string> = {
@@ -334,12 +336,76 @@ function Results({
   );
 }
 
+const lines = (text: string) => text.split("\n").map((t) => t.trim()).filter(Boolean);
+const roleTitles = (role: SuggestedRole) => [role.title, role.title_alt].filter(Boolean);
+
+/** Whether the role's main title is one of the lines (case-insensitive). */
+export function hasRole(text: string, role: SuggestedRole): boolean {
+  const have = new Set(lines(text).map((t) => t.toLowerCase()));
+  return have.has(role.title.toLowerCase());
+}
+
+/** Add the role's titles (both languages) to the lines, or remove them again. */
+export function toggleRole(text: string, role: SuggestedRole): string {
+  const own = new Set(roleTitles(role).map((t) => t.toLowerCase()));
+  const kept = lines(text).filter((t) => !own.has(t.toLowerCase()));
+  return (hasRole(text, role) ? kept : [...kept, ...roleTitles(role)]).join("\n");
+}
+
+export function RoleSuggestions({
+  cvId,
+  roles,
+  status,
+  titles,
+  onChange,
+}: {
+  cvId: number;
+  roles: SuggestedRole[];
+  status: RolesStatus;
+  titles: string;
+  onChange: (titles: string) => void;
+}) {
+  if (status === "suggesting") return <p className="hint">Claude is suggesting other roles that fit your CV…</p>;
+  if (!roles.length) {
+    return status === "done" ? null : (
+      <p className="hint">
+        Other roles that fit your CV can be suggested on the <Link to={`/cvs/${cvId}`}>CV page</Link>.
+      </p>
+    );
+  }
+  return (
+    <div className="role-suggestions">
+      <p className="hint">Other roles that fit your CV, suggested by Claude. Click to add them to the search.</p>
+      <ul>
+        {roles.map((role) => {
+          const added = hasRole(titles, role);
+          return (
+            <li key={role.title}>
+              <button
+                type="button"
+                className={`role-chip${added ? " role-chip--added" : ""}`}
+                aria-pressed={added}
+                onClick={() => onChange(toggleRole(titles, role))}
+              >
+                {added ? "✓" : "+"} {role.title}
+                {role.title_alt && <span className="muted"> / {role.title_alt}</span>}
+              </button>
+              <span className="hint">{role.reason}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
   const { version } = useLive();
   const cvs = useResource(() => api.cvs(), [version("any")]);
   const confirmed = (cvs.data ?? []).filter((c) => c.status === "confirmed");
   const [cvId, setCvId] = useState<number | null>(null);
   const [titles, setTitles] = useState("");
+  const [roles, setRoles] = useState<{ roles: SuggestedRole[]; status: RolesStatus }>({ roles: [], status: null });
   const [sources, setSources] = useState<SearchSource[]>([]);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [reqs, setReqs] = useState(EMPTY_REQUIREMENTS);
@@ -359,6 +425,13 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
       setChosen(new Set(s.sources.filter((x) => x.default && !x.missing_env.length).map((x) => x.key)));
     });
   }, [cvId]);
+  // Role suggestions arrive in the background after confirmation: reload them on CV
+  // updates without touching the titles the user is editing.
+  const cvVersion = version("cv", cvId ?? undefined);
+  useEffect(() => {
+    if (cvId === null) return;
+    api.searchSuggestions(cvId).then((s) => setRoles({ roles: s.roles, status: s.roles_status }));
+  }, [cvId, cvVersion]);
 
   if (cvs.data && !confirmed.length) {
     return (
@@ -380,7 +453,7 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
           const result = await action.run(() =>
             api.createSearch({
               cv_id: cvId,
-              titles: titles.split("\n").map((t) => t.trim()).filter(Boolean),
+              titles: lines(titles),
               requirements: toRequirements(reqs),
               sources: [...chosen],
             }),
@@ -402,6 +475,9 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
           Job titles (one per line, suggested from your CV)
           <textarea rows={4} value={titles} onChange={(e) => setTitles(e.target.value)} />
         </label>
+        {cvId !== null && (
+          <RoleSuggestions cvId={cvId} roles={roles.roles} status={roles.status} titles={titles} onChange={setTitles} />
+        )}
         <RequirementsEditor value={reqs} onChange={setReqs} />
         <p className="hint">
           {reqs.location.trim()
@@ -430,7 +506,7 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
               {s.label}
               {s.remote_only && <span className="muted">remote</span>}
               {s.missing_env.length > 0 && (
-                <span className="muted">needs {s.missing_env.join(", ")}</span>
+                <span className="muted check__note">needs {s.missing_env.join(", ")}</span>
               )}
             </label>
           ))}

@@ -133,7 +133,9 @@ class Engine:
 
     def _requeue_interrupted(self) -> None:
         with Session(get_engine()) as session:
-            stmt = select(CV.id).where(CV.status == CVStatus.PARSING)
+            stmt = select(CV.id).where(
+                (CV.status == CVStatus.PARSING) | (CV.roles_status == "suggesting")
+            )
             for cv_id in session.exec(stmt):
                 self.enqueue_cv(cv_id)
             stmt = select(Run.id).where(Run.status.in_([s.value for s in WORKING]))  # type: ignore[attr-defined]

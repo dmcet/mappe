@@ -69,6 +69,15 @@ Built in `search/queries.py` from `ParsedCV`, shown to the user as editable chip
   (`Software Engineer ↔ Softwareentwickler`, `Android Developer ↔ Android-Entwickler`, ...).
 - **Keywords:** the top skills: level `advanced` first, then the skills used most recently
   (reuse the years-per-skill logic from `checks/skills.py`).
+- **Other roles (opt-in):** after the CV is confirmed, one small Claude call (`suggest_roles`,
+  Sonnet, low effort) suggests up to 6 roles the person hasn't held but that fit: a realistic
+  next step or a neighbouring field. It runs once per confirmed CV, not per search, so the
+  search itself still makes no Claude calls. Each suggestion cites CV fact IDs; Python drops
+  unknown IDs, suggestions left without any, and titles the CV already yields. They are not
+  in the default titles: the search page shows them as chips that add the title (and its
+  other-language form) when clicked. A separate call rather than a field of `parse_cv`,
+  because that prompt forbids inference, runs before the user corrects the data, and
+  couldn't be repeated without parsing again.
 - **Places:** cities from the `location` requirement; with `max_onsite_days = 0`, remote sources
   only and no city filter.
 
@@ -118,7 +127,7 @@ searches (remembered by `source + external_id`).
 | Signal | Weight | How |
 |---|---|---|
 | Skill overlap | 60 | CV skills found in title + description + tags, via `normalize_skill` / `SYNONYMS` and word-boundary matching. Weighted by level (advanced 1.0, intermediate 0.7, basic 0.4) and recency. Normalised by the number of the CV's top skills. |
-| Title fit | 30 | rapidfuzz `token_set_ratio` between the hit title and the CV's headline and recent roles (and their DE/EN variants) |
+| Title fit | 30 | rapidfuzz `token_set_ratio` between the hit title and the CV's headline and recent roles plus the searched titles (and their DE/EN variants), so a chosen alternative role isn't ranked down |
 | Freshness | 10 | Linear decay over `max_age_days` |
 
 BA hits have no description, so they score on title, occupation (`hauptberuf`, `alleBerufe`)
