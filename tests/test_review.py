@@ -2,24 +2,24 @@ from datetime import date
 
 from sqlmodel import Session
 
-from application_crew.checks.ats import check_ats
-from application_crew.checks.skills import analyze_skills
-from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
-from application_crew.db import Run
-from application_crew.domain.author import AuthorBullet
-from application_crew.domain.extraction import to_parsed_cv
-from application_crew.domain.listing import merge_listing
-from application_crew.domain.review import ClaimProblem, ClaimsResult, render_claims
-from application_crew.llm.demo import (
+from mappe.checks.ats import check_ats
+from mappe.checks.skills import analyze_skills
+from mappe.config import DEFAULT_CONFIG_PATH, load_settings
+from mappe.db import Run
+from mappe.domain.author import AuthorBullet
+from mappe.domain.extraction import to_parsed_cv
+from mappe.domain.listing import merge_listing
+from mappe.domain.review import ClaimProblem, ClaimsResult, render_claims
+from mappe.llm.demo import (
     demo_author_cv,
     demo_author_letter,
     demo_listing,
     demo_recruiter,
 )
-from application_crew.render.documents import LABELS, cv_data, render_cv
-from application_crew.render.typst import pdf_to_text
-from application_crew.runner.states import RunStatus
-from application_crew.steps.review import _no_improvement
+from mappe.render.documents import LABELS, cv_data, render_cv
+from mappe.render.typst import pdf_to_text
+from mappe.runner.states import RunStatus
+from mappe.steps.review import _no_improvement
 from tests.conftest import make_extracted
 from tests.test_author import drive_to_documents, make_run
 
@@ -77,8 +77,8 @@ def test_claims_context_shows_cited_facts_levels_and_usage():
 
 
 def test_claims_context_lists_unverified_terms_and_slash_skills():
-    from application_crew.domain.author import SkillGroup
-    from application_crew.domain.extraction import ExtractedSkill
+    from mappe.domain.author import SkillGroup
+    from mappe.domain.extraction import ExtractedSkill
 
     cv = to_parsed_cv(
         make_extracted(

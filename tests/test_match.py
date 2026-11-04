@@ -1,15 +1,15 @@
 from datetime import date
 
-from application_crew.checks.skills import analyze_skills, normalize_skill
-from application_crew.domain.extraction import ExtractedPosition, ExtractedSkill, to_parsed_cv
-from application_crew.domain.match import (
+from mappe.checks.skills import analyze_skills, normalize_skill
+from mappe.domain.extraction import ExtractedPosition, ExtractedSkill, to_parsed_cv
+from mappe.domain.match import (
     Evidence,
     render_analysis,
     render_cv,
     validate_fact_ids,
 )
-from application_crew.domain.models import ParsedListing
-from application_crew.llm.demo import demo_match
+from mappe.domain.models import ParsedListing
+from mappe.llm.demo import demo_match
 from tests.conftest import make_extracted
 
 TODAY = date(2026, 11, 1)

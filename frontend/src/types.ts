@@ -1,4 +1,4 @@
-// Shapes of the JSON API (application_crew/web/*.py).
+// Shapes of the JSON API (mappe/web/*.py).
 
 export type CVStatus = "parsing" | "waiting_for_confirmation" | "confirmed" | "failed";
 

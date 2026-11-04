@@ -2,18 +2,18 @@ from datetime import date
 
 from sqlmodel import Session
 
-from application_crew.checks.facts import FactChecker
-from application_crew.checks.skills import analyze_skills
-from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
-from application_crew.db import CV, Run, init_engine
-from application_crew.domain.author import AuthorBullet, SkillGroup
-from application_crew.domain.extraction import to_parsed_cv
-from application_crew.domain.listing import merge_listing
-from application_crew.llm.demo import demo_author_cv, demo_author_letter, demo_listing
-from application_crew.render.documents import cv_data, letter_data
-from application_crew.render.typst import pdf_to_text
-from application_crew.runner.engine import Engine
-from application_crew.runner.states import CVStatus, RunStatus
+from mappe.checks.facts import FactChecker
+from mappe.checks.skills import analyze_skills
+from mappe.config import DEFAULT_CONFIG_PATH, load_settings
+from mappe.db import CV, Run, init_engine
+from mappe.domain.author import AuthorBullet, SkillGroup
+from mappe.domain.extraction import to_parsed_cv
+from mappe.domain.listing import merge_listing
+from mappe.llm.demo import demo_author_cv, demo_author_letter, demo_listing
+from mappe.render.documents import cv_data, letter_data
+from mappe.render.typst import pdf_to_text
+from mappe.runner.engine import Engine
+from mappe.runner.states import CVStatus, RunStatus
 from tests.conftest import make_extracted
 
 TODAY = date(2026, 11, 3)
@@ -181,8 +181,8 @@ async def test_loop_stops_after_max_iterations(tmp_path, monkeypatch, fake_llm):
 
 
 def test_list_sections_render_one_entry_per_line(tmp_path):
-    from application_crew.domain.extraction import ExtractedCertification, ExtractedEducation
-    from application_crew.render.documents import render_cv
+    from mappe.domain.extraction import ExtractedCertification, ExtractedEducation
+    from mappe.render.documents import render_cv
 
     extracted = make_extracted(
         certifications=[
@@ -233,7 +233,7 @@ def test_multi_word_missing_skills_are_left_to_the_claims_check():
 
 
 def test_old_drafts_with_position_titles_still_load():
-    from application_crew.domain.author import AuthorCV
+    from mappe.domain.author import AuthorCV
 
     data = demo_author_cv().model_dump()
     data["titles"] = [{"position_id": "pos1", "title": "Engineer"}]

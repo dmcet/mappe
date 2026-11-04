@@ -1,6 +1,6 @@
 import json
 
-from application_crew.fetch.listing import detect_language, extract_job_posting
+from mappe.fetch.listing import detect_language, extract_job_posting
 
 POSTING = {
     "@context": "https://schema.org",
@@ -38,7 +38,7 @@ def test_detect_language():
 
 
 def test_redirect_to_parent_path_is_detected():
-    from application_crew.fetch.listing import _is_parent_path
+    from mappe.fetch.listing import _is_parent_path
 
     assert _is_parent_path("/karriere/stellenangebote", "/karriere/stellenangebote/job/x-71096")
     assert _is_parent_path("/karriere/stellenangebote/", "/karriere/stellenangebote/job/x")

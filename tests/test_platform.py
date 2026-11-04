@@ -5,12 +5,12 @@ from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
-from application_crew.db import Usage, init_engine
-from application_crew.llm.client import Usage as TokenUsage
-from application_crew.llm.client import record_usage
-from application_crew.runner import activity
-from application_crew.runner.states import RunStatus
-from application_crew.web.pipeline import pipeline
+from mappe.db import Usage, init_engine
+from mappe.llm.client import Usage as TokenUsage
+from mappe.llm.client import record_usage
+from mappe.runner import activity
+from mappe.runner.states import RunStatus
+from mappe.web.pipeline import pipeline
 
 LEGACY_SCHEMA = """
 CREATE TABLE cv (id INTEGER NOT NULL, label VARCHAR NOT NULL, markdown VARCHAR NOT NULL,
@@ -126,7 +126,7 @@ def test_waiting_for_you_lists_runs_at_a_gate(client):
 
 
 def test_old_drafts_are_normalised_for_the_frontend():
-    from application_crew.web.runs import _drafts
+    from mappe.web.runs import _drafts
 
     old = [{"iteration": 1, "cv": {"titles": [{"position_id": "pos1", "title": "Engineer"}]}}]
     assert _drafts(old)[0]["cv"]["titles"] == [{"id": "pos1", "title": "Engineer"}]
@@ -137,8 +137,8 @@ async def test_prompt_layout_and_cache_markers(tmp_path, monkeypatch, fake_llm):
     """CV and listing come first, byte-identical in every step that uses them. Only blocks
     that a later call with the same schema reads again carry a cache marker (the schema
     is part of the cached prefix, so steps can't share entries)."""
-    from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
-    from application_crew.llm.client import COMMON_SYSTEM, _content
+    from mappe.config import DEFAULT_CONFIG_PATH, load_settings
+    from mappe.llm.client import COMMON_SYSTEM, _content
     from tests.test_author import drive_to_documents, make_run
 
     monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
@@ -162,6 +162,6 @@ async def test_prompt_layout_and_cache_markers(tmp_path, monkeypatch, fake_llm):
     assert letter[-1].text.startswith("<tailored_cv>") and not letter[-1].cache
     assert letter[-2].cache  # assessment and experience, reused by reworks
     # The system prompt is the same for every step.
-    assert "Application Crew" in COMMON_SYSTEM
+    assert "Mappe" in COMMON_SYSTEM
     content = _content(calls["author_cv"], "task")
     assert [("cache_control" in c) for c in content] == [True, True, False, True, False]

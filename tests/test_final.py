@@ -1,10 +1,10 @@
 import io
 import zipfile
 
-from application_crew.domain.extraction import to_parsed_cv
-from application_crew.domain.listing import merge_listing
-from application_crew.llm.demo import demo_author_cv, demo_author_letter, demo_listing
-from application_crew.steps.final import apply_edits, delivery_names, file_part
+from mappe.domain.extraction import to_parsed_cv
+from mappe.domain.listing import merge_listing
+from mappe.llm.demo import demo_author_cv, demo_author_letter, demo_listing
+from mappe.steps.final import apply_edits, delivery_names, file_part
 from tests.conftest import make_extracted
 from tests.test_web import confirmed_cv, start_run, status_is, wait_for
 
@@ -22,8 +22,8 @@ def test_file_names():
 
 
 def test_edits_keep_fact_ids_of_kept_text():
-    from application_crew.domain.author import SkillGroup
-    from application_crew.steps.final import DocumentEdit, LetterEdit
+    from mappe.domain.author import SkillGroup
+    from mappe.steps.final import DocumentEdit, LetterEdit
 
     cv = to_parsed_cv(make_extracted())
     edit = DocumentEdit(

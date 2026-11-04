@@ -1,4 +1,4 @@
-# Application Crew — Architecture
+# Mappe — Architecture
 
 Companion to [requirements.md](requirements.md). This document records the technical decisions and their rationale.
 
@@ -145,7 +145,7 @@ Translation (English CV → German listing) is allowed; rules 2–4 work on numb
 ## 8. Project layout
 
 ```
-application_crew/
+mappe/
   web/ runner/ steps/ llm/ domain/ checks/ render/ fetch/ search/
   templates/          # Jinja2 (UI)
   typst/              # CV + cover letter templates (open source, licenses kept)

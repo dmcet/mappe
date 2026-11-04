@@ -1,4 +1,4 @@
-# Application Crew configuration.
+# Mappe configuration.
 # Secrets (ANTHROPIC_API_KEY) come from the environment, never from this file.
 
 [app]

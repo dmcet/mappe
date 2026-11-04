@@ -179,7 +179,7 @@ New route `/search` (nav entry "Search"):
 ## 7. Code layout
 
 ```
-application_crew/search/
+mappe/search/
   __init__.py
   models.py        # JobHit, SearchRequest, SourceStatus
   queries.py       # queries from ParsedCV, DE/EN title variants
@@ -189,8 +189,8 @@ application_crew/search/
   dedupe.py
   rank.py          # filtering (reuses checks/requirements.py) + scoring
   service.py       # orchestrates one search, persists results
-application_crew/web/search.py        # routes
-application_crew/migrations/versions/0003_job_search.py
+mappe/web/search.py        # routes
+mappe/migrations/versions/0003_job_search.py
 frontend/src/pages/Search.tsx (+ components)
 tests/test_search_*.py, tests/fixtures/search/*.json   # recorded API responses
 ```

@@ -1,11 +1,11 @@
 from sqlmodel import Session, select
 
-import application_crew.steps  # noqa: F401 - registers steps
-from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
-from application_crew.db import CV, Event, Run, init_engine
-from application_crew.domain.extraction import to_parsed_cv
-from application_crew.runner.engine import Engine
-from application_crew.runner.states import CVStatus, RunStatus
+import mappe.steps  # noqa: F401 - registers steps
+from mappe.config import DEFAULT_CONFIG_PATH, load_settings
+from mappe.db import CV, Event, Run, init_engine
+from mappe.domain.extraction import to_parsed_cv
+from mappe.runner.engine import Engine
+from mappe.runner.states import CVStatus, RunStatus
 from tests.conftest import make_extracted
 
 LISTING = "Wir suchen eine Senior Python Developerin. Wir bieten 30 Urlaubstage und ein Jobrad."

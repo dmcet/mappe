@@ -35,7 +35,7 @@ ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/venv
 WORKDIR /app
 COPY pyproject.toml uv.lock* README.md ./
 RUN uv sync --no-dev --no-install-project
-COPY application_crew ./application_crew
+COPY mappe ./mappe
 RUN uv sync --no-dev
 
 # --- Semantic ranking model (job search), downloaded once at build time -----
@@ -55,7 +55,7 @@ COPY --from=typst /usr/local/bin/typst /usr/local/bin/typst
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=models /opt/models /opt/models
 WORKDIR /app
-COPY --chown=app:app application_crew ./application_crew
+COPY --chown=app:app mappe ./mappe
 COPY --chown=app:app typst ./typst
 COPY --chown=app:app prompts ./prompts
 COPY --chown=app:app config.toml ./
@@ -69,9 +69,9 @@ USER app
 VOLUME ["/data"]
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
-CMD ["uvicorn", "application_crew.web.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "mappe.web.app:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# --- Test image: `docker build --target test -t application-crew:test . && docker run --rm application-crew:test`
+# --- Test image: `docker build --target test -t mappe:test . && docker run --rm mappe:test`
 FROM runtime AS test
 USER root
 COPY --from=uv /uv /usr/local/bin/uv

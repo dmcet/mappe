@@ -1,4 +1,4 @@
-# Application Crew
+# Mappe
 
 ### What is it?
 - A local, single-user web application that produces tailored, ATS-friendly application documents (CV and optional cover letter)

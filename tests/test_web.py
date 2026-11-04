@@ -4,7 +4,7 @@ import time
 
 from fastapi.testclient import TestClient
 
-from application_crew.config import get_settings
+from mappe.config import get_settings
 
 
 def wait_for(client, url, predicate, timeout=10.0):
@@ -118,12 +118,12 @@ def test_run_stops_on_must_have_then_continues_to_documents(client):
 
 
 def test_failed_fetch_waits_for_pasted_text(client, monkeypatch):
-    from application_crew.fetch.listing import FetchResult
+    from mappe.fetch.listing import FetchResult
 
     async def blocked(url):
         return FetchResult(ok=False, error="403 Forbidden")
 
-    monkeypatch.setattr("application_crew.steps.listing.fetch_listing", blocked)
+    monkeypatch.setattr("mappe.steps.listing.fetch_listing", blocked)
     cv_id = confirmed_cv(client)
     resp = client.post("/api/runs", json={"cv_id": cv_id, "urls": ["https://x.test/job"]})
     run_id = resp.json()[0]["id"]
@@ -159,7 +159,7 @@ def test_demo_mode_parses_sample_cv_without_api(tmp_path, monkeypatch):
     monkeypatch.setenv("APP_DEMO", "1")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     get_settings.cache_clear()
-    from application_crew.web.app import app
+    from mappe.web.app import app
 
     try:
         with TestClient(app) as client:

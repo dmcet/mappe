@@ -1,5 +1,5 @@
 // Tailored CV. Layout: basic-resume (Unlicense), single column, ATS-friendly.
-// All content comes from data.json (prepared by application_crew/render/documents.py)
+// All content comes from data.json (prepared by mappe/render/documents.py)
 // and is inserted as plain text, never evaluated as markup.
 #import "vendor/basic-resume/src/lib.typ": resume, work, edu, certificates
 
