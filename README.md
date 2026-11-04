@@ -29,7 +29,7 @@ Open **http://127.0.0.1:8000**. The app listens on localhost only.
 
 - The first build takes a few minutes; it also type-checks and tests the frontend.
 - The database schema is migrated automatically at startup.
-- All data lives in the Docker volume `crew-data` and survives rebuilds.
+- All data lives in the Docker volume `mappe_data` and survives rebuilds.
 
 Useful commands:
 

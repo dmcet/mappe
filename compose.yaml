@@ -15,10 +15,7 @@ services:
       ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}     # optional job search source (free key)
       ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
     volumes:
-      - crew-data:/data
+      - data:/data
 
 volumes:
-  crew-data:
-    # Created before the rename to Mappe (project "application-crew"); the explicit name
-    # keeps using it. Not "app-data": that name collides with an older, unrelated volume.
-    name: application-crew_crew-data
+  data: {}   # -> mappe_data. Data from before the rename was copied over from application-crew_crew-data.
