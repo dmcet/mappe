@@ -264,6 +264,11 @@ docker build --target test -t mappe:test .   # also runs the frontend checks
 docker run --rm mappe:test                    # backend tests
 ```
 
+CI (GitHub Actions, `.github/workflows/ci.yml`) runs on every pull request and push to `main`:
+ruff lint and format check, then the same Docker test build and backend tests as above.
+CI has no API key, so it never calls Claude. Dependabot opens weekly grouped update PRs
+for GitHub Actions, Python and npm dependencies.
+
 ## Local development (optional)
 
 Backend: Python 3.12+, [uv](https://docs.astral.sh/uv/), `typst` and `pdftotext`.
