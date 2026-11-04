@@ -1,9 +1,11 @@
+name: mappe   # fixed project name: container and volume names don't depend on the folder
+
 services:
   app:
     build:
       context: .
       target: runtime
-    image: application-crew:dev
+    image: mappe:dev
     ports:
       - "127.0.0.1:8000:8000"   # local only
     environment:
@@ -16,4 +18,7 @@ services:
       - crew-data:/data
 
 volumes:
-  crew-data:   # not "app-data": that name collides with an older, unrelated volume
+  crew-data:
+    # Created before the rename to Mappe (project "application-crew"); the explicit name
+    # keeps using it. Not "app-data": that name collides with an older, unrelated volume.
+    name: application-crew_crew-data

@@ -1,4 +1,6 @@
-# application-crew
+# Mappe
+
+Named after the *Bewerbungsmappe*, the German application folder.
 
 A local web app that turns your master CV and a job listing into a tailored, ATS-friendly CV
 and cover letter (PDF) for IT jobs in the German market. Claude does the reasoning (reading,
@@ -228,8 +230,8 @@ This can't be undone. To keep the cost history, delete CVs and applications in t
 ## Tests
 
 ```bash
-docker build --target test -t application-crew:test .   # also runs the frontend checks
-docker run --rm application-crew:test                    # backend tests
+docker build --target test -t mappe:test .   # also runs the frontend checks
+docker run --rm mappe:test                    # backend tests
 ```
 
 ## Local development (optional)
@@ -239,12 +241,12 @@ Frontend: Node 24+.
 
 ```bash
 uv sync
-APP_DATA_DIR=./data uv run uvicorn application_crew.web.app:app --reload   # API on :8000
+APP_DATA_DIR=./data uv run uvicorn mappe.web.app:app --reload   # API on :8000
 cd frontend && npm install && npm run dev                                 # UI on :5173, proxies /api
 uv run pytest && (cd frontend && npm run typecheck && npm test)
 ```
 
-The database schema is managed with Alembic (`application_crew/migrations/`); migrations run
+The database schema is managed with Alembic (`mappe/migrations/`); migrations run
 automatically at startup. To add one, create a new file in `migrations/versions/`.
 
 ## Known gaps

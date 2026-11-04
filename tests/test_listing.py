@@ -1,7 +1,7 @@
-from application_crew.checks.requirements import check_requirements, failed_must_haves
-from application_crew.domain.listing import FuzzyCheck, from_job_posting, merge_listing
-from application_crew.domain.models import ParsedListing, Requirement
-from application_crew.llm.demo import demo_listing
+from mappe.checks.requirements import check_requirements, failed_must_haves
+from mappe.domain.listing import FuzzyCheck, from_job_posting, merge_listing
+from mappe.domain.models import ParsedListing, Requirement
+from mappe.llm.demo import demo_listing
 
 POSTING = {
     "@type": "JobPosting",
@@ -96,7 +96,7 @@ def test_onsite_requirement():
 
 
 def test_location_matching_normalises_umlauts_and_english_names():
-    from application_crew.checks.requirements import normalize_place
+    from mappe.checks.requirements import normalize_place
 
     assert normalize_place("Nürnberg") == normalize_place("Nuernberg") == "nuernberg"
     assert normalize_place("Nuremberg, Germany") == "nuernberg, germany"

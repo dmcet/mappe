@@ -5,11 +5,11 @@ from datetime import date
 import numpy as np
 import pytest
 
-from application_crew.config import SearchConfig
-from application_crew.domain.extraction import to_parsed_cv
-from application_crew.search import semantic
-from application_crew.search.models import JobHit
-from application_crew.search.rank import rank
+from mappe.config import SearchConfig
+from mappe.domain.extraction import to_parsed_cv
+from mappe.search import semantic
+from mappe.search.models import JobHit
+from mappe.search.rank import rank
 from tests.conftest import FakeEmbedder, make_extracted
 from tests.test_search_web import confirmed_cv, search
 
@@ -80,7 +80,7 @@ def test_search_reports_semantic_ranking_and_reuses_vectors(client, job_apis, fa
 
 
 def test_search_falls_back_to_keywords_without_the_model(client, job_apis, monkeypatch):
-    monkeypatch.setattr("application_crew.search.semantic.get_embedder", lambda cfg: None)
+    monkeypatch.setattr("mappe.search.semantic.get_embedder", lambda cfg: None)
     monkeypatch.setitem(semantic._errors, SearchConfig().semantic_model, "model not found")
     cv_id = confirmed_cv(client)
     data = search(client, cv_id, sources=["arbeitnow"])

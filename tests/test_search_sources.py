@@ -6,10 +6,10 @@ from datetime import date
 import httpx
 import pytest
 
-from application_crew.search.models import SearchQuery
-from application_crew.search.sources import SOURCES
-from application_crew.search.sources.base import SAMPLES_DIR, SourceOptions, clear_cache
-from application_crew.search.text import html_to_text, parse_date, parse_salary_text
+from mappe.search.models import SearchQuery
+from mappe.search.sources import SOURCES
+from mappe.search.sources.base import SAMPLES_DIR, SourceOptions, clear_cache
+from mappe.search.text import html_to_text, parse_date, parse_salary_text
 
 
 def sample(key):

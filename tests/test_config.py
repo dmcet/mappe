@@ -1,4 +1,4 @@
-from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
+from mappe.config import DEFAULT_CONFIG_PATH, load_settings
 
 
 def test_step_overrides_inherit_defaults(monkeypatch, tmp_path):

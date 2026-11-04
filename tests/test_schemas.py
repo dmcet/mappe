@@ -11,11 +11,11 @@ import pytest
 from anthropic.lib._parse._transform import transform_schema
 from pydantic import TypeAdapter
 
-from application_crew.domain.author import AuthorCV, AuthorLetter
-from application_crew.domain.extraction import ExtractedCV
-from application_crew.domain.listing import ExtractedListing
-from application_crew.domain.match import MatchResult
-from application_crew.domain.review import ClaimsResult, RecruiterResult
+from mappe.domain.author import AuthorCV, AuthorLetter
+from mappe.domain.extraction import ExtractedCV
+from mappe.domain.listing import ExtractedListing
+from mappe.domain.match import MatchResult
+from mappe.domain.review import ClaimsResult, RecruiterResult
 
 
 @pytest.mark.parametrize(

@@ -5,7 +5,7 @@ from datetime import date
 import httpx
 from sqlmodel import Session
 
-from application_crew.db import SavedSearch, get_engine
+from mappe.db import SavedSearch, get_engine
 from tests.test_web import confirmed_cv, status_is, wait_for
 
 
@@ -132,7 +132,7 @@ def test_deleting_the_cv_deletes_its_searches(client, job_apis):
 
 
 def test_demo_mode_uses_samples_dated_as_of_today(client, monkeypatch):
-    from application_crew.config import get_settings
+    from mappe.config import get_settings
 
     cv_id = confirmed_cv(client)
     monkeypatch.setenv("APP_DEMO", "1")
@@ -144,7 +144,7 @@ def test_demo_mode_uses_samples_dated_as_of_today(client, monkeypatch):
         return httpx.Response(500)
 
     monkeypatch.setattr(
-        "application_crew.search.service.make_client",
+        "mappe.search.service.make_client",
         lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(no_network)),
     )
     data = search(client, cv_id, sources=["ba", "adzuna"])
@@ -155,7 +155,7 @@ def test_demo_mode_uses_samples_dated_as_of_today(client, monkeypatch):
 
 
 def test_live_status_shows_per_source_progress(client, job_apis, monkeypatch):
-    from application_crew.runner import activity
+    from mappe.runner import activity
 
     seen = []
     handler = job_apis.handler

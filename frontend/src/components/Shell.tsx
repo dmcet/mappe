@@ -19,7 +19,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="topbar__row">
           <NavLink to="/" className="brand">
             <Sparkle glyph="✦" />
-            <GradientText className="brand__name">Application Crew</GradientText>
+            <GradientText className="brand__name">Mappe</GradientText>
           </NavLink>
           <nav className="topbar__nav">
             <NavLink to="/" end>

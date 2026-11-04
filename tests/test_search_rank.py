@@ -4,13 +4,13 @@ from datetime import date
 
 import pytest
 
-from application_crew.domain.extraction import to_parsed_cv
-from application_crew.domain.models import Requirement
-from application_crew.search.dedupe import dedupe
-from application_crew.search.models import JobHit
-from application_crew.search.queries import clean_title, places_from, remote_only, suggest_titles
-from application_crew.search.queries import title_variants as variants
-from application_crew.search.rank import rank
+from mappe.domain.extraction import to_parsed_cv
+from mappe.domain.models import Requirement
+from mappe.search.dedupe import dedupe
+from mappe.search.models import JobHit
+from mappe.search.queries import clean_title, places_from, remote_only, suggest_titles
+from mappe.search.queries import title_variants as variants
+from mappe.search.rank import rank
 from tests.conftest import make_extracted
 
 TODAY = date(2026, 11, 3)
@@ -76,7 +76,7 @@ def test_every_job_title_in_the_headline_is_used():
 
 
 def test_abroad_detection():
-    from application_crew.search.rank import abroad
+    from mappe.search.rank import abroad
 
     for place in ["Waardenburg, Gelderland, Netherlands", "Bern", "Bundesland: Wien", "Linz"]:
         assert abroad(place), place

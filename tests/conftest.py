@@ -3,9 +3,9 @@ import json
 import httpx
 import pytest
 
-from application_crew.domain.extraction import ExtractedCV
-from application_crew.llm.client import Usage
-from application_crew.llm.demo import (
+from mappe.domain.extraction import ExtractedCV
+from mappe.llm.client import Usage
+from mappe.llm.demo import (
     demo_author_cv,
     demo_author_letter,
     demo_claims,
@@ -14,7 +14,7 @@ from application_crew.llm.demo import (
     demo_recruiter,
     sample_cv,
 )
-from application_crew.search.sources.base import SAMPLES_DIR, clear_cache
+from mappe.search.sources.base import SAMPLES_DIR, clear_cache
 
 make_extracted = sample_cv
 
@@ -55,7 +55,7 @@ def fake_llm(monkeypatch):
         "claims_check": demo_claims(),
         "recruiter": demo_recruiter(),
     }
-    monkeypatch.setattr("application_crew.llm.client.structured", fake.structured)
+    monkeypatch.setattr("mappe.llm.client.structured", fake.structured)
     return fake
 
 
@@ -83,7 +83,7 @@ class FakeEmbedder:
 @pytest.fixture
 def fake_embedder(monkeypatch):
     fake = FakeEmbedder()
-    monkeypatch.setattr("application_crew.search.semantic.get_embedder", lambda cfg: fake)
+    monkeypatch.setattr("mappe.search.semantic.get_embedder", lambda cfg: fake)
     return fake
 
 
@@ -91,8 +91,8 @@ def fake_embedder(monkeypatch):
 def client(tmp_path, monkeypatch, fake_llm, fake_embedder):
     from fastapi.testclient import TestClient
 
-    from application_crew.config import get_settings
-    from application_crew.web.app import app
+    from mappe.config import get_settings
+    from mappe.web.app import app
 
     monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
     # Independent of the shell: no demo mode, no optional job source keys.
@@ -138,7 +138,7 @@ def job_apis(monkeypatch):
 
     apis.handler = handler
     monkeypatch.setattr(
-        "application_crew.search.service.make_client",
+        "mappe.search.service.make_client",
         lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(lambda r: apis.handler(r))),
     )
     clear_cache()

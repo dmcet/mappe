@@ -1,4 +1,4 @@
-from application_crew.runner.states import (
+from mappe.runner.states import (
     TRANSITIONS,
     USER_GATES,
     WORKING,

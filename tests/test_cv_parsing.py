@@ -2,13 +2,13 @@ from datetime import date
 
 from sqlmodel import Session
 
-from application_crew.checks.completeness import check_cv, parse_month
-from application_crew.config import DEFAULT_CONFIG_PATH, load_settings
-from application_crew.db import CV, init_engine
-from application_crew.domain.extraction import ExtractedLanguage, to_parsed_cv
-from application_crew.domain.summary import experience_months, summarize
-from application_crew.runner.states import CVStatus
-from application_crew.steps.cv import parse_cv
+from mappe.checks.completeness import check_cv, parse_month
+from mappe.config import DEFAULT_CONFIG_PATH, load_settings
+from mappe.db import CV, init_engine
+from mappe.domain.extraction import ExtractedLanguage, to_parsed_cv
+from mappe.domain.summary import experience_months, summarize
+from mappe.runner.states import CVStatus
+from mappe.steps.cv import parse_cv
 from tests.conftest import make_extracted
 
 TODAY = date(2026, 11, 1)
@@ -37,7 +37,7 @@ def test_current_position_has_no_end_and_lists_are_deduplicated():
 
 
 def test_skill_levels_headline_and_client():
-    from application_crew.domain.extraction import ExtractedSkill, normalize_level
+    from mappe.domain.extraction import ExtractedSkill, normalize_level
 
     extracted = make_extracted(
         skills=[
@@ -140,7 +140,7 @@ async def test_parse_cv_job_failure_is_stored(tmp_path, fake_llm):
 
 
 def test_cvs_stored_before_skill_levels_still_load():
-    from application_crew.domain.models import ParsedCV
+    from mappe.domain.models import ParsedCV
 
     old = to_parsed_cv(make_extracted()).model_dump(mode="json")
     old["skills"] = ["Python", "Kubernetes"]

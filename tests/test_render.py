@@ -1,6 +1,6 @@
 import pytest
 
-from application_crew.render.typst import pdf_to_text, render, typst_available
+from mappe.render.typst import pdf_to_text, render, typst_available
 
 pytestmark = pytest.mark.skipif(not typst_available(), reason="typst not installed")
 
