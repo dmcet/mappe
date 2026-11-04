@@ -1,7 +1,7 @@
 import { Button, GlassCard, GradientText } from "performative-ui";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { api } from "../api";
+import { api, files } from "../api";
 import {
   EMPTY_REQUIREMENTS,
   RequirementsEditor,
@@ -197,6 +197,36 @@ function HitCard({
   );
 }
 
+/** Exports to pass on: the list as shown (PDF), or the list with every application (ZIP). */
+export function ExportButtons({ search, shown }: { search: SearchDetail; shown: Set<HiddenReason> }) {
+  const applied = search.results.filter((r) => r.hit.run_id !== null).length;
+  const show = HIDDEN_ORDER.filter((r) => shown.has(r));
+  return (
+    <>
+      <Button
+        as="a"
+        href={files.searchExport(search.id, show)}
+        variant="ghost"
+        size="sm"
+        title="The listings as shown here, with links, as a PDF"
+      >
+        Export list (PDF)
+      </Button>
+      {applied > 0 && (
+        <Button
+          as="a"
+          href={files.searchArchive(search.id, show)}
+          variant="ghost"
+          size="sm"
+          title="ZIP: a report with the list and each application's assessment and review, plus each tailored CV and cover letter as its own PDF"
+        >
+          Export with {applied} application{applied > 1 ? "s" : ""} (ZIP)
+        </Button>
+      )}
+    </>
+  );
+}
+
 function Results({
   search,
   onChanged,
@@ -228,20 +258,23 @@ function Results({
     <div className="stack">
       <div className="results-head">
         <SourceLine sources={search.sources} />
-        {search.saved_id === null ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={save.busy}
-            onClick={async () => {
-              if (await save.run(() => api.saveSearch(search.id))) onSaved();
-            }}
-          >
-            Save search
-          </Button>
-        ) : (
-          <span className="muted">Saved search</span>
-        )}
+        <div className="panel__actions">
+          {search.saved_id === null ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={save.busy}
+              onClick={async () => {
+                if (await save.run(() => api.saveSearch(search.id))) onSaved();
+              }}
+            >
+              Save search
+            </Button>
+          ) : (
+            <span className="muted">Saved search</span>
+          )}
+          <ExportButtons search={search} shown={shown} />
+        </div>
       </div>
       <p className="hint ranking-note">{rankingText(search.ranking)}</p>
       <ErrorNote error={save.error} />

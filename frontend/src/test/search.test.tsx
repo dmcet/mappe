@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { LiveContext } from "../live";
 import {
+  ExportButtons,
   SearchPage,
   SearchProgress,
   groupResults,
@@ -130,6 +131,25 @@ describe("search page", () => {
     fireEvent.click(screen.getAllByLabelText("apply")[0]);
     expect(screen.getByText("Start 1 application")).toBeInTheDocument();
     expect(screen.getByText("Save search")).toBeInTheDocument();
+    // The export follows what is shown; without applications there is only the list.
+    expect(screen.getByText("Export list (PDF)").closest("a")).toHaveAttribute(
+      "href",
+      "/api/searches/7/export.pdf?show=elsewhere",
+    );
+    expect(screen.queryByText(/Export with/)).not.toBeInTheDocument();
+  });
+
+  it("offers the full export once listings have applications", () => {
+    const applied = {
+      ...detail,
+      results: [item(hit({ id: 1, status: "applied", run_id: 3 })), item(hit({ id: 2, run_id: 4 }))],
+    };
+    render(<ExportButtons search={applied} shown={new Set()} />);
+    expect(screen.getByText("Export list (PDF)").closest("a")).toHaveAttribute("href", "/api/searches/7/export.pdf");
+    expect(screen.getByText("Export with 2 applications (ZIP)").closest("a")).toHaveAttribute(
+      "href",
+      "/api/searches/7/export.zip",
+    );
   });
 
   it("shows each source's progress while a search runs", () => {

@@ -156,6 +156,25 @@ On **Your final review** you see all checks of the final draft and can download 
   `Lastname_Firstname_CV_Company.pdf` (or `_Lebenslauf_` / `_Anschreiben_` for German
   listings), plus **a ZIP** with all drafts, the parsed CV, the listing and the assessment.
 
+### 6. Export to pass on
+
+Exports are for someone else to read and decide (for example a friend whose CV you used).
+The report is a PDF in the Mappe look, with every link working:
+
+- **Find jobs → Export list (PDF)**: the listings as shown (including the hidden groups you
+  ticked), with scores, matched skills, an excerpt and a link to each listing.
+- **Find jobs → Export with N applications (ZIP)**: one report (the same list, an overview
+  of the applications, and per application the assessment, requirement checks, review
+  checks, recruiter review, skill coverage and listing), plus the deliverables as separate
+  files: each tailored CV and cover letter, exactly as delivered. With several applications,
+  each has its own numbered folder. The report's buttons open the files next to it (in
+  desktop PDF viewers, after unpacking). Applications still in the final review include
+  their current draft, named `..._draft-N.pdf`.
+- **Application page → Export ZIP**: the same for a single application: the report, the CV
+  and the cover letter.
+
+Exports cost nothing: no Claude calls, only rendering.
+
 ### Costs
 
 The header always shows today's and the total model costs. **Costs** breaks them down by

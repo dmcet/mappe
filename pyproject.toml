@@ -17,6 +17,7 @@ dependencies = [
     "lingua-language-detector>=2.2",
     "rapidfuzz>=3.14",
     "fastembed>=0.9.1,<0.10",
+    "pypdf>=6",
 ]
 
 [dependency-groups]
