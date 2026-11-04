@@ -44,6 +44,12 @@ class SearchConfig:
 
 
 @dataclass(frozen=True)
+class FetchConfig:
+    timeout_seconds: float = 30.0  # download and text extraction together
+    max_mb: float = 5.0  # larger pages are not listings
+
+
+@dataclass(frozen=True)
 class Settings:
     data_dir: Path
     max_concurrent_runs: int
@@ -51,6 +57,7 @@ class Settings:
     llm_default: StepLLMConfig
     llm_steps: dict[str, StepLLMConfig] = field(default_factory=dict)
     search: SearchConfig = field(default_factory=SearchConfig)
+    fetch: FetchConfig = field(default_factory=FetchConfig)
     demo: bool = False  # canned Claude responses, no API calls (APP_DEMO=1)
     demo_delay_s: float = 0.0  # pause per demo "Claude call" (APP_DEMO_DELAY), to see the status
 
@@ -93,6 +100,7 @@ def load_settings(path: Path | None = None) -> Settings:
         llm_default=llm_default,
         llm_steps=llm_steps,
         search=SearchConfig(**search_raw),
+        fetch=FetchConfig(**raw.get("fetch", {})),
         demo=os.environ.get("APP_DEMO", "").strip().lower() in {"1", "true", "yes"},
         demo_delay_s=float(os.environ.get("APP_DEMO_DELAY", "0") or 0),
     )

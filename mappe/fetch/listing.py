@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -12,6 +13,8 @@ from lingua import Language, LanguageDetectorBuilder
 
 USER_AGENT = "Mozilla/5.0 (compatible; mappe/0.1; personal job search tool)"
 MIN_TEXT_LENGTH = 300  # below this we assume a login wall / JS-only page
+TIMEOUT_SECONDS = 30.0  # the whole fetch: download and text extraction
+MAX_BYTES = 5_000_000  # a listing page is far smaller; more is not a listing
 
 _detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH, Language.GERMAN).build()
 
@@ -54,28 +57,74 @@ def _is_parent_path(candidate: str, path: str) -> bool:
     return candidate != path and path.startswith(candidate + "/")
 
 
-async def fetch_listing(url: str, timeout: float = 20.0) -> FetchResult:
+async def fetch_listing(
+    url: str,
+    timeout: float = TIMEOUT_SECONDS,
+    max_bytes: int = MAX_BYTES,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> FetchResult:
+    """Fetch and extract a listing within ``timeout`` seconds in total.
+
+    httpx's own timeout applies per phase (connect, each read), so a server that trickles
+    bytes could otherwise hold the run indefinitely.
+    """
     try:
-        async with httpx.AsyncClient(
-            follow_redirects=True, timeout=timeout, headers={"User-Agent": USER_AGENT}
-        ) as client:
-            response = await client.get(url)
+        async with asyncio.timeout(timeout):
+            return await _fetch(url, timeout, max_bytes, transport)
+    except TimeoutError:
+        return FetchResult(ok=False, error=f"fetch timed out after {timeout:g} seconds")
+
+
+async def _download(
+    url: str, timeout: float, max_bytes: int, transport: httpx.AsyncBaseTransport | None
+) -> tuple[httpx.URL, str]:
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+        transport=transport,
+    ) as client:
+        async with client.stream("GET", url) as response:
             response.raise_for_status()
+            body = bytearray()
+            async for chunk in response.aiter_bytes():
+                body += chunk
+                if len(body) > max_bytes:
+                    raise PageTooLarge(f"page is larger than {max_bytes // 1_000_000} MB")
+            encoding = response.encoding or "utf-8"
+            return response.url, bytes(body).decode(encoding, errors="replace")
+
+
+class PageTooLarge(Exception):
+    pass
+
+
+async def _fetch(
+    url: str, timeout: float, max_bytes: int, transport: httpx.AsyncBaseTransport | None
+) -> FetchResult:
+    try:
+        final, html = await _download(url, timeout, max_bytes, transport)
     except httpx.HTTPError as exc:
         return FetchResult(ok=False, error=f"fetch failed: {exc}")
+    except PageTooLarge as exc:
+        return FetchResult(ok=False, error=f"fetch failed: {exc}")
 
-    original, final = httpx.URL(url), response.url
+    original = httpx.URL(url)
     if final.host == original.host and _is_parent_path(final.path, original.path):
         return FetchResult(
             ok=False,
             error=f"redirected to {final}; the listing has probably been taken down",
         )
 
-    html = response.text
-    posting = extract_job_posting(html, str(response.url))
-    text = extract_text(html, str(response.url))
+    # Extraction is CPU-bound: off the event loop, so the app (and Abort) stay responsive.
+    return await asyncio.to_thread(_extract, html, str(final))
+
+
+def _extract(html: str, url: str) -> FetchResult:
+    posting = extract_job_posting(html, url)
+    text = extract_text(html, url)
     if posting and posting.get("description"):
-        description = extract_text(str(posting["description"]), str(response.url))
+        description = extract_text(str(posting["description"]), url)
         text = description or text
 
     if len(text) < MIN_TEXT_LENGTH and posting is None:
@@ -84,6 +133,4 @@ async def fetch_listing(url: str, timeout: float = 20.0) -> FetchResult:
             text=text,
             error="page contains too little text (login wall or JavaScript-only page?)",
         )
-    return FetchResult(
-        ok=True, text=text, job_posting=posting, meta={"final_url": str(response.url)}
-    )
+    return FetchResult(ok=True, text=text, job_posting=posting, meta={"final_url": url})

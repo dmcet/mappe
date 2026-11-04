@@ -129,7 +129,7 @@ The application stops where it needs you:
 
 | You see | What to do |
 |---|---|
-| **Paste the listing** | The page couldn't be fetched (login wall, JavaScript-only page, listing taken down). Copy the text from the browser and paste it. |
+| **Paste the listing** | The page couldn't be fetched (login wall, JavaScript-only page, listing taken down, no answer within `timeout_seconds`), or you clicked **Abort** while it was downloading. Copy the text from the browser and paste it. |
 | **A must-have isn't met** | Decide: don't apply, or continue anyway. |
 | **Your decision** | Read the assessment: verdict and score, strengths, gaps, transferable skills and the skill coverage table (fact IDs like `pos1.resp2` show the CV bullet on hover). Choose whether a cover letter should be written and click **Apply** or **Don't apply**. |
 | **Your final review** | See below. |
@@ -214,6 +214,10 @@ effort = "medium"           # low | medium | high | xhigh | max
 Defaults: Opus 5.5 for CV parsing, matching, CV writing and the claims check; Haiku 5.5 for
 listing parsing; Sonnet 5.5 for role suggestions, the cover letter and the recruiter review. After changing the
 file, rebuild with `docker compose up -d --build`.
+
+The `[fetch]` section limits listing downloads: `timeout_seconds` (default 30) for download
+and text extraction together, and `max_mb` (default 5) for the page size. Past either limit,
+the application asks for the pasted text.
 
 The `[search]` section sets the job search: default sources, results per source, maximum
 listing age, search radius, timeouts, the score below which listings are hidden, and the

@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { Pipeline } from "../components/Pipeline";
 import { fromRequirements, toRequirements, EMPTY_REQUIREMENTS } from "../components/RequirementsEditor";
 import { StatusBadge } from "../components/ui";
+import { AbortFetch } from "../pages/run/RunPage";
 import { duration, tone, usd } from "../format";
 import type { Stage } from "../types";
 
@@ -67,5 +68,19 @@ describe("formatting", () => {
       </MemoryRouter>,
     );
     expect(screen.getByText("Your final review")).toBeInTheDocument();
+  });
+});
+
+describe("abort a listing download", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("asks the API to stop the download", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response("{}", { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AbortFetch runId={5} />);
+    fireEvent.click(screen.getByRole("button", { name: "Abort" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/runs/5/abort-fetch");
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
   });
 });

@@ -82,6 +82,7 @@ export const api = {
   editData: (id: number) => request<EditData>("GET", `/api/runs/${id}/edit-data`),
   saveDocuments: (id: number, edit: DocumentEdit) =>
     request<RunDetail>("PUT", `/api/runs/${id}/documents`, edit),
+  abortFetch: (id: number) => request<RunDetail>("POST", `/api/runs/${id}/abort-fetch`),
   approveRun: (id: number) => request<RunDetail>("POST", `/api/runs/${id}/approve`),
   deleteRun: (id: number) => request<void>("DELETE", `/api/runs/${id}`),
 

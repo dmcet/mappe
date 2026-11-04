@@ -2,7 +2,7 @@ import { Button, GradientText, WibblingSpinner } from "performative-ui";
 import { useNavigate, useParams } from "react-router";
 import { api, files } from "../../api";
 import { Pipeline } from "../../components/Pipeline";
-import { ConfirmButton, ErrorNote, Section, StatusBadge } from "../../components/ui";
+import { ConfirmButton, ErrorNote, Section, StatusBadge, useAction } from "../../components/ui";
 import { duration, modelName, usd } from "../../format";
 import { useLive, useResource } from "../../live";
 import { Assessment, Coverage } from "./Assessment";
@@ -77,6 +77,7 @@ export function RunPage() {
             <span className="muted">running for {duration(job.elapsed_s)}</span>
           </div>
         )}
+        {data.status === "fetching_listing" && <AbortFetch runId={id} />}
         {data.status === "failed" && <ErrorNote error={data.error} />}
       </Section>
 
@@ -87,6 +88,20 @@ export function RunPage() {
       <RequirementsPanel run={data} />
       <ListingPanel run={data} />
       <ActivityPanel run={data} />
+    </div>
+  );
+}
+
+/** Stop a slow listing download; the run then asks for the pasted text. */
+export function AbortFetch({ runId }: { runId: number }) {
+  const action = useAction();
+  return (
+    <div className="actions">
+      <Button variant="ghost" size="sm" loading={action.busy} onClick={() => action.run(() => api.abortFetch(runId))}>
+        Abort
+      </Button>
+      <span className="hint">Stops the download; you can paste the listing text instead.</span>
+      <ErrorNote error={action.error} />
     </div>
   );
 }
