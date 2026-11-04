@@ -4,12 +4,14 @@ import type {
   CVSummary,
   EditData,
   Requirement,
+  RolesStatus,
   RunDetail,
   RunSummary,
   SavedSearch,
   SearchDetail,
   SearchSource,
   SearchSummary,
+  SuggestedRole,
 } from "./types";
 
 export class ApiError extends Error {
@@ -58,6 +60,7 @@ export const api = {
   reparseCv: (id: number, markdown: string) =>
     request<CVDetail>("PUT", `/api/cvs/${id}/markdown`, { markdown }),
   confirmCv: (id: number) => request<CVDetail>("POST", `/api/cvs/${id}/confirm`),
+  suggestRoles: (id: number) => request<CVDetail>("POST", `/api/cvs/${id}/roles`),
   deleteCv: (id: number, cascade: boolean) =>
     request<void>("DELETE", `/api/cvs/${id}${cascade ? "?cascade=true" : ""}`),
 
@@ -85,7 +88,12 @@ export const api = {
   costs: () => request<CostSummary>("GET", "/api/costs"),
 
   searchSuggestions: (cvId: number) =>
-    request<{ titles: string[]; sources: SearchSource[] }>(
+    request<{
+      titles: string[];
+      roles: SuggestedRole[];
+      roles_status: RolesStatus;
+      sources: SearchSource[];
+    }>(
       "GET",
       `/api/search/suggestions?cv_id=${cvId}`,
     ),

@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass, field
 # Human-readable names for steps and Claude calls.
 LABELS = {
     "parse_cv": "Reading your CV",
+    "suggest_roles": "Suggesting other roles",
     "parse_listing": "Reading the job listing",
     "match": "Assessing your fit",
     "author_cv": "Writing the tailored CV",

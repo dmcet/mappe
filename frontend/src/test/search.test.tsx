@@ -3,11 +3,14 @@ import { MemoryRouter } from "react-router";
 import { LiveContext } from "../live";
 import {
   ExportButtons,
+  RoleSuggestions,
   SearchPage,
   SearchProgress,
   groupResults,
+  hasRole,
   rankingText,
   salaryText,
+  toggleRole,
   workMode,
 } from "../pages/Search";
 import type { JobHit, SearchDetail, SearchResultItem } from "../types";
@@ -184,5 +187,51 @@ describe("search page", () => {
     expect(screen.getByText("Searching jobs · 1/2 sources · 12 listings")).toBeInTheDocument();
     expect(screen.getByText("12 listings")).toBeInTheDocument();
     expect(screen.getByText("searching…")).toBeInTheDocument();
+  });
+});
+
+describe("role suggestions", () => {
+  const sre = { title: "Site Reliability Engineer", title_alt: "", reason: "Latency work." };
+  const arch = { title: "Software Architect", title_alt: "Softwarearchitekt", reason: "Design ownership." };
+
+  it("adds a role in both languages and removes it again", () => {
+    const added = toggleRole("Backend Engineer\n", arch);
+    expect(added).toBe("Backend Engineer\nSoftware Architect\nSoftwarearchitekt");
+    expect(hasRole(added, arch)).toBe(true);
+    expect(toggleRole(added, arch)).toBe("Backend Engineer");
+    expect(hasRole("site reliability engineer", sre)).toBe(true);
+  });
+
+  it("shows opt-in chips that toggle the titles", () => {
+    let titles = "Backend Engineer";
+    const onChange = vi.fn((t: string) => (titles = t));
+    const view = (t: string) => (
+      <MemoryRouter>
+        <RoleSuggestions cvId={1} roles={[sre, arch]} status="done" titles={t} onChange={onChange} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view(titles));
+    expect(screen.getByText("Latency work.")).toBeInTheDocument();
+    const chip = screen.getByRole("button", { name: /Site Reliability Engineer/ });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(chip);
+    expect(titles).toBe("Backend Engineer\nSite Reliability Engineer");
+    rerender(view(titles));
+    expect(screen.getByRole("button", { name: /Site Reliability Engineer/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("explains where suggestions come from when there are none yet", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <RoleSuggestions cvId={4} roles={[]} status="suggesting" titles="" onChange={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/Claude is suggesting other roles/)).toBeInTheDocument();
+    rerender(
+      <MemoryRouter>
+        <RoleSuggestions cvId={4} roles={[]} status={null} titles="" onChange={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "CV page" })).toHaveAttribute("href", "/cvs/4");
   });
 });

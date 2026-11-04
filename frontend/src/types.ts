@@ -73,6 +73,7 @@ export interface CVSummary {
   cost_usd: number;
   warnings: number;
   runs: number;
+  roles_status: RolesStatus;
   created_at: string;
   updated_at: string;
 }
@@ -138,6 +139,17 @@ export interface CVDetail extends Omit<CVSummary, "warnings"> {
   } | null;
   quick_fields: Record<string, string>;
   quick_values: Record<string, string>;
+  roles: (SuggestedRole & { fact_ids: string[] })[];
+  roles_error: string | null;
+}
+
+export type RolesStatus = "suggesting" | "done" | "failed" | null;
+
+/** An alternative role Claude suggested for the CV (opt-in search title). */
+export interface SuggestedRole {
+  title: string;
+  title_alt: string;
+  reason: string;
 }
 
 export interface Requirement {

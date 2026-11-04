@@ -27,6 +27,8 @@ def confirmed_cv(client) -> int:
     cv = client.post("/api/cvs", json={"label": "Main CV", "markdown": "# Jane Doe"}).json()
     wait_for(client, f"/api/cvs/{cv['id']}", status_is("waiting_for_confirmation"))
     client.post(f"/api/cvs/{cv['id']}/confirm")
+    # Role suggestions run in the background after confirmation; wait so tests don't race.
+    wait_for(client, f"/api/cvs/{cv['id']}", lambda d: d["roles_status"] != "suggesting")
     return cv["id"]
 
 

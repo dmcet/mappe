@@ -1,6 +1,6 @@
 import { Button, GradientText, WibblingSpinner } from "performative-ui";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { api } from "../api";
 import { ConfirmButton, ErrorNote, Section, StatusBadge, useAction } from "../components/ui";
 import { usd } from "../format";
@@ -87,6 +87,38 @@ function Extracted({ cv }: { cv: CVDetail }) {
         </Section>
       </div>
     </>
+  );
+}
+
+export function OtherRoles({ cv, onSuggest, busy }: { cv: CVDetail; onSuggest: () => void; busy: boolean }) {
+  const suggesting = cv.roles_status === "suggesting";
+  return (
+    <Section title="Other roles to consider" eyebrow="For the job search">
+      {suggesting && <WibblingSpinner verbs={["Suggesting other roles"]} info="One small Claude call, based on your confirmed CV" />}
+      {cv.roles_status === "failed" && <ErrorNote error={cv.roles_error} />}
+      {cv.roles.length > 0 && !suggesting && (
+        <>
+          <ul className="facts">
+            {cv.roles.map((r) => (
+              <li key={r.title}>
+                <strong>{r.title}</strong>
+                {r.title_alt && <span className="muted"> / {r.title_alt}</span>} · {r.reason}{" "}
+                <span className="mono muted">{r.fact_ids.join(", ")}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="hint">
+            Add them to a search on the <Link to="/search">search page</Link>; they aren't searched unless you pick them.
+          </p>
+        </>
+      )}
+      {cv.roles_status === "done" && !cv.roles.length && <p className="hint">No other roles found that your CV supports.</p>}
+      {!suggesting && (
+        <Button variant="ghost" loading={busy} onClick={onSuggest}>
+          {cv.roles_status ? "Suggest again" : "Suggest roles"}
+        </Button>
+      )}
+    </Section>
   );
 }
 
@@ -202,6 +234,10 @@ export function CvDetailPage() {
         </div>
       )}
       <ErrorNote error={action.error} />
+
+      {data.status === "confirmed" && (
+        <OtherRoles cv={data} busy={action.busy} onSuggest={() => action.run(() => api.suggestRoles(id).then(cv.setData))} />
+      )}
 
       {data.parsed && <Extracted cv={data} />}
 

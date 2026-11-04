@@ -38,6 +38,11 @@ max_tokens = 16000
 [llm.steps.parse_cv]
 effort = "low"            # once per CV; everything builds on it, so it stays on Opus
 
+[llm.steps.suggest_roles]
+model = "claude-sonnet-5-5"  # once per confirmed CV, small output; reasons about careers
+effort = "low"
+max_tokens = 4000
+
 [llm.steps.parse_listing]
 model = "claude-haiku-5-5"  # extraction; salary, work mode and quotes are checked in Python
 effort = "low"

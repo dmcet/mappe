@@ -64,8 +64,14 @@ def _search(session: Session, search_id: int) -> Search:
 
 @router.get("/search/suggestions")
 def suggestions(cv_id: int, session: SessionDep) -> dict:
+    """Titles from the CV (searched by default) and Claude's alternative roles (opt-in)."""
     cv = confirmed_cv(session, cv_id)
-    return {"titles": suggest_titles(_parsed(cv)), "sources": available_sources(get_settings())}
+    return {
+        "titles": suggest_titles(_parsed(cv)),
+        "roles": [{k: r[k] for k in ("title", "title_alt", "reason")} for r in cv.roles or []],
+        "roles_status": cv.roles_status,
+        "sources": available_sources(get_settings()),
+    }
 
 
 async def _run(

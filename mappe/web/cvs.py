@@ -63,6 +63,7 @@ def cv_summary(cv: CV, runs: int = 0) -> dict:
         "cost_usd": cv.cost_usd,
         "warnings": len(cv.warnings or []),
         "runs": runs,
+        "roles_status": cv.roles_status,
         "created_at": cv.created_at,
         "updated_at": cv.updated_at,
     }
@@ -84,6 +85,8 @@ def cv_detail(cv: CV, runs: int) -> dict:
         "summary": asdict(summarize(parsed)) if parsed else None,
         "quick_fields": QUICK_FIELDS,
         "quick_values": quick,
+        "roles": cv.roles or [],
+        "roles_error": cv.roles_error,
     }
 
 
@@ -146,18 +149,40 @@ def update_markdown(cv_id: int, body: CVMarkdown, request: Request, session: Ses
     cv.parsed = None
     cv.warnings = []
     cv.error = None
+    _clear_roles(cv)
     _touch(session, cv)
     engine_of(request).enqueue_cv(cv_id)
     return cv_detail(cv, _run_count(session, cv_id))
 
 
+def _clear_roles(cv: CV) -> None:
+    cv.roles_status, cv.roles, cv.roles_error = None, [], None
+
+
 @router.post("/{cv_id}/confirm")
-def confirm(cv_id: int, session: SessionDep) -> dict:
+def confirm(cv_id: int, request: Request, session: SessionDep) -> dict:
+    """Confirm the CV, then suggest alternative roles for the job search in the background."""
     cv = _get(session, cv_id)
     if cv.status != CVStatus.WAITING_FOR_CONFIRMATION:
         raise HTTPException(409, "CV is not waiting for confirmation")
     cv.status = CVStatus.CONFIRMED
+    cv.roles_status, cv.roles_error = "suggesting", None
     _touch(session, cv)
+    engine_of(request).enqueue_cv(cv_id)
+    return cv_detail(cv, _run_count(session, cv_id))
+
+
+@router.post("/{cv_id}/roles")
+def suggest_roles_again(cv_id: int, request: Request, session: SessionDep) -> dict:
+    """Ask Claude for new role suggestions (one small call)."""
+    cv = _get(session, cv_id)
+    if cv.status != CVStatus.CONFIRMED:
+        raise HTTPException(409, "Confirm the CV first")
+    if cv.roles_status == "suggesting":
+        raise HTTPException(409, "Roles are being suggested")
+    cv.roles_status, cv.roles_error = "suggesting", None
+    _touch(session, cv)
+    engine_of(request).enqueue_cv(cv_id)
     return cv_detail(cv, _run_count(session, cv_id))
 
 
@@ -172,7 +197,7 @@ def delete_cv(
     cv = _get(session, cv_id)
     engine = engine_of(request)
     if cv.status == CVStatus.PARSING or engine.is_busy("cv", cv_id):
-        raise HTTPException(409, "The CV is being parsed; delete it when parsing is done")
+        raise HTTPException(409, "The CV is being processed; delete it when that is done")
     runs = session.exec(select(Run).where(Run.cv_id == cv_id)).all()
     if runs and not cascade:
         raise HTTPException(409, f"The CV has {len(runs)} application(s); delete them too?")

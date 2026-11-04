@@ -73,7 +73,7 @@ Python; Claude is only used for reasoning workloads").
   and job search uses `search/samples/*.json`. Add both when adding a step or a source.
 - Schema changes need a new Alembic migration in `mappe/migrations/versions/`.
 - Default models: Opus 5.5 (`claude-opus-5-5`) for parsing CV, match, author CV, claims check;
-  Haiku 5.5 for listing parsing; Sonnet 5.5 for cover letter and recruiter.
+  Haiku 5.5 for listing parsing; Sonnet 5.5 for role suggestions, cover letter and recruiter.
 - The cost ledger is kept even when runs or CVs are deleted.
 
 ## Commands

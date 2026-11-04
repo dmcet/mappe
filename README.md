@@ -65,6 +65,11 @@ certification and degree. Then check the result:
 - **Quick fixes** fill in contact details, notice period, earliest start and similar fields.
 - Anything else: edit the Markdown and **Save and parse again**.
 - **Confirm CV** (or "Confirm anyway"). Only confirmed CVs can be used for applications.
+- After confirmation, Claude suggests **other roles to consider** in the background: a
+  realistic next step or a neighbouring field (e.g. "Platform Engineer" for a backend
+  developer with a Kubernetes certificate). Each one names the CV facts it builds on;
+  suggestions without real facts behind them are dropped. One small call (Sonnet, under a
+  cent). **Suggest again** on the CV page asks for new ones.
 
 The extracted data is the only source for everything that follows; nothing outside it is
 used.
@@ -89,13 +94,15 @@ in Python only and costs nothing; Claude is only called for the listings you pic
 
 - Choose the CV. Job titles are suggested from your headline and recent roles, with German
   and English variants ("Backend Engineer", "Backend-Entwickler"); edit them freely.
+  The other roles suggested for your CV are listed below as chips: they are only searched
+  when you click one (it adds the title in both languages; click again to remove it).
 - The requirements are the same as for an application. Cities are searched with a radius
   (`radius_km`); a must-have hides listings that clearly contradict it.
 - Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy, Remote OK (off by default,
   mostly US jobs) and Adzuna (needs a free key, see [Configuration](#configuration)). A source
   that fails is reported and skipped.
 - Each listing gets a score from 0 to 100 from skills from your CV found in the listing,
-  title fit, **meaning** and freshness. Meaning comes from a local embedding model in the
+  title fit (against your CV's titles and the titles you searched for), **meaning** and freshness. Meaning comes from a local embedding model in the
   image (German and English, no API calls): it compares your CV with each listing, so a fit
   shows up even when the wording differs. Without the model, keywords decide. Bundesagentur
   listings have no text in the search, so they are scored mostly on the title. The same
@@ -205,7 +212,7 @@ effort = "medium"           # low | medium | high | xhigh | max
 ```
 
 Defaults: Opus 5.5 for CV parsing, matching, CV writing and the claims check; Haiku 5.5 for
-listing parsing; Sonnet 5.5 for the cover letter and the recruiter review. After changing the
+listing parsing; Sonnet 5.5 for role suggestions, the cover letter and the recruiter review. After changing the
 file, rebuild with `docker compose up -d --build`.
 
 The `[search]` section sets the job search: default sources, results per source, maximum
