@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push to the same branch cancels the run still going for the old commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# No secrets on purpose: tests use fake_llm and never call the real Claude API.
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv run --frozen --only-group dev ruff check .
+      - run: uv run --frozen --only-group dev ruff format --check .
+
+  test:
+    name: Tests (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      # Builds the runtime image plus dev deps; the frontend stage runs typecheck and Vitest.
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: test
+          tags: mappe:test
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Backend tests
+        run: docker run --rm mappe:test
