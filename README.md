@@ -162,6 +162,12 @@ On **Your final review** you see all checks of the final draft and can download 
 - **Approve and finish** produces the final files, named like
   `Lastname_Firstname_CV_Company.pdf` (or `_Lebenslauf_` / `_Anschreiben_` for German
   listings), plus **a ZIP** with all drafts, the parsed CV, the listing and the assessment.
+- **Send by email**: if the listing gives an email address and you have a cover letter,
+  the email is ready: the cover letter as the text, greeting the listing's contact person
+  by name (or neutrally), the CV attached. **Open in Apple Mail** (Mac, needs a one-time
+  shortcut) or **Download email (.eml)** (Outlook, Thunderbird) opens it in your mail app
+  to check and send. Mappe sends nothing itself and needs no mail password. Setup and
+  details: [docs/email.md](docs/email.md).
 
 ### 6. Export to pass on
 

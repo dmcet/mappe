@@ -1,4 +1,5 @@
 import type {
+  ApplicationEmail,
   CostSummary,
   CVDetail,
   CVSummary,
@@ -83,6 +84,7 @@ export const api = {
   saveDocuments: (id: number, edit: DocumentEdit) =>
     request<RunDetail>("PUT", `/api/runs/${id}/documents`, edit),
   abortFetch: (id: number) => request<RunDetail>("POST", `/api/runs/${id}/abort-fetch`),
+  email: (id: number) => request<ApplicationEmail>("GET", `/api/runs/${id}/email`),
   approveRun: (id: number) => request<RunDetail>("POST", `/api/runs/${id}/approve`),
   deleteRun: (id: number) => request<void>("DELETE", `/api/runs/${id}`),
 

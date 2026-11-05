@@ -115,6 +115,11 @@ class ParsedListing(BaseModel):
     salary_period: SalaryPeriod | None = None
     benefits: list[str] = Field(default_factory=list)
     cover_letter_requested: bool = False
+    # Application contact, verified against the listing text (domain/contact.py).
+    contact_name: str | None = None
+    contact_gender: Literal["female", "male"] | None = None
+    contact_academic_title: str | None = None  # "Dr.", "Prof. Dr."
+    contact_email: str | None = None
 
 
 RequirementKind = Literal["salary_min", "max_onsite_days", "location", "benefit", "other"]

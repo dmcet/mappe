@@ -114,6 +114,8 @@ Multiple links result in **separate runs**, one per listing, each with its own s
    - Files are named consistently (e.g. `Lastname_Firstname_CV_Company.pdf`, `Lastname_Firstname_Cover_Letter_Company.pdf`) and put into the run's download space
 
 8. The user downloads everything and sends out the application
+   - If the listing gives an email address and there is a cover letter, the application can be sent by email: the cover letter text is the email body, the CV PDF the attachment, with a greeting to the contact person named in the listing (a neutral one if none is named)
+   - Mappe hands the email to the user's mail app (Apple Shortcut on a Mac, `.eml` draft elsewhere) and never sends it itself; no mail credentials are stored. Details: [email.md](email.md)
 
 ### Cost and model usage
 - Default model: Claude Opus 5.5 with per-step effort levels (see architecture.md); models and effort levels are configurable per step

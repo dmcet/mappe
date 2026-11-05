@@ -14,6 +14,7 @@ Companion to [requirements.md](requirements.md). This document records the techn
 | D11 | Cost tracking | Usage ledger: one row per Claude call (model, step, tokens, cost), kept when runs or CVs are deleted | Exact cost per model, step, run and day; the header shows today's and total spend. |
 | D12 | Job search | Free job APIs (Bundesagentur, Arbeitnow, Remotive, Jobicy, Remote OK, Adzuna), queried in parallel; dedupe, requirement/area filter and ranking (skill overlap, title fit, freshness) in Python; **no Claude calls** | Searching hundreds of listings with Claude would cost per listing; keyword ranking against the parsed CV is good enough to pick candidates, and the existing match step judges the chosen ones. Details: [job-search-plan.md](job-search-plan.md). |
 | D13 | Export | Report rendered by Typst (`typst/export.typ`, the UI's fonts vendored in `typst/fonts`); with applications, a ZIP of the report plus each CV and cover letter as its own file. Report links to them are written as `mappe://doc/...` and rewritten with `pypdf` to links to the neighbouring file (`GoToR`) | The internal reasoning stays in one document; the deliverables stay exactly as sent; no headless browser is needed. |
+| D14 | Email | The application email (cover letter as body, CV as attachment) is built in Python and handed to the user's mail app: an Apple Shortcut on macOS (`shortcuts://` URL with the address of `GET /api/runs/{id}/email`; the shortcut opens a Mail compose window), an `.eml` draft with `X-Unsent: 1` elsewhere. The contact name and email come from the existing listing parse and are kept only if the listing text shows them; Frau/Herr comes from Python alone | No mail credentials in the container or its config; the user sends from their own account and has the last look. `mailto:` can't carry attachments. Details: [email.md](email.md). |
 | D5 | Rendering | **Typst**; CV via RenderCV-based single-column template, cover letter via a DIN 5008 Typst template | Small image, fast compiles, readable errors, ATS-friendly single-column layouts. |
 | D6 | LLM output | Claude produces **content** as flat Pydantic models (`client.messages.parse()` structured outputs), never markup | No syntax/escaping errors; deterministic checks on fixed structure. |
 | D7 | Listing fetch | `httpx` → JSON-LD `JobPosting` (`extruct`) → `trafilatura` main text → paste fallback in UI | Covers career pages/ATS portals (Personio, Greenhouse, Workday, ...) cheaply; no headless browser in v1. Playwright can be added later if needed. |
@@ -149,7 +150,7 @@ Translation (English CV → German listing) is allowed; rules 2–4 work on numb
 
 ```
 mappe/
-  web/ runner/ steps/ llm/ domain/ checks/ render/ fetch/ search/
+  web/ runner/ steps/ llm/ domain/ checks/ render/ fetch/ search/ mail/
   templates/          # Jinja2 (UI)
   typst/              # CV + cover letter templates (open source, licenses kept)
   prompts/            # one prompt file per Claude step

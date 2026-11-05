@@ -1,6 +1,6 @@
 import { Outcome, Section } from "../../components/ui";
 import { STEP_NAMES, usd, when } from "../../format";
-import type { RunDetail } from "../../types";
+import type { Listing, RunDetail } from "../../types";
 
 export function RequirementsPanel({ run }: { run: RunDetail }) {
   const results = run.state.requirement_results ?? [];
@@ -91,6 +91,8 @@ export function ListingPanel({ run }: { run: RunDetail }) {
         <dd>{l.language === "de" ? "German" : "English"}</dd>
         <dt>Cover letter</dt>
         <dd>{l.cover_letter_requested ? "requested" : "not requested"}</dd>
+        <dt>Contact</dt>
+        <dd>{contactText(l)}</dd>
       </dl>
       <div className="grid-2">
         <div>
@@ -160,4 +162,11 @@ export function ActivityPanel({ run }: { run: RunDetail }) {
       </Section>
     </div>
   );
+}
+
+export function contactText(l: Listing): string {
+  const forms = l.language === "de" ? { female: "Frau", male: "Herr" } : { female: "Ms", male: "Mr" };
+  const title = l.contact_gender ? forms[l.contact_gender] : "";
+  const name = [title, l.contact_academic_title, l.contact_name].filter(Boolean).join(" ");
+  return [name, l.contact_email].filter(Boolean).join(" · ") || "—";
 }

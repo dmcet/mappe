@@ -249,6 +249,8 @@ td ul { margin: 0; }
 .scores { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; color: var(--pui-fg-mute); font-size: 0.82rem; }
 .scores strong { color: var(--pui-fg); }
 .downloads { display: flex; flex-wrap: wrap; gap: 10px; }
+.email { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--pui-border); }
+.email__body { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 0.9rem; max-width: 80ch; }
 .timeline { list-style: none; padding: 0; max-height: 420px; overflow-y: auto; font-size: 0.84rem; }
 .timeline__item { display: grid; grid-template-columns: 110px 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--pui-border); }
 .timeline__item time { color: var(--pui-fg-mute); font-family: var(--pui-font-mono); font-size: 0.76rem; }
