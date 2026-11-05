@@ -112,13 +112,13 @@ export function Documents({ run, onChange }: { run: RunDetail; onChange: (r: Run
         <Section className="panel--done" eyebrow="Done" title={<GradientText>Ready to send</GradientText>}>
           <div className="downloads">
             {Object.keys(delivery.files).map((name) => (
-              <Button key={name} as="a" href={files.final(run.id, name)} variant="glow" sparkle>
+              <Button key={name} as="a" href={files.final(run.id, name)} download variant="glow" sparkle>
                 {name}
               </Button>
             ))}
           </div>
           <p>
-            <a href={files.bundle(run.id)}>Download everything as ZIP</a>{" "}
+            <a href={files.bundle(run.id)} download>Download everything as ZIP</a>{" "}
             <span className="muted">(final documents, all drafts, parsed CV, listing and assessment)</span>
           </p>
           <EmailPanel runId={run.id} />
@@ -135,7 +135,7 @@ export function Documents({ run, onChange }: { run: RunDetail; onChange: (r: Run
             {["cv.pdf", "cover-letter.pdf"]
               .filter((n) => n in d.files)
               .map((n) => (
-                <Button key={n} as="a" href={files.draft(run.id, d.iteration, n)} variant="ghost" size="sm">
+                <Button key={n} as="a" href={files.draft(run.id, d.iteration, n)} download variant="ghost" size="sm">
                   {n === "cv.pdf" ? "CV" : "Cover letter"} PDF
                 </Button>
               ))}
@@ -232,7 +232,7 @@ export function Documents({ run, onChange }: { run: RunDetail; onChange: (r: Run
                         {Object.keys(e.files)
                           .filter((n) => n.endsWith(".pdf"))
                           .map((n) => (
-                            <a key={n} href={files.draft(run.id, e.iteration, n)}>
+                            <a key={n} href={files.draft(run.id, e.iteration, n)} download>
                               {n}{" "}
                             </a>
                           ))}

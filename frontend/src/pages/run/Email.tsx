@@ -28,7 +28,7 @@ export function EmailPanel({ runId, mac = isMac() }: { runId: number; mac?: bool
     </Button>
   );
   const eml = (
-    <Button key="eml" as="a" href={email.eml_url} variant={mac ? "ghost" : "glow"}>
+    <Button key="eml" as="a" href={email.eml_url} download variant={mac ? "ghost" : "glow"}>
       Download email (.eml)
     </Button>
   );

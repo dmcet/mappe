@@ -123,33 +123,76 @@ def get_costs() -> dict:
         return cost_summary(session)
 
 
+HEARTBEAT_S = 10.0  # send at least this often, so the client can tell a dead connection
+LOOKBACK = timedelta(seconds=10)  # re-check rows updated this recently (late commits)
+
+
+class ChangeTracker:
+    """Which runs and CVs changed since the last call.
+
+    Two sources: new events (by ID, so every event is seen exactly once) and ``updated_at``
+    of runs and CVs (changes without an event, e.g. a saved edit). ``updated_at`` is set
+    before the commit, so a row can become visible with a timestamp older than the last
+    check. Rows updated within LOOKBACK are therefore checked again each time and reported
+    when their timestamp differs from the one seen before.
+    """
+
+    def __init__(self, session: Session) -> None:
+        self.last_event: int = session.exec(select(func.coalesce(func.max(Event.id), 0))).one()
+        self.seen: dict[str, dict[int, datetime]] = {"run": {}, "cv": {}}
+        self.changes(session)  # remember the current state; nothing has changed yet
+
+    def changes(self, session: Session) -> tuple[set[int], set[int]]:
+        rows = session.exec(select(Event.id, Event.run_id).where(Event.id > self.last_event)).all()
+        if rows:
+            self.last_event = max(event_id for event_id, _ in rows)
+        runs = {run_id for _, run_id in rows}
+        cutoff = datetime.now(UTC) - LOOKBACK
+        runs |= self._updated(session, "run", Run, cutoff)
+        cvs = self._updated(session, "cv", CV, cutoff)
+        return runs, cvs
+
+    def _updated(self, session: Session, kind: str, model, cutoff: datetime) -> set[int]:
+        seen = self.seen[kind]
+        current = dict(
+            session.exec(select(model.id, model.updated_at).where(model.updated_at >= cutoff)).all()
+        )
+        changed = {i for i, ts in current.items() if seen.get(i) != ts}
+        self.seen[kind] = current  # older rows dropped out of the window
+        return changed
+
+
 @router.get("/stream")
 async def stream(request: Request) -> EventSourceResponse:
-    """One message per second: the status snapshot plus which runs and CVs changed.
+    """The status snapshot plus which runs and CVs changed: every second while something
+    changes or runs, otherwise at least every HEARTBEAT_S seconds.
 
     The frontend refetches only what changed, so pages stay live without polling.
     """
 
     async def events() -> AsyncIterator[dict[str, str]]:
         with Session(get_engine()) as session:
-            last_event = session.exec(select(func.coalesce(func.max(Event.id), 0))).one()
-        since = datetime.now(UTC)
+            tracker = ChangeTracker(session)
         previous = ""
+        last_sent = 0.0
+        loop = asyncio.get_running_loop()
         while not await request.is_disconnected():
             with Session(get_engine()) as session:
-                runs = set(session.exec(select(Event.run_id).where(Event.id > last_event)).all())
-                last_event = session.exec(select(func.coalesce(func.max(Event.id), 0))).one()
-                now = datetime.now(UTC)
-                runs |= set(session.exec(select(Run.id).where(Run.updated_at >= since)).all())
-                cvs = set(session.exec(select(CV.id).where(CV.updated_at >= since)).all())
-                since = now
+                runs, cvs = tracker.changes(session)
                 snapshot = status_snapshot(request, session)
             payload = {**snapshot, "changed": {"runs": sorted(runs), "cvs": sorted(cvs)}}
             text = json.dumps(payload, default=str)
-            # Always send while jobs run (elapsed time ticks); otherwise only on change.
-            if snapshot["jobs"] or runs or cvs or text != previous:
+            # Always send while jobs run (elapsed time ticks), on change, and as a heartbeat.
+            now = loop.time()
+            if (
+                snapshot["jobs"]
+                or runs
+                or cvs
+                or text != previous
+                or now - last_sent >= HEARTBEAT_S
+            ):
                 yield {"event": "status", "data": text}
-                previous = text
+                previous, last_sent = text, now
             await asyncio.sleep(1.0)
 
     return EventSourceResponse(events(), ping=15)
