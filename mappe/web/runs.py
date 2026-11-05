@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, Response
@@ -12,6 +13,7 @@ from sqlmodel import Session, select
 from mappe.config import get_settings
 from mappe.db import CV, Event, Run, Usage
 from mappe.domain.models import ParsedCV, Requirement
+from mappe.mail.message import SHORTCUT_NAME, EmailUnavailable, build_eml, email_draft
 from mappe.runner import aborts
 from mappe.runner.engine import InvalidTransition, run_title, set_status
 from mappe.runner.states import WORKING, CVStatus, RunStatus
@@ -308,6 +310,44 @@ def download_final(run_id: int, name: str, session: SessionDep):
     if not path.is_file():
         raise HTTPException(404, "File not found")
     return FileResponse(path, filename=name)
+
+
+@router.get("/{run_id}/email")
+def email(run_id: int, request: Request, session: SessionDep) -> dict:
+    """The application email, for the UI preview and the Apple Shortcut (docs/email.md)."""
+    run = _get(session, run_id)
+    try:
+        draft = email_draft(get_settings().runs_dir, run)
+    except EmailUnavailable as exc:
+        return {"available": False, "reason": str(exc)}
+    base = str(request.base_url).rstrip("/")
+    own_url = f"{base}/api/runs/{run_id}/email"
+    return {
+        "available": True,
+        "to": draft.to,
+        "subject": draft.subject,
+        "body": draft.body,
+        "cv_name": draft.cv_name,
+        "cv_url": f"{base}/api/runs/{run_id}/final/{quote(draft.cv_name)}",
+        "eml_url": f"{own_url}.eml",
+        "shortcut_url": (
+            f"shortcuts://run-shortcut?name={quote(SHORTCUT_NAME)}&input=text&text={quote(own_url)}"
+        ),
+    }
+
+
+@router.get("/{run_id}/email.eml")
+def email_eml(run_id: int, session: SessionDep) -> Response:
+    """The email as an unsent draft to open in a mail client (Outlook, Thunderbird, ...)."""
+    run = _get(session, run_id)
+    try:
+        draft = email_draft(get_settings().runs_dir, run)
+    except EmailUnavailable as exc:
+        raise HTTPException(409, str(exc)) from exc
+    name = draft.cv_name.removesuffix(".pdf").replace("_Lebenslauf_", "_Bewerbung_")
+    name = name.replace("_CV_", "_Application_")
+    headers = {"Content-Disposition": f'attachment; filename="{name}.eml"'}
+    return Response(build_eml(draft), media_type="message/rfc822", headers=headers)
 
 
 @router.get("/{run_id}/bundle.zip")

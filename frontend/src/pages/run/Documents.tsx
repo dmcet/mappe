@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { api, files } from "../../api";
 import { ErrorNote, FactRefs, Outcome, Section, useAction } from "../../components/ui";
 import type { Draft, RunDetail } from "../../types";
+import { EmailPanel } from "./Email";
 
 function finalOf(run: RunDetail): Draft | null {
   const drafts = run.state.drafts ?? [];
@@ -120,6 +121,7 @@ export function Documents({ run, onChange }: { run: RunDetail; onChange: (r: Run
             <a href={files.bundle(run.id)}>Download everything as ZIP</a>{" "}
             <span className="muted">(final documents, all drafts, parsed CV, listing and assessment)</span>
           </p>
+          <EmailPanel runId={run.id} />
         </Section>
       )}
 

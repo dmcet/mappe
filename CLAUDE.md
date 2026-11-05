@@ -31,6 +31,7 @@ mappe/
   checks/     facts, ats, requirements, skills, completeness (all deterministic)
   render/     content → Typst → PDF
   export/     PDF/ZIP exports of searches and applications
+  mail/       application email (body, .eml draft); handed to the mail app, never sent
   fetch/      listing fetch: HTTP → JSON-LD → main text → paste fallback
   search/     job APIs (sources/), queries, dedupe, rank, semantic; no Claude calls
   migrations/ Alembic (versions/000N_*.py), run automatically at startup

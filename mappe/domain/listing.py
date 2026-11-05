@@ -11,6 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from mappe.domain.contact import resolve_contact
 from mappe.domain.models import ParsedListing, SalaryPeriod
 
 
@@ -57,6 +58,14 @@ class ExtractedListing(BaseModel):
     benefits: list[str]
     cover_letter_requested: bool = Field(
         description="True only if the listing explicitly asks for a cover letter / Anschreiben"
+    )
+    contact_name: str = Field(
+        description="Person to address the application to, first and last name only, without "
+        "Frau/Herr or academic titles (e.g. 'Anna Müller'). Empty string if none is named."
+    )
+    contact_email: str = Field(
+        description="Email address for applications, copied exactly from the listing. Empty "
+        "string if none is given."
     )
     requirement_checks: list[FuzzyCheck]
 
@@ -119,7 +128,7 @@ def _to_int(value: Any) -> int | None:
 
 def _clean(extracted: ExtractedListing) -> dict[str, Any]:
     """Map Claude's "not stated" markers ("", 0, "not_stated") to None."""
-    data = extracted.model_dump(exclude={"requirement_checks"})
+    data = extracted.model_dump(exclude={"requirement_checks", "contact_name", "contact_email"})
     for key, value in data.items():
         if isinstance(value, str):
             data[key] = None if value.strip() in {"", "not_stated"} else value.strip()
@@ -146,10 +155,20 @@ def _split_skills(data: dict[str, Any]) -> None:
 
 
 def merge_listing(
-    extracted: ExtractedListing, job_posting: dict[str, Any] | None, language: str
+    extracted: ExtractedListing,
+    job_posting: dict[str, Any] | None,
+    language: str,
+    text: str = "",
 ) -> ParsedListing:
+    """``text`` is the listing text; the contact is kept only as far as it shows it."""
     data = _clean(extracted)
     _split_skills(data)
+    data |= resolve_contact(
+        extracted.contact_name,
+        extracted.contact_email,
+        text,
+        job_posting,
+    )
     for key, value in from_job_posting(job_posting).items():
         if value is not None:
             data[key] = value

@@ -203,6 +203,45 @@ def cv_data(cv: ParsedCV, doc: AuthorCV, lang: str, translate_titles: bool) -> d
     }
 
 
+FORMS = {
+    "de": {"female": ("Sehr geehrte Frau", "Frau"), "male": ("Sehr geehrter Herr", "Herr")},
+    "en": {"female": ("Dear Ms", "Ms"), "male": ("Dear Mr", "Mr")},
+}
+
+
+def salutation(listing: ParsedListing, lang: str) -> str:
+    """The greeting: the contact person if the listing names one, else a neutral one.
+
+    "Sehr geehrte Frau Dr. Schmidt," / "Dear Ms Schmidt," when the form of address is known,
+    "Guten Tag Anna Schmidt," / "Dear Anna Schmidt," when only the name is.
+    """
+    name = listing.contact_name
+    if not name:
+        return LABELS[lang]["salutation"]
+    last = name.split()[-1]
+    title = listing.contact_academic_title
+    if lang == "en" and title:  # "Dear Dr. Schmidt,": the title replaces Ms/Mr
+        return f"Dear {title} {last},"
+    if listing.contact_gender:
+        greeting = FORMS[lang][listing.contact_gender][0]
+        return f"{greeting} {title + ' ' if title else ''}{last},"
+    full = f"{title} {name}" if title else name
+    return f"Guten Tag {full}," if lang == "de" else f"Dear {name},"
+
+
+def addressee(listing: ParsedListing, lang: str) -> str | None:
+    """Recipient line for the contact person: "Frau Dr. Anna Schmidt", "Anna Schmidt"."""
+    name = listing.contact_name
+    if not name:
+        return None
+    parts = [
+        FORMS[lang][listing.contact_gender][1] if listing.contact_gender else None,
+        listing.contact_academic_title,
+        name,
+    ]
+    return " ".join(p for p in parts if p)
+
+
 def letter_data(
     cv: ParsedCV, listing: ParsedListing, letter: AuthorLetter, lang: str, today: date
 ) -> dict[str, Any]:
@@ -212,7 +251,9 @@ def letter_data(
         when = f"{today.day}. {MONTHS['de'][today.month - 1]} {today.year}"
     else:
         when = f"{today.day} {MONTHS['en'][today.month - 1]} {today.year}"
-    recipient = [x for x in (listing.company, listing.location) if x] or ["—"]
+    recipient = [x for x in (listing.company, addressee(listing, lang), listing.location) if x] or [
+        "—"
+    ]
     return {
         "lang": lang,
         "date": when,
@@ -223,7 +264,7 @@ def letter_data(
             "contact": [x for x in (c.phone, c.email) if x],
         },
         "recipient": recipient,
-        "salutation": labels["salutation"],
+        "salutation": salutation(listing, lang),
         "paragraphs": [p.text for p in letter.paragraphs],
         "closing": labels["closing"],
     }

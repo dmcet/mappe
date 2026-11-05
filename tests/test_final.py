@@ -1,9 +1,11 @@
+import email
 import io
 import zipfile
+from email import policy
 
 from mappe.domain.extraction import to_parsed_cv
 from mappe.domain.listing import merge_listing
-from mappe.llm.demo import demo_author_cv, demo_author_letter, demo_listing
+from mappe.llm.demo import DEMO_CONTACT_LINE, demo_author_cv, demo_author_letter, demo_listing
 from mappe.steps.final import apply_edits, delivery_names, file_part
 from tests.conftest import make_extracted
 from tests.test_web import confirmed_cv, start_run, status_is, wait_for
@@ -60,7 +62,9 @@ def test_edits_keep_fact_ids_of_kept_text():
 
 def test_final_review_edit_approve_and_deliver(client):
     cv_id = confirmed_cv(client)
-    run_id = start_run(client, cv_id)
+    run_id = start_run(client, cv_id, listing_text=f"Wir suchen ...\n{DEMO_CONTACT_LINE}")
+    early = client.get(f"/api/runs/{run_id}/email").json()
+    assert early == {"available": False, "reason": "The application isn't finished yet."}
     wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_apply_decision"))
     client.post(f"/api/runs/{run_id}/apply", json={"cover_letter": True})
     wait_for(client, f"/api/runs/{run_id}", status_is("waiting_for_final_review"), 20)
@@ -104,3 +108,15 @@ def test_final_review_edit_approve_and_deliver(client):
     assert "final/Doe_Jane_Anschreiben_Beispiel_Mobility_GmbH.pdf" in names
     assert {"draft-1/cv.pdf", "draft-2/cv.pdf", "intermediates/assessment.json"} <= names
     assert "intermediates/listing.txt" in names
+
+    mail = client.get(f"/api/runs/{run_id}/email").json()
+    assert mail["available"] and mail["to"] == "bewerbung@beispiel-mobility.de"
+    assert mail["body"].startswith("Sehr geehrte Frau Schmidt,\n\nMein Interesse")
+    assert mail["cv_name"] == "Doe_Jane_Lebenslauf_Beispiel_Mobility_GmbH.pdf"
+    assert mail["shortcut_url"].startswith("shortcuts://run-shortcut?name=Mappe%20Mail&input=text")
+    assert client.get(mail["cv_url"]).content.startswith(b"%PDF")
+    eml = client.get(f"/api/runs/{run_id}/email.eml")
+    assert "Doe_Jane_Bewerbung_Beispiel_Mobility_GmbH.eml" in eml.headers["content-disposition"]
+    msg = email.message_from_bytes(eml.content, policy=policy.default)
+    assert msg["X-Unsent"] == "1"
+    assert [p.get_filename() for p in msg.iter_attachments()] == [mail["cv_name"]]

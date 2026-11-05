@@ -141,8 +141,15 @@ def demo_listing() -> ExtractedListing:
         salary_period="year",
         benefits=["30 Urlaubstage", "Jobrad", "Weiterbildungsbudget"],
         cover_letter_requested=False,
+        contact_name="Anna Schmidt",
+        contact_email="bewerbung@beispiel-mobility.de",
         requirement_checks=[],
     )
+
+
+# The demo listing's contact is checked against the real listing text, which doesn't name it.
+# In demo mode this line is added to the text used for that check, so the email shows up.
+DEMO_CONTACT_LINE = "Ihre Ansprechpartnerin: Frau Anna Schmidt, bewerbung@beispiel-mobility.de"
 
 
 def demo_match() -> MatchResult:

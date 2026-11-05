@@ -94,7 +94,14 @@ async def parse(ctx: StepContext) -> RunStatus:
         blocks=[Block(f"<listing>\n{text}\n</listing>"), instructions("parse_listing")],
         task=task,
     )
-    listing = merge_listing(extracted, job_posting, language=detect_language(text))
+    contact_text = text
+    if ctx.settings.demo:
+        from mappe.llm.demo import DEMO_CONTACT_LINE
+
+        contact_text = f"{text}\n{DEMO_CONTACT_LINE}"
+    listing = merge_listing(
+        extracted, job_posting, language=detect_language(text), text=contact_text
+    )
 
     cost = cost_usd(ctx.settings.llm_for("parse_listing").model, usage)
     run.cost_usd += cost

@@ -183,7 +183,26 @@ export interface Listing {
   salary_period: "year" | "month" | "hour" | null;
   benefits: string[];
   cover_letter_requested: boolean;
+  // Missing in runs parsed before contacts were read.
+  contact_name?: string | null;
+  contact_gender?: "female" | "male" | null;
+  contact_academic_title?: string | null;
+  contact_email?: string | null;
 }
+
+/** The application email of a finished run (GET /api/runs/{id}/email). */
+export type ApplicationEmail =
+  | { available: false; reason: string }
+  | {
+      available: true;
+      to: string;
+      subject: string;
+      body: string;
+      cv_name: string;
+      cv_url: string;
+      eml_url: string;
+      shortcut_url: string;
+    };
 
 export interface Evidence {
   point: string;
