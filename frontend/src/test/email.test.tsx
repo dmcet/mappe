@@ -36,6 +36,7 @@ describe("email panel", () => {
     render(<EmailPanel runId={3} mac={false} />);
     const links = await screen.findAllByRole("link", { name: /Apple Mail|\.eml/ });
     expect(links[0].textContent).toBe("Download email (.eml)");
+    expect(links[0].hasAttribute("download")).toBe(true); // a download must not end the live stream
     expect(screen.getByText(/Outlook or Thunderbird/)).toBeInTheDocument();
   });
 

@@ -208,6 +208,7 @@ export function ExportButtons({ search, shown }: { search: SearchDetail; shown: 
       <Button
         as="a"
         href={files.searchExport(search.id, show)}
+        download
         variant="ghost"
         size="sm"
         title="The listings as shown here, with links, as a PDF"
@@ -218,6 +219,7 @@ export function ExportButtons({ search, shown }: { search: SearchDetail; shown: 
         <Button
           as="a"
           href={files.searchArchive(search.id, show)}
+          download
           variant="ghost"
           size="sm"
           title="ZIP: a report with the list and each application's assessment and review, plus each tailored CV and cover letter as its own PDF"

@@ -1,4 +1,5 @@
 import { Button, GradientText, WibblingSpinner } from "performative-ui";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { api, files } from "../../api";
 import { Pipeline } from "../../components/Pipeline";
@@ -10,12 +11,23 @@ import { ActivityPanel, ListingPanel, RequirementsPanel } from "./Details";
 import { Documents } from "./Documents";
 import { Gates } from "./Gates";
 
+export const POLL_MS = 3_000;
+
 export function RunPage() {
   const id = Number(useParams().id);
-  const { version, status } = useLive();
+  const { version, status, connected } = useLive();
   const run = useResource(() => api.run(id), [id, version("run", id)]);
   const navigate = useNavigate();
   const job = status?.jobs.find((j) => j.kind === "run" && j.id === id);
+  const busy = run.data?.pipeline.some((s) => s.state === "active") ?? false;
+
+  // Without the live stream, a working run would never show its result: poll instead.
+  useEffect(() => {
+    if (connected || !busy) return;
+    const timer = setInterval(run.reload, POLL_MS);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, busy]);
 
   if (!run.data) return <div className="page"><ErrorNote error={run.error} /></div>;
   const data = run.data;
@@ -43,6 +55,7 @@ export function RunPage() {
             <Button
               as="a"
               href={files.runExport(id)}
+              download
               variant="ghost"
               size="sm"
               title="ZIP to pass on: a report with the assessment and review, plus the CV and cover letter"

@@ -107,8 +107,10 @@ class Engine:
         self._queued: set[tuple[str, int]] = set()
         self._running: set[tuple[str, int]] = set()
         self._workers: list[asyncio.Task[None]] = []
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     async def start(self) -> None:
+        self._loop = asyncio.get_running_loop()
         self._requeue_interrupted()
         self._workers = [
             asyncio.create_task(self._worker(i), name=f"run-worker-{i}")
@@ -127,6 +129,19 @@ class Engine:
         self._put(("cv", cv_id))
 
     def _put(self, job: tuple[str, int]) -> None:
+        """Queue a job. Safe from any thread: sync API routes run in a thread pool, and
+        asyncio.Queue isn't thread-safe (a put from another thread doesn't wake the worker
+        until something else wakes the event loop)."""
+        try:
+            on_loop = asyncio.get_running_loop() is self._loop
+        except RuntimeError:  # no event loop in this thread
+            on_loop = False
+        if self._loop is None or on_loop:
+            self._put_now(job)
+        else:
+            self._loop.call_soon_threadsafe(self._put_now, job)
+
+    def _put_now(self, job: tuple[str, int]) -> None:
         if job not in self._queued:
             self._queued.add(job)
             self.queue.put_nowait(job)
