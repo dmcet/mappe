@@ -62,7 +62,7 @@ docker compose up -d --build      # rebuild after pulling changes
 ### Demo mode
 
 To explore the UI without an API key and without costs, start in demo mode. Claude is not
-called; every CV and listing is parsed as the same sample data (a yellow banner says so).
+called; every CV and listing is parsed as the same sample data (a banner at the top says so).
 The job search uses recorded sample responses instead of the live job APIs.
 
 ```bash
