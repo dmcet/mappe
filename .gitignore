@@ -228,3 +228,6 @@ __marimo__/
 
 # coverage output (README: Tests)
 cov/
+
+# Playwright output (README: Tests)
+frontend/e2e-results/

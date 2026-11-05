@@ -37,6 +37,7 @@ mappe/
   migrations/ Alembic (versions/000N_*.py), run automatically at startup
 prompts/      one Markdown prompt per Claude step (name = step name)
 frontend/src/ pages/, pages/run/, components/, api.ts, types.ts, live.tsx (SSE)
+frontend/e2e/ Playwright tests against the app in demo mode
 tests/        pytest; conftest.py provides fake_llm and sample data
 config.toml   per-step model/effort, review loop limits, search settings
 ```
@@ -90,10 +91,11 @@ docker build --target test -t mappe:test . && docker run --rm mappe:test   # ful
 .venv/bin/pytest                             # backend tests (local)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 cd frontend && npm run typecheck && npm test # frontend checks
+cd frontend && npm run e2e                   # Playwright; needs the app in demo mode on :8123 (README: Tests)
 ```
 
 Tests never call the real API (see "AI budget" above): use the `fake_llm` fixture (set `fake_llm.results[step]`,
-a list gives successive answers). Ruff: line length 100, rules E, F, I, UP, B.
+a list gives successive answers). Backend coverage must stay at 100% (`fail_under`). Ruff: line length 100, rules E, F, I, UP, B.
 
 ## Conventions
 

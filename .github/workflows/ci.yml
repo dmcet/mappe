@@ -58,29 +58,117 @@ jobs:
           name: coverage
           path: cov/coverage.json
 
-  # The README badge reads cov/coverage.json from the "badges" branch via shields.io.
-  # Only on main, and only this job may write to the repository.
-  coverage-badge:
-    name: Coverage badge
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # Playwright against the real image in demo mode: no API key, no costs.
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build app image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: runtime
+          tags: mappe:e2e
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Start the app in demo mode
+        run: |
+          docker run -d --name mappe-e2e -e APP_DEMO=1 -p 127.0.0.1:8123:8000 mappe:e2e
+          for i in $(seq 60); do curl -sf http://127.0.0.1:8123/health && exit 0; sleep 1; done
+          docker logs mappe-e2e; exit 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install Playwright
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Run Playwright tests
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:8123
+        run: npm run e2e
+      - name: E2E summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          f = pathlib.Path("frontend/e2e-results/results.json")
+          if f.is_file():
+              s = json.loads(f.read_text())["stats"]
+              print(f"End-to-end tests: **{s['expected']} passed**, {s['unexpected']} failed, {s['flaky']} flaky")
+          else:
+              print("End-to-end tests: **did not run**")
+          PY
+      - name: App logs
+        if: failure()
+        run: docker logs mappe-e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e
+          path: frontend/e2e-results/
+          retention-days: 14
+
+  # The README badges read coverage.json and e2e.json from the "badges" branch via shields.io.
+  # Only on main, and only this job may write to the repository. It runs even when tests
+  # fail, so a failing suite shows up on the badge instead of leaving the old value.
+  badges:
+    name: Badges
+    needs: [test, e2e]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: coverage
+          path: in/coverage
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: e2e
+          path: in/e2e
       - name: Publish badge data to the badges branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          pct=$(python3 -c "import json; print(round(json.load(open('coverage.json'))['totals']['percent_covered']))")
-          if [ "$pct" -ge 90 ]; then color=brightgreen; elif [ "$pct" -ge 75 ]; then color=yellowgreen; elif [ "$pct" -ge 60 ]; then color=yellow; else color=red; fi
-          mkdir badge && cd badge
-          printf '{"schemaVersion": 1, "label": "coverage", "message": "%s%%", "color": "%s"}\n' "$pct" "$color" > coverage.json
-          git init -q -b badges
-          git add coverage.json
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          # Keep the other badge's file when only one result is available.
+          git clone -q --depth 1 --branch badges "$remote" badge 2>/dev/null || git init -q -b badges badge
+          python3 - <<'PY'
+          import json, pathlib
+          out = pathlib.Path("badge")
+          def badge(name, label, message, color):
+              data = {"schemaVersion": 1, "label": label, "message": message, "color": color}
+              (out / name).write_text(json.dumps(data) + "\n")
+          cov = pathlib.Path("in/coverage/coverage.json")
+          if cov.is_file():
+              pct = round(json.loads(cov.read_text())["totals"]["percent_covered"])
+              color = ("brightgreen" if pct >= 90 else "yellowgreen" if pct >= 75
+                       else "yellow" if pct >= 60 else "red")
+              badge("coverage.json", "coverage", f"{pct}%", color)
+          e2e = pathlib.Path("in/e2e/results.json")
+          if e2e.is_file():
+              s = json.loads(e2e.read_text())["stats"]
+              failed = s["unexpected"]
+              passed = s["expected"] + s["flaky"]
+              if failed:
+                  badge("e2e.json", "e2e", f"{failed} failed, {passed} passed", "red")
+              else:
+                  badge("e2e.json", "e2e", f"{passed} passed", "brightgreen")
+          else:
+              badge("e2e.json", "e2e", "did not run", "lightgrey")
+          PY
+          # One commit with the current files, no history (as before).
+          cd badge && git checkout -q --orphan current && git add -A
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -q -m "Coverage ${pct}%"
-          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" badges
+            commit -q -m "Badges for ${GITHUB_SHA::7}"
+          git push -q -f "$remote" HEAD:badges
