@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "test": "vitest run",
+    "e2e": "playwright test",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,8 +21,10 @@
     "react-router": "8.5.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",

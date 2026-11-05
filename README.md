@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/dmcet/mappe/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dmcet/mappe/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dmcet/mappe/badges/coverage.json)](https://github.com/dmcet/mappe/actions/workflows/ci.yml)
+[![E2E](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dmcet/mappe/badges/e2e.json)](https://github.com/dmcet/mappe/actions/workflows/ci.yml)
 
 Named after the *Bewerbungsmappe*, the German application folder.
 
@@ -297,11 +298,29 @@ mkdir -m 777 -p cov && docker run --rm -e COVERAGE_FILE=/cov/.coverage -v "$PWD/
   mappe:test pytest -q --cov --cov-report=term:skip-covered --cov-report=json:/cov/coverage.json
 ```
 
+Backend coverage must stay at 100% (`fail_under` in `pyproject.toml`); a line that really
+can't be tested gets `# pragma: no cover` with a reason.
+
+End-to-end tests (Playwright, `frontend/e2e/`) click through the built app in demo mode:
+CVs, an application from pasted listing to the final PDFs, a declined one, and the job
+search. They refuse to run against a server that isn't in demo mode.
+
+```bash
+docker build --target runtime -t mappe:e2e .
+docker run -d --rm --name mappe-e2e -e APP_DEMO=1 -p 127.0.0.1:8123:8000 mappe:e2e
+cd frontend && npx playwright install chromium   # once
+npm run e2e                                      # report in frontend/e2e-results/report
+docker stop mappe-e2e
+```
+
+`E2E_BASE_URL` points the tests at another server (default `http://127.0.0.1:8123`).
+
 CI (GitHub Actions, `.github/workflows/ci.yml`) runs on every pull request and push to `main`:
-ruff lint and format check, then the same Docker test build and backend tests as above, with
-coverage (shown in the run summary). On `main`, a last job writes the coverage figure to the
-`badges` branch, which the coverage badge above reads (via shields.io); no external service
-or token is needed.
+ruff lint and format check, the same Docker test build and backend tests as above, with
+coverage, and the end-to-end tests against the app image in demo mode (results in the run
+summary; report, traces and screenshots as the `e2e` artifact). On `main`, a last job writes
+the coverage figure and the end-to-end result to the `badges` branch, which the badges above
+read (via shields.io); no external service or token is needed.
 CI has no API key, so it never calls Claude. Dependabot opens weekly grouped update PRs
 for GitHub Actions, Python and npm dependencies.
 

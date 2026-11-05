@@ -49,6 +49,7 @@ omit = ["mappe/migrations/*"]
 
 [tool.coverage.report]
 skip_empty = true
+fail_under = 100  # CI fails when coverage drops
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
