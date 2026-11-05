@@ -24,6 +24,7 @@ dependencies = [
 dev = [
     "pytest>=8.4",
     "pytest-asyncio>=1.2",
+    "pytest-cov>=6",
     "ruff>=0.14",
 ]
 
@@ -41,6 +42,13 @@ extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.coverage.run]
+source = ["mappe"]
+omit = ["mappe/migrations/*"]
+
+[tool.coverage.report]
+skip_empty = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

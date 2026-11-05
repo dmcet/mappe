@@ -1,5 +1,8 @@
 # Mappe
 
+[![CI](https://github.com/dmcet/mappe/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dmcet/mappe/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dmcet/mappe/badges/coverage.json)](https://github.com/dmcet/mappe/actions/workflows/ci.yml)
+
 Named after the *Bewerbungsmappe*, the German application folder.
 
 A local web app that turns your master CV and a job listing into a tailored, ATS-friendly CV
@@ -10,6 +13,22 @@ traced back to your CV.
 
 - Requirements: [docs/requirements.md](docs/requirements.md)
 - Architecture: [docs/architecture.md](docs/architecture.md)
+
+## Screenshots
+
+Taken in [demo mode](#demo-mode), with sample data.
+
+**Applications:** what's running, what waits for you, and each application's progress.
+
+![Applications overview](docs/screenshots/applications.png)
+
+**A finished application:** the pipeline, the final documents and the email, ready to send.
+
+![A finished application](docs/screenshots/application.png)
+
+**Export:** a job search as a PDF report to pass on.
+
+<img src="docs/screenshots/export.png" alt="Exported job search report" width="480">
 
 ## Requirements
 
@@ -272,10 +291,17 @@ This can't be undone. To keep the cost history, delete CVs and applications in t
 ```bash
 docker build --target test -t mappe:test .   # also runs the frontend checks
 docker run --rm mappe:test                    # backend tests
+
+# with coverage (report in ./cov/coverage.json)
+mkdir -m 777 -p cov && docker run --rm -e COVERAGE_FILE=/cov/.coverage -v "$PWD/cov:/cov" \
+  mappe:test pytest -q --cov --cov-report=term:skip-covered --cov-report=json:/cov/coverage.json
 ```
 
 CI (GitHub Actions, `.github/workflows/ci.yml`) runs on every pull request and push to `main`:
-ruff lint and format check, then the same Docker test build and backend tests as above.
+ruff lint and format check, then the same Docker test build and backend tests as above, with
+coverage (shown in the run summary). On `main`, a last job writes the coverage figure to the
+`badges` branch, which the coverage badge above reads (via shields.io); no external service
+or token is needed.
 CI has no API key, so it never calls Claude. Dependabot opens weekly grouped update PRs
 for GitHub Actions, Python and npm dependencies.
 

@@ -44,5 +44,43 @@ jobs:
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Backend tests
-        run: docker run --rm mappe:test
+      - name: Backend tests with coverage
+        run: |
+          mkdir -m 777 cov
+          docker run --rm -e COVERAGE_FILE=/cov/.coverage -v "$PWD/cov:/cov" mappe:test \
+            pytest -q --cov --cov-report=term:skip-covered --cov-report=json:/cov/coverage.json
+      - name: Coverage summary
+        run: |
+          pct=$(python3 -c "import json; print(json.load(open('cov/coverage.json'))['totals']['percent_covered_display'])")
+          echo "Backend test coverage: **${pct}%**" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: cov/coverage.json
+
+  # The README badge reads cov/coverage.json from the "badges" branch via shields.io.
+  # Only on main, and only this job may write to the repository.
+  coverage-badge:
+    name: Coverage badge
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage
+      - name: Publish badge data to the badges branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pct=$(python3 -c "import json; print(round(json.load(open('coverage.json'))['totals']['percent_covered']))")
+          if [ "$pct" -ge 90 ]; then color=brightgreen; elif [ "$pct" -ge 75 ]; then color=yellowgreen; elif [ "$pct" -ge 60 ]; then color=yellow; else color=red; fi
+          mkdir badge && cd badge
+          printf '{"schemaVersion": 1, "label": "coverage", "message": "%s%%", "color": "%s"}\n' "$pct" "$color" > coverage.json
+          git init -q -b badges
+          git add coverage.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Coverage ${pct}%"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" badges

@@ -225,3 +225,6 @@ __marimo__/
 # PyCharm: shared settings in .idea/ are committed; these are per-machine
 .idea/*.iml
 .idea/modules.xml
+
+# coverage output (README: Tests)
+cov/
