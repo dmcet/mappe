@@ -56,6 +56,12 @@ def _norm_text(text: str) -> str:
     return f" {normalize_skill(_flat(text))} "
 
 
+def _count_term(norm: str, term: str) -> int:
+    """Whole-word mentions of term in normalized text. Lookarounds instead of counting
+    " term ": a counted match must not use up the space the next mention starts with."""
+    return len(re.findall(rf"(?<= ){re.escape(term)}(?= )", norm))
+
+
 def check_ats(pdf_text: str, cv: ParsedCV, analysis: SkillAnalysis, labels: dict) -> ATSReport:
     report = ATSReport()
     flat = _flat(pdf_text)
@@ -85,6 +91,6 @@ def check_ats(pdf_text: str, cv: ParsedCV, analysis: SkillAnalysis, labels: dict
 
     for cov in analysis.coverage:
         term = normalize_skill(cov.skill)
-        if len(term) > 2 and norm.count(f" {term} ") > MAX_KEYWORD_REPEATS:
+        if len(term) > 2 and _count_term(norm, term) > MAX_KEYWORD_REPEATS:
             report.stuffing.append(cov.skill)
     return report

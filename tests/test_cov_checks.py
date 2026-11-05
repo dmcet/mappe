@@ -2,6 +2,8 @@
 
 from datetime import date
 
+import pytest
+
 from mappe.checks.ats import MAX_KEYWORD_REPEATS, check_ats
 from mappe.checks.completeness import check_cv
 from mappe.checks.facts import FactChecker
@@ -61,6 +63,18 @@ def test_ats_reports_missing_name_employer_and_keyword_stuffing():
     assert "Employer 'Acme' isn't found." in report.parse_problems
     assert report.stuffing == ["Python"]
     assert report.keywords_found == ["Python"]
+
+
+@pytest.mark.parametrize("sep", [" ", ", ", " / "])
+def test_ats_counts_adjacent_repeats_as_stuffing(sep):
+    # Mentions right next to each other (a stuffed skills line) count one by one.
+    cv = _cv()
+    analysis = analyze_skills(cv, ParsedListing(required_skills=["Python"]), TODAY)
+    base = "Jane Doe jane@example.com +49 1 Experience Acme Skills Education "
+    over = check_ats(base + sep.join(["Python"] * (MAX_KEYWORD_REPEATS + 1)), cv, analysis, LABELS)
+    assert over.stuffing == ["Python"]
+    at_limit = check_ats(base + sep.join(["Python"] * MAX_KEYWORD_REPEATS), cv, analysis, LABELS)
+    assert at_limit.stuffing == []
 
 
 def test_ats_clean_text_has_no_problems():
