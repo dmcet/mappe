@@ -15,6 +15,8 @@
   phone: c.phone,
   personal-site: c.site,
   accent-color: "#1f3a68",
+  // Inter (OFL, typst/fonts): a plain sans serif instead of the template's LaTeX serif.
+  font: "Inter",
   paper: "a4",
   font-size: 10pt,
   lang: d.lang,

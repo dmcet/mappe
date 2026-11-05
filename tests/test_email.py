@@ -17,7 +17,8 @@ from mappe.render.documents import addressee, letter_data, salutation
 TEXT = """Senior Python Developer (m/w/d) bei der Beispiel Mobility GmbH.
 Deine Ansprechpartnerin: Frau Dr. Anna  Schmidt
 Bewerbungen bitte an bewerbung(at)beispiel-mobility.de.
-Datenschutz: datenschutz@beispiel-mobility.de"""
+Datenschutz: datenschutz@beispiel-mobility.de
+Beispiel Mobility GmbH · Leopoldstraße 10 · 80802 München"""
 
 
 def listing(text=TEXT, **overrides):
@@ -107,7 +108,13 @@ def test_letter_pdf_uses_the_contact():
     cv = to_parsed_cv(sample_cv())
     data = letter_data(cv, listing(), demo_author_letter(), "de", date.today())
     assert data["salutation"] == "Sehr geehrte Frau Dr. Schmidt,"
-    assert data["recipient"] == ["Beispiel Mobility GmbH", "Frau Dr. Anna Schmidt", "München"]
+    assert data["layout"] == "letter"
+    assert data["recipient"] == [
+        "Beispiel Mobility GmbH",
+        "Frau Dr. Anna Schmidt",
+        "Leopoldstraße 10",
+        "80802 München",
+    ]
     assert addressee(listing().model_copy(update={"contact_gender": None}), "de") == (
         "Dr. Anna Schmidt"
     )

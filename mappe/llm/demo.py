@@ -143,13 +143,20 @@ def demo_listing() -> ExtractedListing:
         cover_letter_requested=False,
         contact_name="Anna Schmidt",
         contact_email="bewerbung@beispiel-mobility.de",
+        company_street="Leopoldstraße 10",
+        company_postal_code="80802",
+        company_city="München",
         requirement_checks=[],
     )
 
 
-# The demo listing's contact is checked against the real listing text, which doesn't name it.
-# In demo mode this line is added to the text used for that check, so the email shows up.
-DEMO_CONTACT_LINE = "Ihre Ansprechpartnerin: Frau Anna Schmidt, bewerbung@beispiel-mobility.de"
+# The demo listing's contact and address are checked against the real listing text, which
+# doesn't contain them. In demo mode this line is added to the text used for that check, so
+# the email and the letter layout show up.
+DEMO_CONTACT_LINE = (
+    "Ihre Ansprechpartnerin: Frau Anna Schmidt, bewerbung@beispiel-mobility.de, "
+    "Beispiel Mobility GmbH, Leopoldstraße 10, 80802 München"
+)
 
 
 def demo_match() -> MatchResult:

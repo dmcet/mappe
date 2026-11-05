@@ -96,7 +96,9 @@ def test_document_data_comes_from_the_cv():
 
     letter = letter_data(cv, listing, demo_author_letter(), "de", TODAY)
     assert letter["date"] == "3. November 2026"
-    assert letter["recipient"] == ["Beispiel Mobility GmbH", "München"]
+    # No confirmed address in the listing (no text given): plain letter, no address blocks.
+    assert letter["layout"] == "plain" and letter["recipient"] == []
+    assert letter["sender"]["address"] == ""
     assert letter["sender"]["contact"] == ["+49 30 1234567", "jane@example.com"]
     assert letter_data(cv, listing, demo_author_letter(), "en", TODAY)["date"] == "3 November 2026"
 
