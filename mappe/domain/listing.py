@@ -11,6 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from mappe.domain.address import confirmed_address
 from mappe.domain.contact import resolve_contact
 from mappe.domain.models import ParsedListing, SalaryPeriod
 
@@ -67,6 +68,12 @@ class ExtractedListing(BaseModel):
         description="Email address for applications, copied exactly from the listing. Empty "
         "string if none is given."
     )
+    company_street: str = Field(
+        description="Employer's postal address for applications: street and house number "
+        "(e.g. 'Leopoldstraße 10'), copied exactly. Empty string if the listing gives none."
+    )
+    company_postal_code: str = Field(description="Postal code of that address, or empty string")
+    company_city: str = Field(description="City of that address, or empty string")
     requirement_checks: list[FuzzyCheck]
 
 
@@ -126,9 +133,19 @@ def _to_int(value: Any) -> int | None:
         return None
 
 
+# Read by Claude, but only kept after a check against the listing (contact, address).
+_VERIFIED_FIELDS = {
+    "contact_name",
+    "contact_email",
+    "company_street",
+    "company_postal_code",
+    "company_city",
+}
+
+
 def _clean(extracted: ExtractedListing) -> dict[str, Any]:
     """Map Claude's "not stated" markers ("", 0, "not_stated") to None."""
-    data = extracted.model_dump(exclude={"requirement_checks", "contact_name", "contact_email"})
+    data = extracted.model_dump(exclude={"requirement_checks", *_VERIFIED_FIELDS})
     for key, value in data.items():
         if isinstance(value, str):
             data[key] = None if value.strip() in {"", "not_stated"} else value.strip()
@@ -160,12 +177,20 @@ def merge_listing(
     language: str,
     text: str = "",
 ) -> ParsedListing:
-    """``text`` is the listing text; the contact is kept only as far as it shows it."""
+    """``text`` is the listing text; contact and address are kept only as far as it (or the
+    JSON-LD) shows them."""
     data = _clean(extracted)
     _split_skills(data)
     data |= resolve_contact(
         extracted.contact_name,
         extracted.contact_email,
+        text,
+        job_posting,
+    )
+    data["company_address"] = confirmed_address(
+        extracted.company_street.strip(),
+        extracted.company_postal_code.strip(),
+        extracted.company_city.strip(),
         text,
         job_posting,
     )

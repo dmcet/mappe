@@ -32,7 +32,8 @@
   - a tailored CV and, optionally, a cover letter, in PDF format
   - documents are generated via **Typst** from open-source templates
     - CV: single-column, ATS-friendly layout (e.g. based on RenderCV themes)
-    - cover letter: DIN 5008 business letter layout
+    - cover letter: DIN 5008 business letter layout when the employer's postal address is confirmed (complete and shown in the listing); otherwise a plain letter without address blocks
+    - both in a plain, professional sans-serif font (Inter)
   - German conventions: **no photo, no date of birth, no marital status**
   - all intermediates (parsed CV, parsed listing, match report, drafts per iteration, check reports) and the end results are downloadable from the Web UI
 

@@ -93,6 +93,8 @@ export function ListingPanel({ run }: { run: RunDetail }) {
         <dd>{l.cover_letter_requested ? "requested" : "not requested"}</dd>
         <dt>Contact</dt>
         <dd>{contactText(l)}</dd>
+        <dt>Address</dt>
+        <dd>{l.company_address?.join(", ") ?? "— (plain cover letter, no address block)"}</dd>
       </dl>
       <div className="grid-2">
         <div>

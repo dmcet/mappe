@@ -120,6 +120,8 @@ class ParsedListing(BaseModel):
     contact_gender: Literal["female", "male"] | None = None
     contact_academic_title: str | None = None  # "Dr.", "Prof. Dr."
     contact_email: str | None = None
+    # Employer's postal address, only if confirmed (domain/address.py): ["street", "PLZ city"].
+    company_address: list[str] | None = None
 
 
 RequirementKind = Literal["salary_min", "max_onsite_days", "location", "benefit", "other"]

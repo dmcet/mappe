@@ -188,6 +188,8 @@ export interface Listing {
   contact_gender?: "female" | "male" | null;
   contact_academic_title?: string | null;
   contact_email?: string | null;
+  /** Confirmed postal address ("street", "postal code city"); the letter layout needs it. */
+  company_address?: string[] | null;
 }
 
 /** The application email of a finished run (GET /api/runs/{id}/email). */

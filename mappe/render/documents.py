@@ -251,16 +251,22 @@ def letter_data(
         when = f"{today.day}. {MONTHS['de'][today.month - 1]} {today.year}"
     else:
         when = f"{today.day} {MONTHS['en'][today.month - 1]} {today.year}"
-    recipient = [x for x in (listing.company, addressee(listing, lang), listing.location) if x] or [
-        "—"
-    ]
+    # The DIN 5008 letter layout only with a confirmed address; otherwise a plain document
+    # without address blocks (an address window with just a company name looks broken).
+    address = listing.company_address
+    if address and listing.company:
+        layout = "letter"
+        recipient = [listing.company, *filter(None, [addressee(listing, lang)]), *address]
+    else:
+        layout, recipient = "plain", []
     return {
         "lang": lang,
+        "layout": layout,
         "date": when,
         "subject": letter.subject,
         "sender": {
             "name": c.name,
-            "address": c.address or c.city or "",
+            "address": (c.address or c.city or "") if layout == "letter" else "",
             "contact": [x for x in (c.phone, c.email) if x],
         },
         "recipient": recipient,
@@ -271,8 +277,8 @@ def letter_data(
 
 
 def render_cv(data: dict[str, Any], out: Path) -> RenderResult:
-    return render("cv", data, out)
+    return render("cv", data, out, app_fonts=True)
 
 
 def render_letter(data: dict[str, Any], out: Path) -> RenderResult:
-    return render("cover-letter", data, out)
+    return render("cover-letter", data, out, app_fonts=True)
