@@ -7,7 +7,7 @@ Germany. Claude does the reasoning steps; deterministic Python does everything e
 Read before larger changes:
 - `README.md`: usage, configuration, env vars, dev commands
 - `docs/requirements.md`: what the app must do
-- `docs/architecture.md`: decisions (D1–D13) and their rationale, state machine, fact-check rules
+- `docs/architecture.md`: decisions (D1–D14) and their rationale, state machine, fact-check rules
 - `docs/job-search-plan.md`: the job search feature
 
 ## Stack
@@ -103,3 +103,25 @@ a list gives successive answers). Ruff: line length 100, rules E, F, I, UP, B.
 - Commits: short imperative subject ("Add …", "Job search: …"); work on feature branches
   (`feat/…`, `chore/…`), merged into `main` via PR.
 - `.idea/` shared settings are committed on purpose; per-machine files are gitignored.
+
+## Dependabot PRs
+
+At the start of each session, check whether the newest commit on `main` is from today:
+
+```bash
+git fetch -q origin && [ "$(git log -1 --format=%cd --date=short origin/main)" = "$(date +%F)" ]
+```
+
+If it is, we already worked on the project today and most likely did the check: skip it.
+If not, check open Dependabot PRs (`gh pr list --author app/dependabot`) and merge the ones
+that look logical. Dependabot opens weekly grouped PRs (`.github/dependabot.yml`) for
+GitHub Actions, Python (uv) and npm.
+
+- Merge (`gh pr merge <n> --squash --delete-branch`) when CI is green and the update is a
+  patch or minor bump without breaking changes in the release notes.
+- Don't merge, but tell the user, when: CI fails; a major version changes; the update touches
+  something central (Anthropic SDK, FastAPI, SQLModel/SQLAlchemy, Alembic, React, Vite,
+  `performative-ui`, Typst); or the release notes mention breaking changes, removals or
+  security-relevant behavior changes. Suggest what would be needed (code changes, a test run).
+- If a grouped PR mixes safe and risky updates, don't merge it; say which update is the risk.
+- Never change code in a Dependabot branch to make it pass; do that on a `chore/…` branch.
