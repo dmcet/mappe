@@ -5,24 +5,26 @@
 
 #let d = json("data.json")
 
-// ---------- tokens (frontend/src/app.css, performative-ui) ----------
-#let bg = rgb("#08080b")
-#let panel-fill = rgb("#0e0e14")
-#let elev = rgb("#14141c")
-#let border = rgb("#1f1f2b")
-#let border-bright = rgb("#2a2a3a")
-#let fg = rgb("#f4f4f6")
-#let dim = rgb("#a3a3b2")
-#let mute = rgb("#88889a")
-#let violet = rgb("#7c3aed")
-#let pink = rgb("#ec4899")
-#let cyan = rgb("#06b6d4")
-#let link-color = rgb("#c4b5fd")
+// ---------- tokens (as in frontend/src/app.css: neutral grays, navy accent) ----------
+#let bg = rgb("#0a0a0b")
+#let panel-fill = rgb("#111113")
+#let elev = rgb("#18181b")
+#let border = rgb("#232326")
+#let border-bright = rgb("#303035")
+#let fg = rgb("#f2f2f3")
+#let dim = rgb("#a8a8ae")
+#let mute = rgb("#86868d")
+// navy accent (the CV's #1f3a68 and light tints of it)
+#let navy = rgb("#1f3a68")
+#let accent = rgb("#4f72a8")
+#let accent-mid = rgb("#7f9dc8")
+#let accent-to = rgb("#a9bfdd")
+#let link-color = rgb("#8fa9d1")
 #let good = rgb("#22c55e")
 #let you = rgb("#fbbf24")
 #let bad = rgb("#f87171")
-#let busy = rgb("#67e8f9")
-#let grad = gradient.linear(violet, pink, cyan, angle: 15deg)
+#let busy = rgb("#8fa9d1")
+#let grad = gradient.linear(accent, accent-mid, accent-to, angle: 15deg)
 #let tones = (good: good, bad: bad, you: you, busy: busy, muted: mute, neutral: dim)
 #let verdict-colors = (apply: good, consider: you, dont_apply: bad)
 #let sans = "Inter"
@@ -32,11 +34,11 @@
 // ---------- page ----------
 #let glow = {
   place(rect(width: 100%, height: 100%, fill: gradient.radial(
-    (violet.transparentize(72%), 0%), (violet.transparentize(100%), 100%),
+    (navy.transparentize(55%), 0%), (navy.transparentize(100%), 100%),
     center: (0%, 0%), radius: 75%,
   )))
   place(rect(width: 100%, height: 100%, fill: gradient.radial(
-    (pink.transparentize(86%), 0%), (pink.transparentize(100%), 100%),
+    (accent.transparentize(88%), 0%), (accent.transparentize(100%), 100%),
     center: (100%, 100%), radius: 60%,
   )))
 }
@@ -85,7 +87,7 @@
 )
 #set text(font: sans, size: 9.5pt, fill: fg, lang: "en", hyphenate: false)
 #set par(leading: 0.62em, justify: false, spacing: 0.9em)
-#set list(marker: text(fill: pink, size: 8pt, baseline: -0.5pt)[●], indent: 2pt, body-indent: 6pt, spacing: 0.55em)
+#set list(marker: text(fill: accent-mid, size: 8pt, baseline: -0.5pt)[●], indent: 2pt, body-indent: 6pt, spacing: 0.55em)
 #set enum(indent: 2pt, body-indent: 6pt, spacing: 0.55em, numbering: n => text(font: mono, fill: link-color, size: 8pt)[#n])
 #show link: set text(fill: link-color)
 #show heading: set text(font: serif, weight: "regular")
@@ -180,7 +182,7 @@
   height: 30pt,
   radius: 8pt,
   fill: elev,
-  stroke: 0.6pt + if score >= 70 { violet.transparentize(20%) } else { border-bright },
+  stroke: 0.6pt + if score >= 70 { accent.transparentize(20%) } else { border-bright },
   align(center + horizon, text(font: mono, size: 11pt, weight: "bold", fill: fg, str(score))),
 )
 
@@ -238,7 +240,7 @@
   width: 100%,
   breakable: false,
   fill: panel-fill,
-  stroke: 0.6pt + if r.application != none { violet.transparentize(40%) } else { border },
+  stroke: 0.6pt + if r.application != none { accent.transparentize(40%) } else { border },
   radius: 12pt,
   inset: (x: 12pt, y: 10pt),
   above: 0pt,
