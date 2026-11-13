@@ -32,7 +32,7 @@ async def fetch(client: httpx.AsyncClient, query: SearchQuery, opts: SourceOptio
             params = {
                 "was": title,
                 "wo": place,
-                "umkreis": query.radius_km if place else None,
+                "umkreis": query.radius(place) if place else None,
                 "angebotsart": 1,  # jobs (not apprenticeships or self-employment)
                 "veroeffentlichtseit": query.max_age_days,
                 "size": min(query.limit, 100),

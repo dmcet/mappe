@@ -124,7 +124,7 @@ class ParsedListing(BaseModel):
     company_address: list[str] | None = None
 
 
-RequirementKind = Literal["salary_min", "max_onsite_days", "location", "benefit", "other"]
+RequirementKind = Literal["salary_min", "max_onsite_days", "remote", "location", "benefit", "other"]
 
 
 class Requirement(BaseModel):
@@ -132,7 +132,9 @@ class Requirement(BaseModel):
 
     - ``salary_min``: minimum gross annual salary in EUR, e.g. "75000"
     - ``max_onsite_days``: maximum onsite days per week, "0" = fully remote
-    - ``location``: acceptable cities, comma-separated, e.g. "Berlin, Hamburg"
+    - ``remote``: "no" = fully remote jobs are not wanted
+    - ``location``: acceptable cities, comma-separated, each with an optional search radius,
+      e.g. "Berlin (30 km), Hamburg"
     - ``benefit`` / ``other``: free text, judged by Claude against the listing
     """
 

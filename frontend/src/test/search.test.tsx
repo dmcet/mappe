@@ -4,6 +4,9 @@ import { LiveContext } from "../live";
 import {
   ExportButtons,
   RoleSuggestions,
+  TitleChips,
+  initialForm,
+  toPrefs,
   SearchPage,
   SearchProgress,
   groupResults,
@@ -13,7 +16,7 @@ import {
   toggleRole,
   workMode,
 } from "../pages/Search";
-import type { JobHit, SearchDetail, SearchResultItem } from "../types";
+import type { JobHit, SearchDetail, SearchResultItem, SearchSource } from "../types";
 
 const hit = (over: Partial<JobHit> = {}): JobHit => ({
   id: 1,
@@ -195,27 +198,27 @@ describe("role suggestions", () => {
   const arch = { title: "Software Architect", title_alt: "Softwarearchitekt", reason: "Design ownership." };
 
   it("adds a role in both languages and removes it again", () => {
-    const added = toggleRole("Backend Engineer\n", arch);
-    expect(added).toBe("Backend Engineer\nSoftware Architect\nSoftwarearchitekt");
+    const added = toggleRole(["Backend Engineer"], arch);
+    expect(added).toEqual(["Backend Engineer", "Software Architect", "Softwarearchitekt"]);
     expect(hasRole(added, arch)).toBe(true);
-    expect(toggleRole(added, arch)).toBe("Backend Engineer");
-    expect(hasRole("site reliability engineer", sre)).toBe(true);
+    expect(toggleRole(added, arch)).toEqual(["Backend Engineer"]);
+    expect(hasRole(["site reliability engineer"], sre)).toBe(true);
   });
 
-  it("shows opt-in chips that toggle the titles", () => {
-    let titles = "Backend Engineer";
-    const onChange = vi.fn((t: string) => (titles = t));
-    const view = (t: string) => (
+  it("shows opt-in chips that explain themselves on hover", () => {
+    let titles = ["Backend Engineer"];
+    const onChange = vi.fn((t: string[]) => (titles = t));
+    const view = (t: string[]) => (
       <MemoryRouter>
         <RoleSuggestions cvId={1} roles={[sre, arch]} status="done" titles={t} onChange={onChange} />
       </MemoryRouter>
     );
     const { rerender } = render(view(titles));
-    expect(screen.getByText("Latency work.")).toBeInTheDocument();
     const chip = screen.getByRole("button", { name: /Site Reliability Engineer/ });
     expect(chip).toHaveAttribute("aria-pressed", "false");
+    expect(chip).toHaveAccessibleDescription("Latency work.");
     fireEvent.click(chip);
-    expect(titles).toBe("Backend Engineer\nSite Reliability Engineer");
+    expect(titles).toEqual(["Backend Engineer", "Site Reliability Engineer"]);
     rerender(view(titles));
     expect(screen.getByRole("button", { name: /Site Reliability Engineer/ })).toHaveAttribute("aria-pressed", "true");
   });
@@ -223,15 +226,62 @@ describe("role suggestions", () => {
   it("explains where suggestions come from when there are none yet", () => {
     const { rerender } = render(
       <MemoryRouter>
-        <RoleSuggestions cvId={4} roles={[]} status="suggesting" titles="" onChange={() => {}} />
+        <RoleSuggestions cvId={4} roles={[]} status="suggesting" titles={[]} onChange={() => {}} />
       </MemoryRouter>,
     );
     expect(screen.getByText(/Claude is suggesting other roles/)).toBeInTheDocument();
     rerender(
       <MemoryRouter>
-        <RoleSuggestions cvId={4} roles={[]} status={null} titles="" onChange={() => {}} />
+        <RoleSuggestions cvId={4} roles={[]} status={null} titles={[]} onChange={() => {}} />
       </MemoryRouter>,
     );
     expect(screen.getByRole("link", { name: "CV page" })).toHaveAttribute("href", "/cvs/4");
+  });
+});
+
+describe("title chips and saved form", () => {
+  const sources: SearchSource[] = [
+    { key: "ba", label: "BA", home: "", remote_only: false, default: true },
+    { key: "remotive", label: "Remotive", home: "", remote_only: true, default: true },
+    { key: "remoteok", label: "Remote OK", home: "", remote_only: true, default: false },
+  ];
+  const base = { titles: ["Backend Engineer", "Python Developer"], roles: [], roles_status: null, sources };
+
+  it("switches titles off, adds own ones and removes only those", () => {
+    let titles = ["Backend Engineer"];
+    const onChange = vi.fn((t: string[]) => (titles = t));
+    const onRemove = vi.fn();
+    const all = ["Backend Engineer", "Python Developer", "Tech Lead"];
+    const view = () => (
+      <TitleChips all={all} titles={titles} onChange={onChange} removable={(t) => t === "Tech Lead"} onRemove={onRemove} />
+    );
+    const { rerender } = render(view());
+    expect(screen.getByRole("button", { name: "Python Developer" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Remove Python Developer" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove Tech Lead" }));
+    expect(onRemove).toHaveBeenCalledWith("Tech Lead");
+    fireEvent.click(screen.getByRole("button", { name: "Backend Engineer" }));
+    expect(titles).toEqual([]);
+    rerender(view());
+    fireEvent.change(screen.getByLabelText("Add a job title"), { target: { value: "SRE" } });
+    fireEvent.keyDown(screen.getByLabelText("Add a job title"), { key: "Enter" });
+    expect(titles).toEqual(["SRE"]);
+  });
+
+  it("starts from the CV and the last requirements, then from what was saved", () => {
+    const last = [{ kind: "location" as const, value: "Berlin", must_have: false }];
+    const fresh = initialForm({ ...base, prefs: null }, last);
+    expect(fresh.titles).toEqual(base.titles);
+    expect([...fresh.chosen]).toEqual(["ba", "remotive"]); // the defaults
+    expect(fresh.reqs.places).toEqual([{ name: "Berlin", km: 30 }]);
+
+    const prefs = toPrefs({ ...fresh, titles: ["Backend Engineer", "SRE"], titlesOff: ["Python Developer"], chosen: new Set(["remoteok", "ba", "gone"]) });
+    expect(prefs.sources).toEqual(["ba", "gone", "remoteok"]);
+    const back = initialForm({ ...base, titles: [...base.titles, "Tech Lead"], prefs }, []);
+    // A title the CV gained since is searched; switched-off ones stay off; removed sources drop.
+    expect(back.titles).toEqual(["Backend Engineer", "SRE", "Tech Lead"]);
+    expect(back.titlesOff).toEqual(["Python Developer"]);
+    expect([...back.chosen]).toEqual(["ba", "remoteok"]);
+    expect(back.reqs.places).toEqual([{ name: "Berlin", km: 30 }]);
   });
 });

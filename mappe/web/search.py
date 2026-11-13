@@ -40,6 +40,16 @@ class SearchCreate(BaseModel):
     sources: list[str] | None = None  # None = the configured defaults
 
 
+class SearchPrefs(BaseModel):
+    """The search form of one CV, kept between visits."""
+
+    titles: list[str] = Field(default_factory=list)  # searched
+    titles_off: list[str] = Field(default_factory=list)  # shown as chips, not searched
+    requirements: list[Requirement] = Field(default_factory=list)
+    requirements_off: list[Requirement] = Field(default_factory=list)  # parked chips
+    sources: list[str] | None = None
+
+
 class SavedCreate(BaseModel):
     search_id: int  # save the parameters of this search; it becomes the first run
     name: str = ""
@@ -64,14 +74,25 @@ def _search(session: Session, search_id: int) -> Search:
 
 @router.get("/search/suggestions")
 def suggestions(cv_id: int, session: SessionDep) -> dict:
-    """Titles from the CV (searched by default) and Claude's alternative roles (opt-in)."""
+    """Titles from the CV (searched by default), Claude's alternative roles (opt-in) and
+    the form as the user last left it for this CV (``prefs``, None before the first save)."""
     cv = confirmed_cv(session, cv_id)
     return {
+        "prefs": cv.search_prefs,
         "titles": suggest_titles(_parsed(cv)),
         "roles": [{k: r[k] for k in ("title", "title_alt", "reason")} for r in cv.roles or []],
         "roles_status": cv.roles_status,
         "sources": available_sources(get_settings()),
     }
+
+
+@router.put("/search/prefs/{cv_id}")
+def save_prefs(cv_id: int, body: SearchPrefs, session: SessionDep) -> dict:
+    cv = confirmed_cv(session, cv_id)
+    cv.search_prefs = body.model_dump(mode="json")
+    session.add(cv)
+    session.commit()
+    return cv.search_prefs
 
 
 async def _run(
@@ -233,8 +254,9 @@ async def run_saved(saved_id: int, session: SessionDep) -> dict:
     """Run a saved search again; "new" marks listings none of its earlier runs found."""
     saved = _saved(session, saved_id)
     requirements = [Requirement.model_validate(r) for r in saved.requirements]
+    sources = [k for k in saved.sources if k in SOURCES]  # sources removed since are dropped
     search = await _run(
-        session, saved.cv_id, saved.titles, requirements, saved.sources, saved_id=saved.id
+        session, saved.cv_id, saved.titles, requirements, sources, saved_id=saved.id
     )
     return search_detail(session, search)
 

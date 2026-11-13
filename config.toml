@@ -18,8 +18,8 @@ max_mb = 5                # larger pages are not listings
 
 # Job search (no Claude calls). See docs/job-search-plan.md.
 [search]
-# Also available: "remoteok" (mostly US jobs). "adzuna" needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
-sources = ["ba", "arbeitnow", "remotive", "jobicy", "adzuna"]
+# Also available: "remoteok" (mostly US jobs).
+sources = ["ba", "arbeitnow", "remotive", "jobicy"]
 max_results_per_source = 100
 max_age_days = 30
 radius_km = 30

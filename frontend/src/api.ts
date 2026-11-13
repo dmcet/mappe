@@ -10,6 +10,7 @@ import type {
   RunSummary,
   SavedSearch,
   SearchDetail,
+  SearchPrefs,
   SearchSource,
   SearchSummary,
   SuggestedRole,
@@ -96,10 +97,13 @@ export const api = {
       roles: SuggestedRole[];
       roles_status: RolesStatus;
       sources: SearchSource[];
+      prefs: SearchPrefs | null;
     }>(
       "GET",
       `/api/search/suggestions?cv_id=${cvId}`,
     ),
+  saveSearchPrefs: (cvId: number, prefs: SearchPrefs) =>
+    request<SearchPrefs>("PUT", `/api/search/prefs/${cvId}`, prefs),
   searches: () => request<SearchSummary[]>("GET", "/api/searches"),
   search: (id: number) => request<SearchDetail>("GET", `/api/searches/${id}`),
   createSearch: (body: {

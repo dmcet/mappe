@@ -131,9 +131,18 @@ def test_sentence_like_skills_move_to_qualifications():
 
 def test_location_requirement():
     assert outcomes([req("location", "Berlin, München")])[0][0] == "passed"
+    assert outcomes([req("location", "Berlin (20 km), München (50 km)")])[0][0] == "passed"
     assert outcomes([req("location", "Berlin")])[0][0] == "failed"
     assert outcomes([req("location", "Berlin")], listing(remote="remote"))[0][0] == "passed"
     assert outcomes([req("location", "Berlin")], listing(location=None))[0][0] == "unknown"
+
+
+def test_remote_requirement():
+    no = [req("remote", "no")]
+    assert outcomes(no, listing(remote="remote"))[0] == ("failed", "Fully remote")
+    assert outcomes(no, listing(remote="hybrid"))[0] == ("passed", "Hybrid position")
+    assert outcomes(no, listing(remote=None))[0] == ("unknown", "Work mode not stated")
+    assert outcomes([req("remote", "yes")], listing(remote="remote"))[0][0] == "passed"
 
 
 def test_fuzzy_requirements_need_a_verifiable_quote():

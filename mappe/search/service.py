@@ -19,9 +19,9 @@ from mappe.runner import activity
 from mappe.search import semantic
 from mappe.search.dedupe import dedupe
 from mappe.search.models import JobHit, SearchQuery
-from mappe.search.queries import places_from, remote_only
+from mappe.search.queries import no_remote, places_from, remote_only
 from mappe.search.rank import rank
-from mappe.search.sources import SOURCES, missing_env
+from mappe.search.sources import SOURCES
 from mappe.search.sources.base import Source, SourceOptions
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,6 @@ def available_sources(settings: Settings) -> list[dict]:
             "home": s.home,
             "remote_only": s.remote_only,
             "default": s.key in settings.search.sources,
-            "missing_env": [] if settings.demo else missing_env(s),
         }
         for s in SOURCES.values()
     ]
@@ -67,11 +66,14 @@ def available_sources(settings: Settings) -> list[dict]:
 
 def build_query(settings: Settings, titles: list[str], reqs: list[Requirement]) -> SearchQuery:
     cfg = settings.search
+    places = places_from(reqs)
     return SearchQuery(
         titles=[t.strip() for t in titles if t.strip()],
-        places=places_from(reqs),
+        places=list(places),
         remote_only=remote_only(reqs),
+        no_remote=no_remote(reqs),
         radius_km=cfg.radius_km,
+        radii={name: km for name, km in places.items() if km is not None},
         max_age_days=cfg.max_age_days,
         limit=cfg.max_results_per_source,
     )
@@ -123,9 +125,8 @@ async def collect(
     statuses: dict[str, SourceStatus] = {}
     runnable = []
     for source in (SOURCES[k] for k in keys if k in SOURCES):
-        missing = [] if settings.demo else missing_env(source)
-        if missing:
-            statuses[source.key] = SourceStatus(source.label, error=f"needs {', '.join(missing)}")
+        if source.remote_only and query.no_remote:
+            statuses[source.key] = SourceStatus(source.label, error="skipped: remote not wanted")
         else:
             runnable.append(source)
     progress = {

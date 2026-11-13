@@ -162,8 +162,6 @@ textarea { resize: vertical; font-size: 0.92rem; line-height: 1.5; }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--navy-mid); box-shadow: 0 0 0 3px rgba(var(--navy-rgb), 0.25); }
 label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--pui-fg); white-space: nowrap; }
 label.check input { width: auto; accent-color: var(--navy-mid); }
-label.check:has(.check__note) { flex-wrap: wrap; row-gap: 2px; }
-.check__note { white-space: normal; overflow-wrap: anywhere; font-size: 0.8rem; flex-basis: 100%; padding-left: 24px; }
 fieldset.requirements { border: 1px solid var(--pui-border); border-radius: var(--pui-radius); padding: 12px 14px; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 fieldset legend { padding: 0 6px; color: var(--pui-fg); font-weight: 600; }
 .req-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
@@ -188,11 +186,64 @@ button.danger, .pui-btn.danger { background: linear-gradient(180deg, #ef4444, #b
   display: inline-block; margin: 0 0 0 4px; padding: 0 5px; font-size: 0.72rem; color: var(--navy-light);
   border: 1px solid rgba(var(--navy-rgb), 0.45); border-radius: 5px; cursor: help; vertical-align: 1px;
 }
-.role-suggestions ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
-.role-suggestions li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
-.role-chip { padding: 2px 10px; border-radius: 999px; font: inherit; font-size: 0.85rem; cursor: pointer; color: inherit; border: 1px dashed var(--pui-border-bright); background: transparent; }
-.role-chip--added { border-style: solid; background: var(--pui-bg-elev); }
-.role-suggestions .hint { margin: 0; }
+.role-suggestions { padding-top: 10px; border-top: 1px solid var(--pui-border); }
+.role-suggestions .hint { margin: 0 0 6px; }
+
+/* chips: titles, roles, cities, wishes */
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  position: relative; display: inline-flex; align-items: center; gap: 2px; border-radius: 999px;
+  font-size: 0.85rem; border: 1px dashed var(--pui-border-bright); color: var(--pui-fg-mute);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.chip--on { border-style: solid; border-color: rgba(var(--navy-rgb), 0.6); background: rgba(var(--navy-rgb), 0.16); color: var(--pui-fg); }
+.chip button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.chip__toggle { padding: 3px 4px 3px 11px; border-radius: 999px; }
+.chip__toggle:last-child { padding-right: 11px; }
+.chip__toggle:focus-visible, .chip__kind:focus-visible, .chip__remove:focus-visible { outline: 2px solid var(--navy-light); outline-offset: 1px; }
+.chip__kind { padding: 1px 7px; margin: 0 2px; border-radius: 999px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid var(--pui-border-bright) !important; color: var(--pui-fg-dim) !important; }
+.chip--must .chip__kind { border-color: rgba(251, 191, 36, 0.5) !important; color: var(--you) !important; }
+.chip__remove { padding: 0 9px 0 4px; font-size: 1rem; line-height: 1; color: var(--pui-fg-mute) !important; }
+.chip__remove:hover { color: var(--bad) !important; }
+.chip:not(.chip--on) .chip__toggle { text-decoration: line-through; text-decoration-color: var(--pui-fg-mute); }
+.chip--role:not(.chip--on) .chip__toggle { text-decoration: none; }
+.place-chip { padding-left: 11px; color: var(--pui-fg); }
+.place-chip select { width: auto; padding: 1px 4px; margin-left: 6px; font-size: 0.8rem; border-radius: 999px; background: transparent; }
+/* role reasons: shown on hover or keyboard focus */
+.chip__tip {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; width: max-content; max-width: min(320px, 80vw);
+  padding: 8px 10px; border-radius: var(--pui-radius-sm); background: var(--pui-bg-soft); border: 1px solid var(--pui-border-bright);
+  color: var(--pui-fg-dim); font-size: 0.82rem; line-height: 1.45; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  opacity: 0; visibility: hidden; transition: opacity 0.15s; pointer-events: none;
+}
+.chip:hover .chip__tip, .chip:focus-within .chip__tip { opacity: 1; visibility: visible; }
+/* anchored to the whole list, so a chip on the right doesn't push it out of the card */
+.role-suggestions .chips { position: relative; }
+.role-suggestions .chip { position: static; }
+.role-suggestions .chip__tip { right: 0; width: auto; max-width: none; }
+.chip-input { display: flex; gap: 6px; align-items: stretch; }
+.chip-input input { flex: 1; min-width: 0; padding: 7px 10px; }
+.chip-input--stack { flex-direction: column; }
+.chip-input__buttons { display: flex; gap: 6px; }
+.chip-input__buttons .chip-btn { flex: 1; padding: 7px 12px; }
+.chip-btn {
+  font: inherit; font-size: 0.85rem; padding: 0 12px; border-radius: var(--pui-radius-sm); cursor: pointer; white-space: nowrap;
+  color: var(--pui-fg); background: var(--pui-bg-soft); border: 1px solid var(--pui-border-bright);
+}
+.chip-btn:hover:not(:disabled) { border-color: var(--navy-mid); }
+.chip-btn:disabled { opacity: 0.45; cursor: default; }
+.chip-btn--must { border-color: rgba(251, 191, 36, 0.4); }
+/* requirement blocks with sliders */
+.req-block { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--pui-border); }
+.req-block:first-of-type { border-top: 0; padding-top: 0; }
+.req-block__head { display: flex; align-items: baseline; gap: 10px; color: var(--pui-fg-dim); font-size: 0.88rem; }
+.req-block__head > label:first-child, .req-block__head > span:first-child { display: inline; color: var(--pui-fg); font-weight: 500; }
+.req-block__value { flex: 1; color: var(--navy-pale); font-variant-numeric: tabular-nums; }
+.must-toggle { font-size: 0.82rem; color: var(--pui-fg-dim) !important; }
+input[type="range"] { padding: 0; border: 0; background: none; accent-color: var(--navy-mid); height: 22px; }
+input[type="range"]:focus { box-shadow: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--navy-light); outline-offset: 2px; }
+.range-scale { display: flex; justify-content: space-between; color: var(--pui-fg-mute); font-size: 0.75rem; margin-top: -4px; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .tags span { padding: 2px 9px; border-radius: 999px; font-size: 0.8rem; border: 1px solid var(--pui-border-bright); background: var(--pui-bg-elev); }
 .error-note { color: var(--bad); margin: 8px 0; }

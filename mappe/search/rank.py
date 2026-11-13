@@ -33,7 +33,7 @@ RECENT_YEARS = 3
 UNKNOWN_SKILL_FIT = 0.4  # listings without a description: skills can't be checked
 # Short or everyday words: matched only as written in the CV ("Go", not "go").
 _CASE_SENSITIVE = {"go", "r", "c", "d", "rest", "swift", "spring", "flow", "compose", "dart"}
-CHECKED_KINDS = {"salary_min", "max_onsite_days", "location"}
+CHECKED_KINDS = {"salary_min", "max_onsite_days", "remote", "location"}
 # Without places to search, onsite jobs are hidden when their location is abroad: it names
 # a German state or Germany -> domestic; else a foreign country, region or city -> abroad.
 _GERMANY = re.compile(

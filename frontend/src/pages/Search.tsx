@@ -1,11 +1,12 @@
 import { Button, GlassCard, GradientText } from "performative-ui";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { api, files } from "../api";
 import {
-  EMPTY_REQUIREMENTS,
+  type RequirementsForm,
   RequirementsEditor,
   fromRequirements,
+  parkedWishes,
   toRequirements,
 } from "../components/RequirementsEditor";
 import { ConfirmButton, ErrorNote, Section, useAction } from "../components/ui";
@@ -14,8 +15,10 @@ import { useLive, useResource } from "../live";
 import type {
   HiddenReason,
   JobHit,
+  Requirement,
   RolesStatus,
   SearchDetail,
+  SearchPrefs,
   SearchResultItem,
   SearchSource,
   SourceStatus,
@@ -338,20 +341,90 @@ function Results({
   );
 }
 
-const lines = (text: string) => text.split("\n").map((t) => t.trim()).filter(Boolean);
+const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+const includes = (list: string[], t: string) => list.some((x) => same(x, t));
+const without = (list: string[], drop: string[]) => list.filter((x) => !includes(drop, x));
 const roleTitles = (role: SuggestedRole) => [role.title, role.title_alt].filter(Boolean);
 
-/** Whether the role's main title is one of the lines (case-insensitive). */
-export function hasRole(text: string, role: SuggestedRole): boolean {
-  const have = new Set(lines(text).map((t) => t.toLowerCase()));
-  return have.has(role.title.toLowerCase());
+/** Whether the role's main title is searched (case-insensitive). */
+export function hasRole(titles: string[], role: SuggestedRole): boolean {
+  return includes(titles, role.title);
 }
 
-/** Add the role's titles (both languages) to the lines, or remove them again. */
-export function toggleRole(text: string, role: SuggestedRole): string {
-  const own = new Set(roleTitles(role).map((t) => t.toLowerCase()));
-  const kept = lines(text).filter((t) => !own.has(t.toLowerCase()));
-  return (hasRole(text, role) ? kept : [...kept, ...roleTitles(role)]).join("\n");
+/** Add the role's titles (both languages) to the searched titles, or remove them again. */
+export function toggleRole(titles: string[], role: SuggestedRole): string[] {
+  const kept = without(titles, roleTitles(role));
+  return hasRole(titles, role) ? kept : [...kept, ...roleTitles(role)];
+}
+
+/** Title chips: the CV's titles plus the user's own, each switched on or off. */
+export function TitleChips({
+  all,
+  titles,
+  onChange,
+  removable,
+  onRemove,
+  children,
+}: {
+  children?: ReactNode;
+  all: string[];
+  titles: string[];
+  onChange: (titles: string[]) => void;
+  removable: (title: string) => boolean;
+  onRemove: (title: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const title = draft.trim();
+    if (title && !includes(titles, title)) onChange([...titles, title]);
+    setDraft("");
+  };
+  return (
+    <fieldset className="requirements">
+      <legend>Job titles</legend>
+      <p className="hint">From your CV. Click a title to leave it out of the search, or add your own.</p>
+      <ul className="chips">
+        {all.map((t) => {
+          const on = includes(titles, t);
+          return (
+            <li key={t} className={`chip${on ? " chip--on" : ""}`}>
+              <button
+                type="button"
+                className="chip__toggle"
+                aria-pressed={on}
+                onClick={() => onChange(on ? without(titles, [t]) : [...titles, t])}
+              >
+                {t}
+              </button>
+              {!on && removable(t) && (
+                <button type="button" className="chip__remove" aria-label={`Remove ${t}`} onClick={() => onRemove(t)}>
+                  ×
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="chip-input">
+        <input
+          aria-label="Add a job title"
+          value={draft}
+          placeholder="Add a title"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <button type="button" className="chip-btn" onClick={add} disabled={!draft.trim()}>
+          Add
+        </button>
+      </div>
+      {children}
+    </fieldset>
+  );
 }
 
 export function RoleSuggestions({
@@ -364,8 +437,8 @@ export function RoleSuggestions({
   cvId: number;
   roles: SuggestedRole[];
   status: RolesStatus;
-  titles: string;
-  onChange: (titles: string) => void;
+  titles: string[];
+  onChange: (titles: string[]) => void;
 }) {
   if (status === "suggesting") return <p className="hint">Claude is suggesting other roles that fit your CV…</p>;
   if (!roles.length) {
@@ -377,22 +450,25 @@ export function RoleSuggestions({
   }
   return (
     <div className="role-suggestions">
-      <p className="hint">Other roles that fit your CV, suggested by Claude. Click to add them to the search.</p>
-      <ul>
+      <p className="hint">Other roles that fit your CV, suggested by Claude. Hover for why; click to search for one too.</p>
+      <ul className="chips">
         {roles.map((role) => {
           const added = hasRole(titles, role);
           return (
-            <li key={role.title}>
+            <li key={role.title} className={`chip chip--role${added ? " chip--on" : ""}`} data-tip={role.reason}>
               <button
                 type="button"
-                className={`role-chip${added ? " role-chip--added" : ""}`}
+                className="chip__toggle"
                 aria-pressed={added}
+                aria-describedby={`role-${slug(role.title)}`}
                 onClick={() => onChange(toggleRole(titles, role))}
               >
                 {added ? "✓" : "+"} {role.title}
                 {role.title_alt && <span className="muted"> / {role.title_alt}</span>}
               </button>
-              <span className="hint">{role.reason}</span>
+              <span id={`role-${slug(role.title)}`} role="tooltip" className="chip__tip">
+                {role.reason}
+              </span>
             </li>
           );
         })}
@@ -401,39 +477,103 @@ export function RoleSuggestions({
   );
 }
 
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+interface Suggestions {
+  titles: string[];
+  roles: SuggestedRole[];
+  roles_status: RolesStatus;
+  sources: SearchSource[];
+  prefs: SearchPrefs | null;
+}
+
+interface FormState {
+  titles: string[];
+  titlesOff: string[];
+  reqs: RequirementsForm;
+  chosen: Set<string>;
+}
+
+/** The form for a CV: its saved prefs, or the CV's titles and the last used requirements. */
+export function initialForm(s: Suggestions, lastReqs: Requirement[]): FormState {
+  const available = new Set(s.sources.map((x) => x.key));
+  const defaults = s.sources.filter((x) => x.default && available.has(x.key)).map((x) => x.key);
+  const p = s.prefs;
+  if (!p) {
+    return { titles: s.titles, titlesOff: [], reqs: fromRequirements(lastReqs), chosen: new Set(defaults) };
+  }
+  // CV titles the user never switched off are searched (e.g. after the CV changed).
+  const fresh = without(s.titles, [...p.titles, ...p.titles_off]);
+  return {
+    titles: [...p.titles, ...fresh],
+    titlesOff: p.titles_off,
+    reqs: fromRequirements(p.requirements, p.requirements_off),
+    chosen: new Set(p.sources === null ? defaults : p.sources.filter((k) => available.has(k))),
+  };
+}
+
+export function toPrefs(f: FormState): SearchPrefs {
+  return {
+    titles: f.titles,
+    titles_off: f.titlesOff,
+    requirements: toRequirements(f.reqs),
+    requirements_off: parkedWishes(f.reqs),
+    sources: [...f.chosen].sort(),
+  };
+}
+
 function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
   const { version } = useLive();
   const cvs = useResource(() => api.cvs(), [version("any")]);
   const confirmed = (cvs.data ?? []).filter((c) => c.status === "confirmed");
   const [cvId, setCvId] = useState<number | null>(null);
-  const [titles, setTitles] = useState("");
+  const [cvTitles, setCvTitles] = useState<string[]>([]);
+  const [form, setForm] = useState<FormState | null>(null);
+  const [loadedFor, setLoadedFor] = useState<number | null>(null);
+  const saved = useRef("");
   const [roles, setRoles] = useState<{ roles: SuggestedRole[]; status: RolesStatus }>({ roles: [], status: null });
   const [sources, setSources] = useState<SearchSource[]>([]);
-  const [chosen, setChosen] = useState<Set<string>>(new Set());
-  const [reqs, setReqs] = useState(EMPTY_REQUIREMENTS);
   const action = useAction();
 
-  useEffect(() => {
-    api.lastRequirements().then((r) => setReqs(fromRequirements(r)));
-  }, []);
   useEffect(() => {
     if (cvId === null && confirmed.length) setCvId(confirmed[0].id);
   }, [confirmed, cvId]);
   useEffect(() => {
     if (cvId === null) return;
-    api.searchSuggestions(cvId).then((s) => {
-      setTitles(s.titles.join("\n"));
+    let stale = false;
+    setLoadedFor(null);
+    Promise.all([api.searchSuggestions(cvId), api.lastRequirements()]).then(([s, last]) => {
+      if (stale) return;
+      const initial = initialForm(s, last);
+      setCvTitles(s.titles);
       setSources(s.sources);
-      setChosen(new Set(s.sources.filter((x) => x.default && !x.missing_env.length).map((x) => x.key)));
+      setForm(initial);
+      saved.current = s.prefs ? JSON.stringify(toPrefs(initial)) : "";
+      setLoadedFor(cvId);
     });
+    return () => {
+      stale = true;
+    };
   }, [cvId]);
   // Role suggestions arrive in the background after confirmation: reload them on CV
-  // updates without touching the titles the user is editing.
+  // updates without touching the form the user is editing.
   const cvVersion = version("cv", cvId ?? undefined);
   useEffect(() => {
     if (cvId === null) return;
     api.searchSuggestions(cvId).then((s) => setRoles({ roles: s.roles, status: s.roles_status }));
   }, [cvId, cvVersion]);
+  // Keep the form per CV: save shortly after each change.
+  useEffect(() => {
+    if (form === null || cvId === null || loadedFor !== cvId) return;
+    const prefs = toPrefs(form);
+    const json = JSON.stringify(prefs);
+    if (json === saved.current) return;
+    const timer = setTimeout(() => {
+      saved.current = json;
+      api.saveSearchPrefs(cvId, prefs).catch(() => (saved.current = ""));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [form, cvId, loadedFor]);
 
   if (cvs.data && !confirmed.length) {
     return (
@@ -445,19 +585,28 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
     );
   }
 
+  const update = (patch: Partial<FormState>) => setForm((f) => (f ? { ...f, ...patch } : f));
+  const roleSet = roles.roles.flatMap(roleTitles);
+  const ready = form !== null && loadedFor === cvId;
+  // Chips: the CV's titles and the user's own; roles have their own chips below.
+  const allTitles = form
+    ? without([...new Map([...cvTitles, ...form.titles, ...form.titlesOff].map((t) => [t.toLowerCase(), t])).values()], roleSet)
+    : [];
+  const noRemote = form !== null && !form.reqs.remote_ok && form.reqs.max_onsite_days !== 0 && form.reqs.work_must;
+
   return (
     <Section title="Search" eyebrow="No AI costs">
       <form
         className="stack"
         onSubmit={async (e) => {
           e.preventDefault();
-          if (cvId === null) return;
+          if (cvId === null || !form) return;
           const result = await action.run(() =>
             api.createSearch({
               cv_id: cvId,
-              titles: lines(titles),
-              requirements: toRequirements(reqs),
-              sources: [...chosen],
+              titles: form.titles,
+              requirements: toRequirements(form.reqs),
+              sources: [...form.chosen],
             }),
           );
           if (result) onSearched(result);
@@ -473,53 +622,61 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
             ))}
           </select>
         </label>
-        <label>
-          Job titles (one per line, suggested from your CV)
-          <textarea rows={4} value={titles} onChange={(e) => setTitles(e.target.value)} />
-        </label>
-        {cvId !== null && (
-          <RoleSuggestions cvId={cvId} roles={roles.roles} status={roles.status} titles={titles} onChange={setTitles} />
-        )}
-        <RequirementsEditor value={reqs} onChange={setReqs} />
-        <p className="hint">
-          {reqs.location.trim()
-            ? "Cities are searched with a radius."
-            : "No cities: all of Germany is searched (jobs abroad are hidden). Add cities to search near you."}{" "}
-          A must-have hides listings that clearly contradict it; hidden listings stay one click
-          away.
-        </p>
-        <fieldset className="requirements">
-          <legend>Sources</legend>
-          {sources.map((s) => (
-            <label key={s.key} className="check" title={s.home}>
-              <input
-                type="checkbox"
-                checked={chosen.has(s.key)}
-                disabled={s.missing_env.length > 0}
-                onChange={() =>
-                  setChosen((c) => {
-                    const next = new Set(c);
-                    if (next.has(s.key)) next.delete(s.key);
-                    else next.add(s.key);
-                    return next;
-                  })
-                }
+        {ready && form && cvId !== null && (
+          <>
+            <TitleChips
+              all={allTitles}
+              titles={form.titles}
+              onChange={(titles) =>
+                update({ titles, titlesOff: without([...form.titlesOff, ...without(allTitles, titles)], titles) })
+              }
+              removable={(t) => !includes(cvTitles, t)}
+              onRemove={(t) => update({ titlesOff: without(form.titlesOff, [t]) })}
+            >
+              <RoleSuggestions
+                cvId={cvId}
+                roles={roles.roles}
+                status={roles.status}
+                titles={form.titles}
+                onChange={(titles) => update({ titles })}
               />
-              {s.label}
-              {s.remote_only && <span className="muted">remote</span>}
-              {s.missing_env.length > 0 && (
-                <span className="muted check__note">needs {s.missing_env.join(", ")}</span>
-              )}
-            </label>
-          ))}
-        </fieldset>
+            </TitleChips>
+            <RequirementsEditor value={form.reqs} onChange={(reqs) => update({ reqs })} />
+            <p className="hint">
+              {form.reqs.places.length
+                ? "Bundesagentur searches within each city's radius; the other sources match the city names."
+                : "No cities: all of Germany is searched (jobs abroad are hidden). Add cities to search near you."}{" "}
+              A must-have hides listings that clearly contradict it; hidden listings stay one click
+              away.
+            </p>
+            <fieldset className="requirements">
+              <legend>Sources</legend>
+              {sources.map((s) => (
+                <label key={s.key} className="check" title={s.home}>
+                  <input
+                    type="checkbox"
+                    checked={form.chosen.has(s.key)}
+                    onChange={() => {
+                      const next = new Set(form.chosen);
+                      if (next.has(s.key)) next.delete(s.key);
+                      else next.add(s.key);
+                      update({ chosen: next });
+                    }}
+                  />
+                  {s.label}
+                  {s.remote_only && <span className="muted">remote{noRemote && ", skipped"}</span>}
+                </label>
+              ))}
+            </fieldset>
+          </>
+        )}
         <ErrorNote error={action.error} />
         <Button
           type="submit"
           variant="glow"
           sparkle
           loading={action.busy}
-          disabled={!titles.trim() || chosen.size === 0}
+          disabled={!ready || !form?.titles.length || !form?.chosen.size}
         >
           Search
         </Button>

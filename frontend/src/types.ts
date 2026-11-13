@@ -153,9 +153,18 @@ export interface SuggestedRole {
 }
 
 export interface Requirement {
-  kind: "salary_min" | "max_onsite_days" | "location" | "benefit" | "other";
+  kind: "salary_min" | "max_onsite_days" | "remote" | "location" | "benefit" | "other";
   value: string;
   must_have: boolean;
+}
+
+/** The search form of one CV, kept between visits. */
+export interface SearchPrefs {
+  titles: string[];
+  titles_off: string[];
+  requirements: Requirement[];
+  requirements_off: Requirement[];
+  sources: string[] | null;
 }
 
 export interface RequirementResult {
@@ -375,7 +384,6 @@ export interface SearchSource {
   home: string;
   remote_only: boolean;
   default: boolean;
-  missing_env: string[];
 }
 
 export interface SourceStatus {

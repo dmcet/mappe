@@ -26,7 +26,36 @@ def test_suggestions(client):
     ]
     sources = {s["key"]: s for s in data["sources"]}
     assert sources["ba"]["default"] and not sources["remoteok"]["default"]
-    assert sources["adzuna"]["missing_env"] == ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"]
+
+
+def test_form_is_kept_per_cv(client):
+    cv_id = confirmed_cv(client)
+    url = f"/api/search/suggestions?cv_id={cv_id}"
+    assert client.get(url).json()["prefs"] is None
+    prefs = {
+        "titles": ["Backend Engineer", "Platform Engineer"],
+        "titles_off": ["Python Developer"],
+        "requirements": [{"kind": "location", "value": "Berlin (10 km)", "must_have": True}],
+        "requirements_off": [{"kind": "other", "value": "Dog-friendly", "must_have": False}],
+        "sources": ["ba"],
+    }
+    resp = client.put(f"/api/search/prefs/{cv_id}", json=prefs)
+    assert resp.status_code == 200, resp.text
+    assert client.get(url).json()["prefs"] == prefs
+    assert client.put("/api/search/prefs/999", json=prefs).status_code == 404
+
+
+def test_remote_only_sources_are_skipped_when_remote_is_excluded(client, job_apis):
+    cv_id = confirmed_cv(client)
+    data = search(
+        client,
+        cv_id,
+        titles=["Softwareentwickler"],
+        requirements=[{"kind": "remote", "value": "no", "must_have": True}],
+        sources=["ba", "remotive"],
+    )
+    assert data["sources"]["remotive"]["error"] == "skipped: remote not wanted"
+    assert not any(r.url.host == "remotive.com" for r in job_apis.requests)
 
 
 def test_search_ranks_reports_sources_and_survives_a_failing_one(client, job_apis):
@@ -43,7 +72,6 @@ def test_search_ranks_reports_sources_and_survives_a_failing_one(client, job_api
     sources = data["sources"]
     assert sources["ba"]["count"] > 0 and sources["ba"]["error"] is None
     assert sources["jobicy"]["error"] == "HTTP 503"
-    assert sources["adzuna"]["error"] == "needs ADZUNA_APP_ID, ADZUNA_APP_KEY"
     assert "remoteok" not in sources  # not a default source
 
     results = data["results"]
@@ -147,8 +175,8 @@ def test_demo_mode_uses_samples_dated_as_of_today(client, monkeypatch):
         "mappe.search.service.make_client",
         lambda timeout: httpx.AsyncClient(transport=httpx.MockTransport(no_network)),
     )
-    data = search(client, cv_id, sources=["ba", "adzuna"])
-    assert data["sources"]["ba"]["count"] > 0 and data["sources"]["adzuna"]["error"] is None
+    data = search(client, cv_id, sources=["ba", "remoteok"])
+    assert data["sources"]["ba"]["count"] > 0 and data["sources"]["remoteok"]["error"] is None
     newest = max(r["hit"]["posted_at"] for r in data["results"])
     assert newest == date.today().isoformat()
     assert requests == []  # demo mode never calls the job APIs
@@ -216,12 +244,13 @@ def test_saved_search_reports_listings_its_earlier_runs_missed(client, job_apis)
     saved_id = saved.json()["id"]
     with Session(get_engine()) as session:  # widen the saved search to a second source
         row = session.get(SavedSearch, saved_id)
-        row.sources = ["ba", "remotive"]
+        row.sources = ["ba", "remotive", "adzuna"]  # Adzuna was removed: it's dropped
         session.add(row)
         session.commit()
     run = client.post(f"/api/saved-searches/{saved_id}/run").json()
     new = {r["hit"]["source"] for r in run["results"] if r["is_new"]}
     assert new == {"remotive"}
+    assert set(run["sources"]) == {"ba", "remotive"}
 
 
 def test_deleting_the_cv_deletes_its_saved_searches(client, job_apis):

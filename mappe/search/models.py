@@ -72,6 +72,11 @@ class SearchQuery:
     titles: list[str]
     places: list[str] = field(default_factory=list)  # empty = all of Germany
     remote_only: bool = False
-    radius_km: int = 30
+    no_remote: bool = False  # fully remote jobs are excluded: skip remote-only sources
+    radius_km: int = 30  # default radius
+    radii: dict[str, int] = field(default_factory=dict)  # per place, overrides the default
     max_age_days: int = 30
     limit: int = 100  # per source
+
+    def radius(self, place: str) -> int:
+        return self.radii.get(place, self.radius_km)

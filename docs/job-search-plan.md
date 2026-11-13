@@ -5,14 +5,21 @@ user picks into applications. Status: phases 1 and 2 implemented; from phase 3 s
 semantic ranking (scheduled searches are not built).
 
 **Changes during implementation:**
-- Query chips are a plain "one title per line" field; places and remote-only come from the
-  requirements form, so there is one place to enter cities.
+- Adzuna was removed (2026-11-13). Saved searches that still list it run without it.
+- Titles are chips (the CV's titles, on by default, plus the user's own); places and remote
+  come from the requirements form, so there is one place to enter cities. Each city has its
+  own radius (`"Nürnberg (30 km), Fürth (10 km)"` in the `location` requirement; without one,
+  `radius_km`). A `remote: "no"` requirement excludes fully remote jobs; as a must-have it also
+  skips the remote-only sources.
+- The search form is stored per CV (`cv.search_prefs`, migration 0007): searched and
+  switched-off titles, requirements, switched-off wishes and sources. CV titles that are in
+  neither list (new after a CV edit) are searched.
 - `RunCreate` is unchanged: `POST /api/searches/{id}/apply` creates the runs itself (URL plus
   text when the source has the full listing).
 - New filter "outside your area": onsite/hybrid hits from sources that can't search by place
   (Arbeitnow, the remote boards) are hidden when their location isn't one of the searched
-  cities, or, without cities, when it names a place abroad. Bundesagentur and Adzuna search
-  around the cities themselves (radius) and are exempt.
+  cities, or, without cities, when it names a place abroad. Bundesagentur searches
+  around the cities itself (radius) and is exempt.
 - Bundesagentur's `homeofficemoeglich: false` is treated as *unknown*, not onsite: it's often
   just an unticked box, and unknown must never fail a must-have.
 - Hits from Bundesagentur use the employer's page (`externeURL`, ~1/3 of hits) as the
@@ -42,7 +49,6 @@ All sources were checked on 2026-11-03 unless marked *unverified*.
 | **Remotive** | `GET remotive.com/api/remote-jobs?search=&category=&limit=` | Server side (keyword, category) | Title, company, HTML description, tags, `candidate_required_location`, salary text | Remote only. Terms forbid republishing to other job sites; local personal use is fine. Keep the link to the original. |
 | **Jobicy** | `GET jobicy.com/api/v2/remote-jobs?geo=germany&tag=&count=` | Server side (`geo`, `tag`, `industry`) | Title, company, description, geo, salary when given | Remote only. Must credit Jobicy and link to the original URL. |
 | **Remote OK** | `GET remoteok.com/api` (needs a User-Agent) | None, filter locally | Title, company, tags, description, location, salary | Mostly US/worldwide, so it's mostly noise here. Must link back and name Remote OK. Disabled by default. |
-| **Adzuna** | `GET api.adzuna.com/v1/api/jobs/de/search/{page}?app_id=&app_key=&what=&where=` | Server side | Title, company, description snippet, location, salary (also estimated) | Free key (registration). Enabled only when `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` are set. *Unverified* (needs a key). |
 
 Every result shows its source and links to the original listing, which covers the attribution
 terms above.
@@ -88,7 +94,7 @@ Sources with server-side search get `title` queries (BA: `was=<title>`, `wo=<cit
 
 ```python
 class JobHit(BaseModel):
-    source: str               # "ba" | "arbeitnow" | "remotive" | "jobicy" | "remoteok" | "adzuna"
+    source: str               # "ba" | "arbeitnow" | "remotive" | "jobicy" | "remoteok"
     external_id: str          # BA referenznummer, Arbeitnow slug, ...
     url: str                  # original listing (BA: jobdetail URL or the employer's external URL)
     title: str
@@ -194,7 +200,7 @@ mappe/search/
   queries.py       # queries from ParsedCV, DE/EN title variants
   sources/
     base.py        # Source protocol: async search(queries, places, client) -> list[JobHit]
-    ba.py  arbeitnow.py  remotive.py  jobicy.py  remoteok.py  adzuna.py
+    ba.py  arbeitnow.py  remotive.py  jobicy.py  remoteok.py
   dedupe.py
   rank.py          # filtering (reuses checks/requirements.py) + scoring
   service.py       # orchestrates one search, persists results
@@ -208,7 +214,7 @@ Config (`config.toml`):
 
 ```toml
 [search]
-sources = ["ba", "arbeitnow", "remotive", "jobicy", "adzuna"]  # adzuna only with keys
+sources = ["ba", "arbeitnow", "remotive", "jobicy"]
 max_results_per_source = 100
 max_age_days = 30
 radius_km = 30
@@ -232,7 +238,8 @@ cache_minutes = 60            # for sources without server-side search (Arbeitno
 
 1. **Core:** models, BA + Arbeitnow adapters, queries, dedupe, filtering, ranking, migration,
    API, Search page, apply → runs. Covers most German listings.
-2. **More sources:** Remotive, Jobicy, Remote OK (off by default), Adzuna (with keys).
+2. **More sources:** Remotive, Jobicy, Remote OK (off by default). Adzuna (needed a key) was
+   built and later removed.
 3. **Later:** saved searches with "new since last time" (done), embeddings ranking (done, see
    below), SSE progress per source (done, via the activity registry), scheduled searches
    (open).
