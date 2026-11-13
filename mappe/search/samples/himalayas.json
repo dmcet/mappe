@@ -1,0 +1,658 @@
+{
+ "comments": "Search results come 20 to a page. Pass ?page=2, ?page=3 and so on for more; there is no cursor on search. Cursor pagination (nextCursor) is only on /jobs/api, the browse feed. 13/03/2026: The API has been updated to include the companySlug field in the response.",
+ "updatedAt": 1794473443,
+ "offset": 0,
+ "limit": 20,
+ "totalCount": 11,
+ "jobs": [
+  {
+   "title": "Engineering Manager (all genders) | Mobile Engineering",
+   "excerpt": "anstellungsdetailsPermanent contract, Full or Part-Time, Remote or Cologne / Darmstadt / Düsseldorf / Berlin info Who we areWe are the tech powerhouse behind Kaufland’s international online marketplaces and a company within the Schwarz Group.",
+   "companyName": "Kaufland e-commerce",
+   "companySlug": "kaufland-e-commerce",
+   "companyLogo": "https://cdn-images.himalayas.app/vbedrk758n0118kjx0t803mk5w0e",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Mid-level"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "Germany"
+   ],
+   "timezoneRestrictions": [
+    1
+   ],
+   "categories": [
+    "Engineering-Manager",
+    "Mobile-Engineering-Manager",
+    "Mobile-Engineering-Lead"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h3>anstellungsdetails</h3><p>Permanent contract, Full or Part-Time, Remote or Cologne / Darmstadt / Düsseldorf / Berlin</p><h3>info</h3><p></p><h3>Who we are</h3>We are the tech powerhouse behind Kaufland’s international online marketplaces and a company within the Schwarz Group. Driven by a start-up mentality and working on an equal footing within flat hierarchies, we develop the best marketplace solutions for our customers, sellers and partners. #FromEuropeForEurope<br><br>Day by day, our Tech &amp; Product Team of about 400 experts pursues the goal of creating the best possible customer shopping experience for our online marketplace. Through innovative technical developments, they not only create an outstanding shopping experience but also lay the foundation for an optimal selling experience for our sellers. Learn more about our division, areas, and cross-functional teams here!<p></p><h3>aufgaben</h3><p></p><h3>Your tasks – this is what awaits you in detail</h3>Building, developing and enabling high performing teams who build awesome products is the main responsibility for our Engineering Managers. It’s the entry position in our Engineering Management career path and reports to a Head of Product Engineering.<br><br>As an Engineering Manager joining our team, you will initially focus on hands-on technical tasks like an individual contributor allowing you to gain a deep understanding of our mobile infrastructure and systems so that you know the code inside and out before adding managerial responsibilities to your plate. This approach enables you to understand the technical challenges your team encounters deeply, setting you and the team up for future wins.<ul>\n<li>You have found your passion in software development, but you enjoy building the right team, removing roadblocks, helping others, creating transparency, and alignment even more than being an individual contributor</li>\n<li>Based on your experience, you will start by leading the engineers of one mobile pro",
+   "pubDate": 1794473443,
+   "expiryDate": 1799657442,
+   "applicationLink": "https://himalayas.app/companies/kaufland-e-commerce/jobs/engineering-manager-all-genders-mobile-engineering?utm_source=api",
+   "guid": "https://himalayas.app/companies/kaufland-e-commerce/jobs/engineering-manager-all-genders-mobile-engineering"
+  },
+  {
+   "title": "Mobile Application Developer",
+   "excerpt": "About BJAKThe original mission of BJAK is we believe people deserve smarter ways to plan, save and grow their money.",
+   "companyName": "Bjak",
+   "companySlug": "bjak",
+   "companyLogo": "https://cdn-images.himalayas.app/8ub8wtihrfrm3vfivlkcojai4np3",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Mid-level"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "Germany"
+   ],
+   "timezoneRestrictions": [
+    1
+   ],
+   "categories": [
+    "Mobile-Application-Developer",
+    "Mobile-Software-Developer",
+    "Mobile-Apps-Development",
+    "App-Developer",
+    "Mobile-Solutions-Developer",
+    "Mobile-IOS-Developer",
+    "Mobile-Development-Specialist",
+    "Mobile-Software-Development",
+    "Application-Developer",
+    "Developer"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h3><strong>About BJAK</strong></h3><p>The original mission of BJAK is we believe people deserve smarter ways to plan, save and grow their money. This is the origin of our name.<br><br>Started in 2019, we built the first mobile-first, insurance platform, enabling insurance to be accessible online by millions in the region. Today, its the leading insurance platform in Southeast Asia.<br><br>Today, we are expanding ways to help people in the region — this includes spending, saving, investing, exchanging, travelling, and more. Our mission is help people get more from their money every day.<br><br>We have teams working around the world, with over 20 nationalities from our offices and remotely, who truly enjoys their work. We are looking for the most talented and driven people we can find. We are looking for people who work for their passion, not counting hours. Who loves building great next-generation products, not status quo. Who cares about redefining how everyone around us can get the best financial applications, not for an exclusive few.<br><br>If you're this person, we'd love to talk to you.</p><h3><strong>The Role</strong></h3><p>We are looking for Mobile developer to build the native Android experience for BJAK's AI Finance Agent.<br><br>This role is for someone who cares about clean user flows, fast performance, product quality and shipping reliable mobile features used by real customers.</p><h3><strong>What You'll Own</strong></h3><ul>\n<li><p>Build and ship Android features using Kotlin.</p></li>\n<li><p>Create clean mobile flows for insurance, payments, claims, renewals and financial services.</p></li>\n<li><p>Work with product and design to simplify complex user journeys.</p></li>\n<li><p>Integrate backend APIs and ensure mobile flows are stable, secure and reliable.</p></li>\n<li><p>Improve app performance, crash rate, loading states, responsiveness and memory usage.</p></li>\n<li><p>Use analytics, user behaviour and production issues to improve the product.</p><",
+   "pubDate": 1794280399,
+   "expiryDate": 1799464398,
+   "applicationLink": "https://himalayas.app/companies/bjak/jobs/mobile-application-developer-8337645602?utm_source=api",
+   "guid": "https://himalayas.app/companies/bjak/jobs/mobile-application-developer-8337645602"
+  },
+  {
+   "title": "Senior Android Developer",
+   "excerpt": "Ukraine, Europe, Remote Gaming About Us We are a leading Israeli IT company with 15 years of market experience and 8 years in Ukraine.",
+   "companyName": "YozmaTech",
+   "companySlug": "yozmatech",
+   "companyLogo": "https://cdn-images.himalayas.app/v2wqzl9vrf8y4fbdfusqmkjpz7dz",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "Albania",
+    "Andorra",
+    "Austria",
+    "Belarus",
+    "Belgium",
+    "Bosnia and Herzegovina",
+    "Bulgaria",
+    "Croatia",
+    "Cyprus",
+    "Czechia",
+    "Denmark",
+    "Estonia",
+    "Faroe Islands",
+    "Finland",
+    "France",
+    "Germany",
+    "Gibraltar",
+    "Greece",
+    "Guernsey",
+    "Holy See (Vatican City State)",
+    "Hungary",
+    "Iceland",
+    "Ireland",
+    "Isle of Man",
+    "Italy",
+    "Jersey",
+    "Kosovo",
+    "Latvia",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Malta",
+    "Moldova",
+    "Monaco",
+    "Montenegro",
+    "Netherlands",
+    "North Macedonia",
+    "Norway",
+    "Poland",
+    "Portugal",
+    "Romania",
+    "San Marino",
+    "Serbia",
+    "Slovakia",
+    "Slovenia",
+    "Spain",
+    "Svalbard and Jan Mayen",
+    "Sweden",
+    "Switzerland",
+    "Ukraine",
+    "United Kingdom",
+    "Åland Islands"
+   ],
+   "timezoneRestrictions": [
+    -1,
+    0,
+    1,
+    2,
+    3
+   ],
+   "categories": [
+    "Android-Developer",
+    "Mobile-Software-Engineer",
+    "Android-Engineer"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h3> Ukraine, Europe, Remote</h3><h3> Gaming</h3><p></p><p><strong>About Us</strong></p><p><strong>We are a leading Israeli IT company with 15 years of market experience and 8 years in Ukraine. Officially registered in Ukraine, Israel, and Estonia, we employ over 100 professionals worldwide. Specializing in successful startup collaboration, we offer services across e-commerce, Fintech, logistics, and healthcare.</strong></p><p><strong><strong>Our client</strong> is building a groundbreaking loyalty platform for mobile gamers, and we're seeking passionate individuals to form the foundation of our engineering team.</strong></p><h3><strong>What you will do:</strong></h3><ul>\n<li><strong> Design, build, test, and maintain native Android applications;</strong></li>\n<li><strong> Create Gradle builds and full CI/CD pipelines;</strong></li>\n<li><strong> Contribute effectively within the scrum team;</strong></li>\n<li><strong> Continuously innovate by proposing technical solutions to our business needs;</strong></li>\n<li><strong> Design app observability to enhance app UX and overall product quality.</strong></li>\n</ul><h3><strong>Key Requirements:</strong></h3><ul>\n<li><strong> 4+ years of experience developing production-grade native Android applications using Kotlin;</strong></li>\n<li><strong> Good understanding and knowledge of Android development best practices, Kotlin, coroutines, and Jetpack Compose;</strong></li>\n<li><strong> Strong grasp of clean code, SOLID principles, testing, and MVC/MVVM patterns;</strong></li>\n<li><strong> Good knowledge of Androids features and restrictions;</strong></li>\n<li><strong> English  Upper-Intermediate or higher.</strong></li>\n</ul><h3><strong>Will be plus:</strong></h3><ul>\n<li><strong>Portfolio with created applications;</strong></li>\n<li><strong>Tech lead experience.</strong></li>\n</ul><h3><strong>Interview stages:</strong></h3><ul>\n<li><strong> HR interview;</strong></li>\n<li><strong> Tech screening;</strong></li>\n<li><strong> Tes",
+   "pubDate": 1794225561,
+   "expiryDate": 1799409560,
+   "applicationLink": "https://himalayas.app/companies/yozmatech/jobs/senior-android-developer?utm_source=api",
+   "guid": "https://himalayas.app/companies/yozmatech/jobs/senior-android-developer"
+  },
+  {
+   "title": "Engineering Manager (Java/Kotlin Stack)",
+   "excerpt": "Engineering ManagerWe are looking for an Engineering Manager to lead a team of backend engineers building the systems behind our financial products.",
+   "companyName": "Banco Plata, S.A., Institución de Banca Múltiple",
+   "companySlug": "banco-plata-s-a-institucion-de-banca-multiple",
+   "companyLogo": "https://cdn-images.himalayas.app/cu15rhdxs9omvo0ml1kwr014ai5y",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": null,
+   "locationRestrictions": [],
+   "timezoneRestrictions": [
+    -11,
+    -10,
+    -9.5,
+    -9,
+    -8,
+    -7,
+    -6,
+    -5,
+    -4,
+    -3.5,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    2,
+    3,
+    3.5,
+    4,
+    4.5,
+    5,
+    5.5,
+    5.75,
+    6,
+    6.5,
+    7,
+    8,
+    8.75,
+    9,
+    9.5,
+    10,
+    10.5,
+    11,
+    12,
+    12.75,
+    13,
+    14
+   ],
+   "categories": [
+    "Engineering-Manager",
+    "Software-Engineering-Manager",
+    "Backend-Engineering-Manager",
+    "Technical-Lead"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h4>Engineering Manager</h4><p>We are looking for an Engineering Manager to lead a team of backend engineers building the systems behind our financial products. You will own the team's delivery, technical direction and people growth, and help shape engineering culture across the department. You'll operate with significant autonomy, making key decisions on architecture, priorities and ways of working, and you will work closely with product and neighboring engineering teams to turn business goals into reliable, scalable services. Your work will directly impact the quality and speed with which Plata delivers to its customers.</p><h4>Challenges that await you:</h4><ul>\n<li>Lead, mentor and grow a team of engineers: hiring, onboarding, career development and honest feedback, while fostering a culture of ownership and engineering excellence.</li>\n<li>Take ownership of your team's delivery and the reliability of its services: set priorities, plan roadmaps, and keep quality, scope and timelines in balance.</li>\n<li>Drive technical strategy and architecture for high-load, distributed systems, balancing immediate business needs with long-term, future-proof decisions.</li>\n<li>Partner with product, other engineering teams and stakeholders to understand needs, align on priorities and provide a seamless, dependable service.</li>\n<li>Improve engineering practices across the team and the department: code quality, testing, observability, incident management, CI/CD.</li>\n<li>Take part in shaping the department: share best practices, contribute to hiring standards and help grow the engineering community at Plata.</li>\n</ul><h4>What makes you a great fit:</h4><ul>\n<li>3+ years of experience <strong>leading </strong>a software engineering team, with a strong ability to mentor engineers, manage change and drive team growth.</li>\n<li>5+ years of hands-on <strong>backend development</strong>, particularly building robust, high-scale, distributed systems.</li>\n<li>Deep experience <strong>d",
+   "pubDate": 1794026458,
+   "expiryDate": 1799210458,
+   "applicationLink": "https://himalayas.app/companies/banco-plata-s-a-institucion-de-banca-multiple/jobs/engineering-manager-java-kotlin-stack?utm_source=api",
+   "guid": "https://himalayas.app/companies/banco-plata-s-a-institucion-de-banca-multiple/jobs/engineering-manager-java-kotlin-stack"
+  },
+  {
+   "title": "Senior Software Engineer (m/w/d) für Individualsoftware",
+   "excerpt": "über unsWas für einen Kunden eine Ausnahme ist, gehört für den nächsten zum Tagesgeschäft.",
+   "companyName": "avenit AG",
+   "companySlug": "avenit-ag",
+   "companyLogo": "https://cdn-images.himalayas.app/a42hs7b5kgsb2fu5xju49eoneqwp",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "Germany"
+   ],
+   "timezoneRestrictions": [
+    1
+   ],
+   "categories": [
+    "Software-Engineer",
+    "Software-Developer",
+    "Full-Stack-Developer",
+    "Software-Architect"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h3>über uns</h3><p><em>Was für einen Kunden eine Ausnahme ist, gehört für den nächsten zum Tagesgeschäft. Wir entwickeln Individualsoftware für mittelständische Unternehmen aus Industrie, Handel und Versicherungen. Gemeinsam betreuen wir mehrere Kundenprojekte - so lernst du unterschiedliche Geschäftsabläufe kennen und gestaltest Anwendungen für Web, Mobilgeräte und Desktop. <br>Als Senior Software Engineer klärst du mit den Fachleuten auf Kundenseite, was die Software im Alltag leisten muss. Du gestaltest die Architektur mit und setzt deine Entscheidungen selbst im Code um.</em></p><h3>das gibt es zu tun</h3><p></p><ul>\n<li>\n<strong>Fachliche Anforderungen verstehen.</strong> Du klärst mit den Fachleuten auf Kundenseite, welche Abläufe die Anwendung unterstützen soll. Du übersetzt Geschäftsregeln und Sonderfälle in ein tragfähiges Softwaredesign.</li>\n<li>\n<strong>Architektur gestalten und selbst entwickeln.</strong> Du entscheidest mit, wie eine Anwendung aufgebaut ist, wie ihre Komponenten zusammenspielen und wo sie an bestehende Systeme angebunden wird. Deine Entscheidungen bringst du selbst in den Code.</li>\n<li>\n<strong>Anwendungen durchgängig entwickeln.</strong>Je nach Projekt entwickelst du Geschäftslogik und Schnittstellen mit C# und .NET oder mit TypeScript und Node.js. Dabei arbeitest du an Webanwendungen ebenso wie an nativen Apps für Mobilgeräte oder Desktop.</li>\n<li>\n<strong>Mit Daten arbeiten.</strong> Du entwirfst relationale Datenmodelle, die fachliche Zusammenhänge verständlich abbilden. Wenn eine Abfrage mit wachsender Datenmenge langsam wird, gehst du der Ursache auf den Grund.</li>\n<li>\n<strong>Bestehende Software weiterentwickeln.</strong> Du findest Wege, neue Anforderungen sauber in eine gewachsene Codebasis zu integrieren. In Code-Reviews teilst du deine Erfahrung und machst technische Entscheidungen im Team nachvollziehbar.</li>\n</ul><p></p><h3>das bringst du mit</h3><p></p><ul>\n<li>Du hast mindestens fünf Jahre Erfahrung in der professi",
+   "pubDate": 1794472882,
+   "expiryDate": 1799656881,
+   "applicationLink": "https://himalayas.app/companies/avenit-ag/jobs/senior-software-engineer-m-w-d-fur-individualsoftware?utm_source=api",
+   "guid": "https://himalayas.app/companies/avenit-ag/jobs/senior-software-engineer-m-w-d-fur-individualsoftware"
+  },
+  {
+   "title": "SAP Fieldglass Solution Architect",
+   "excerpt": "We are looking for an experienced SAP Fieldglass Solution Architect to design, implement, and optimize contingent workforce management solutions.",
+   "companyName": "Talan",
+   "companySlug": "talan",
+   "companyLogo": "https://cdn-images.himalayas.app/h4sjwtnzudafdqqkknliv4vrybrr",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "Albania",
+    "Andorra",
+    "Austria",
+    "Belarus",
+    "Belgium",
+    "Bosnia and Herzegovina",
+    "Bulgaria",
+    "Croatia",
+    "Cyprus",
+    "Czechia",
+    "Denmark",
+    "Estonia",
+    "Faroe Islands",
+    "Finland",
+    "France",
+    "Germany",
+    "Gibraltar",
+    "Greece",
+    "Guernsey",
+    "Holy See (Vatican City State)",
+    "Hungary",
+    "Iceland",
+    "Ireland",
+    "Isle of Man",
+    "Italy",
+    "Jersey",
+    "Kosovo",
+    "Latvia",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Malta",
+    "Moldova",
+    "Monaco",
+    "Montenegro",
+    "Netherlands",
+    "North Macedonia",
+    "Norway",
+    "Poland",
+    "Portugal",
+    "Romania",
+    "San Marino",
+    "Serbia",
+    "Slovakia",
+    "Slovenia",
+    "Spain",
+    "Svalbard and Jan Mayen",
+    "Sweden",
+    "Switzerland",
+    "Ukraine",
+    "United Kingdom",
+    "Åland Islands"
+   ],
+   "timezoneRestrictions": [
+    -1,
+    0,
+    1,
+    2,
+    3
+   ],
+   "categories": [
+    "SAP-Solution-Architect",
+    "SAP-Fieldglass-Functional-Consultant",
+    "Solutions-Architect",
+    "SAP-Consultant",
+    "Enterprise-Software-Consultant"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<p>We are looking for an experienced <strong>SAP Fieldglass Solution Architect</strong> to design, implement, and optimize contingent workforce management solutions.</p><p>In this role, you will lead the design, configuration, and deployment of <strong>SAP Fieldglass</strong> solutions, translating complex business requirements into scalable, efficient, and user-friendly solutions.</p><p>You will act as a subject matter expert in SAP Fieldglass and contingent workforce management, collaborating with different stakeholders throughout the full implementation lifecycle. The position also involves providing guidance to project teams, mentoring junior consultants, and contributing to continuous improvement and best practices.</p><p>This is a permanent position offering opportunities for professional growth, leadership, and continuous learning within a collaborative and dynamic environment.</p><h3>Key Responsibilities</h3><ul>\n<li>Lead full lifecycle <strong>SAP Fieldglass implementations</strong>, from discovery and solution design through deployment and post-go-live support.</li>\n<li>Translate complex business requirements into detailed functional and technical specifications for SAP Fieldglass.</li>\n<li>Design end-to-end contingent workforce management processes, including <strong>Statement of Work (SOW), contingent labor, and services procurement</strong>.</li>\n<li>Provide expert guidance on SAP Fieldglass capabilities, best practices, and integration strategies.</li>\n<li>Design and support integrations between SAP Fieldglass and other enterprise systems, including <strong>SAP S/4HANA, SAP SuccessFactors, ERP, HRIS, and third-party platforms</strong>.</li>\n<li>Conduct workshops and requirements-gathering sessions and present solution designs to key stakeholders.</li>\n<li>Oversee and support system configuration, testing, data migration, and user training activities.</li>\n<li>Identify opportunities for process improvement and solution optimization.</li>\n<li>Provide gui",
+   "pubDate": 1794413022,
+   "expiryDate": 1799597021,
+   "applicationLink": "https://himalayas.app/companies/talan/jobs/sap-fieldglass-solution-architect?utm_source=api",
+   "guid": "https://himalayas.app/companies/talan/jobs/sap-fieldglass-solution-architect"
+  },
+  {
+   "title": "Solutions Architect - +6 years of experience - FULL REMOTE",
+   "excerpt": "Category: IT Services Location: For an international organization, we are looking for a FULL REMOTE Solutions Architect with +6 years of experience.",
+   "companyName": "Talent 4.0 BVBA",
+   "companySlug": "talent-4-0-bvba",
+   "companyLogo": "https://cdn-images.himalayas.app/pecalcggycnz7dl54cjo6b0dmxah",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": "EUR",
+   "locationRestrictions": [
+    "Albania",
+    "Andorra",
+    "Austria",
+    "Belarus",
+    "Belgium",
+    "Bosnia and Herzegovina",
+    "Bulgaria",
+    "Croatia",
+    "Cyprus",
+    "Czechia",
+    "Denmark",
+    "Estonia",
+    "Faroe Islands",
+    "Finland",
+    "France",
+    "Germany",
+    "Gibraltar",
+    "Greece",
+    "Guernsey",
+    "Holy See (Vatican City State)",
+    "Hungary",
+    "Iceland",
+    "Ireland",
+    "Isle of Man",
+    "Italy",
+    "Jersey",
+    "Kosovo",
+    "Latvia",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Malta",
+    "Moldova",
+    "Monaco",
+    "Montenegro",
+    "Netherlands",
+    "North Macedonia",
+    "Norway",
+    "Poland",
+    "Portugal",
+    "Romania",
+    "San Marino",
+    "Serbia",
+    "Slovakia",
+    "Slovenia",
+    "Spain",
+    "Svalbard and Jan Mayen",
+    "Sweden",
+    "Switzerland",
+    "Ukraine",
+    "United Kingdom",
+    "Åland Islands"
+   ],
+   "timezoneRestrictions": [
+    -1,
+    0,
+    1,
+    2,
+    3
+   ],
+   "categories": [
+    "Solutions-Architect",
+    "Enterprise-Architect",
+    "Software-Architect",
+    "Technical-Architect"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "Category: IT Services <br><br>Location: <br><br><br><div>For an international organization, we are looking for a FULL REMOTE Solutions Architect with +6 years of experience. Candidates need to have strong experience with Sparx EA, Archimate, TOGAF and Microservices architecture. <br>\n</div><div>Candidates need to be fluent in English. This position is also open for employees and contractors, who would like to commit long-term.<br>\n</div><div>Candidates need to be based in Europe. Successful candidates need to go through European Security Clearance process!<br>\n</div><div>\n<b>Tasks and responsibilities:</b><br>\n</div><ul>\n<li>Lead the Solution Architecture design and programming architectures for code efforts;<br>\n</li>\n<li>Provide top level architectural direction and governance that strikes the balance between directing technical decisions towards alignment but not imposing restrictive unchanging standards on development teams;<br>\n</li>\n<li>Work closely with Enterprise Architect and analysts in gathering requirements and specifications from clients and users;<br>\n</li>\n<li>Determine a project’s scope before developers begin any major by conducting required studies;<br>\n</li>\n<li>Define all aspects of development from appropriate technology and workflow to coding standards; Provide technical guidance and coaching to developers and engineers;<br>\n</li>\n<li>Provide inputs in development of schedules and test plans, preparation of documentation based on analyst reports, and defining key project milestones;<br>\n</li>\n<li>Evaluate potential risk in projects;<br>\n</li>\n<li>Advise the project team and the client in areas such as capacity management, contingency planning, environment planning, configuration management and other relevant tasks related to the role;<br>\n</li>\n<li>Maintain relevant documents/manuals describing the System and its infrastructure;<br>\n</li>\n<li>Review of software cod e and secure code in line with best practices;<br>\n</li>\n</ul><div>\n<b>Profile:<",
+   "pubDate": 1794202951,
+   "expiryDate": 1799386950,
+   "applicationLink": "https://himalayas.app/companies/talent-4-0-bvba/jobs/solutions-architect-6-years-of-experience-full-remote?utm_source=api",
+   "guid": "https://himalayas.app/companies/talent-4-0-bvba/jobs/solutions-architect-6-years-of-experience-full-remote"
+  },
+  {
+   "title": "Senior Softwareentwickler WPF & .NET (m/w/d)",
+   "excerpt": "Entwickle komplexe Legacy Software weiter und setze nachhaltige Engineering Standards.",
+   "companyName": "ResMed",
+   "companySlug": "resmed",
+   "companyLogo": "https://cdn-images.himalayas.app/f055xe9m6uprrz5hqkjlwu1kivas",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "Germany"
+   ],
+   "timezoneRestrictions": [
+    1
+   ],
+   "categories": [
+    "Senior-Software-Developer",
+    ".NET-Developer",
+    "WPF-Developer",
+    "Desktop-Application-Developer",
+    "Software-Architect"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<p><b>Entwickle komplexe Legacy Software weiter und setze nachhaltige Engineering Standards.</b></p><br><p>Als Senior Softwareentwickler WPF &amp; .NET (m/w/d) entwickelst du eine seit rund 30 Jahren gewachsene Desktop Anwendung weiter und übernimmst Verantwortung für anspruchsvolle technische Aufgaben, Architekturentscheidungen und nachhaltige Softwarequalität. Im Team arbeitest du an fachlich breiten Themen der ambulanten Anwendung und verbindest Weiterentwicklung mit dem schrittweisen Abbau technischer Schulden.</p><br><p><b>Die Position ist zu 100 % remote und kann vollständig ortsunabhängig in Deutschland ausgeübt werden.</b></p><br><h3>Was du bewirkst</h3><ul>\n<li>Übernimmst komplexe technische Aufgaben eigenständig von Design und Implementierung bis zu Test und Betrieb und berücksichtigst dabei Wartbarkeit, Performance und Testbarkeit</li>\n<li>Entwickelst die bestehende WPF Desktop Anwendung auf Basis von .NET Framework 4.8 weiter und arbeitest dabei mit einer umfangreichen, historisch gewachsenen Codebasis</li>\n<li>Triffst Architektur und Designentscheidungen für skalierbare, resiliente und performante Lösungen und bringst die Nutzerperspektive aktiv in technische Entscheidungen ein</li>\n<li>Identifizierst Abhängigkeiten und mögliche Kreuzeffekte in der monolithischen Anwendung frühzeitig und treibst Refactoring sowie den schrittweisen Abbau technischer Schulden voran</li>\n<li>Sicherst hohe Engineering Standards durch Code, Security und Design Reviews, entwickelst bestehende Coding Guidelines weiter und unterstützt das Team bei ihrer konsequenten Anwendung</li>\n<li>Gestaltest sichere Software entlang des SSDLC und stellst Privacy by Design bei Architektur und Designentscheidungen sowie in Reviews sicher</li>\n<li>Arbeitest eng mit Product Management und angrenzenden Entwicklungsteams zusammen und leitest aus geeigneten Metriken konkrete Verbesserungen ab</li>\n</ul><br><h3>Was du mitbringst</h3><ul>\n<li>Verfügst über mehrjährige einschlägige Erfahrung in der p",
+   "pubDate": 1794196733,
+   "expiryDate": 1799380732,
+   "applicationLink": "https://himalayas.app/companies/resmed/jobs/senior-softwareentwickler-wpf-net-m-w-d?utm_source=api",
+   "guid": "https://himalayas.app/companies/resmed/jobs/senior-softwareentwickler-wpf-net-m-w-d"
+  },
+  {
+   "title": "Senior iOS Engineer (Swift/SwiftUI) - Portugal Full Remote",
+   "excerpt": "ABOUT THE OPPORTUNITYJoin a fast-growing EdTech startup helping more than 1.",
+   "companyName": "HumanIT Digital Consulting",
+   "companySlug": "humanit-digital-consulting",
+   "companyLogo": "https://cdn-images.himalayas.app/wzl9mct1s404vcb7wg4lik4axpho",
+   "employmentType": "Full Time",
+   "minSalary": 2400,
+   "maxSalary": 3150,
+   "salaryPeriod": "monthly",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": "EUR",
+   "locationRestrictions": [
+    "Albania",
+    "Andorra",
+    "Austria",
+    "Belarus",
+    "Belgium",
+    "Bosnia and Herzegovina",
+    "Bulgaria",
+    "Croatia",
+    "Cyprus",
+    "Czechia",
+    "Denmark",
+    "Estonia",
+    "Faroe Islands",
+    "Finland",
+    "France",
+    "Germany",
+    "Gibraltar",
+    "Greece",
+    "Guernsey",
+    "Holy See (Vatican City State)",
+    "Hungary",
+    "Iceland",
+    "Ireland",
+    "Isle of Man",
+    "Italy",
+    "Jersey",
+    "Kosovo",
+    "Latvia",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Malta",
+    "Moldova",
+    "Monaco",
+    "Montenegro",
+    "Netherlands",
+    "North Macedonia",
+    "Norway",
+    "Poland",
+    "Portugal",
+    "Romania",
+    "San Marino",
+    "Serbia",
+    "Slovakia",
+    "Slovenia",
+    "Spain",
+    "Svalbard and Jan Mayen",
+    "Sweden",
+    "Switzerland",
+    "Ukraine",
+    "United Kingdom",
+    "Åland Islands"
+   ],
+   "timezoneRestrictions": [
+    -1,
+    0,
+    1,
+    2,
+    3
+   ],
+   "categories": [
+    "iOS-Developer",
+    "Mobile-Application-Developer",
+    "Swift-Developer",
+    "Mobile-Engineer",
+    "Senior-IOS-Engineer",
+    "Senior-IOS-Developer"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h3>ABOUT THE OPPORTUNITY</h3><p>Join a fast-growing EdTech startup helping more than 1.5 million students worldwide learn better and stay motivated through an AI-powered education platform. With tens of thousands of new students joining every week and recent seed funding, the team is expanding its mobile experience.</p><p>As a Senior iOS Engineer, you will take hands-on ownership of the iOS app, work directly with the founders and help shape a product used by students every day. This opportunity suits someone who enjoys autonomy, meaningful technical challenges and the pace of a small startup.</p><p>The role is fully remote within Europe. Being based in Portugal, particularly Lisbon, is a plus.</p><h3>PROJECT &amp; CONTEXT</h3><p>Own the iOS app across architecture, performance, releases and technical roadmap. Collaborate closely with engineering and product leadership to improve onboarding, engagement and retention.</p><p>Build polished native experiences with smooth animations, responsive interactions and platform-specific conventions. Support and mentor the two engineers already contributing to mobile, sharing knowledge and improving engineering practices.</p><p>Work in a product-led growth environment, shipping features, instrumenting user journeys, measuring results and iterating through A/B testing. Take responsibility for App Store deployment, release cadence, versioning, store optimization and crash monitoring.</p><p>The wider platform includes Node.js, React, React Native, Next.js, NestJS, Expo, Prisma, Tailwind CSS and AWS. Specific technology versions and supported iOS versions are to be confirmed.</p><h3>WHAT WE'RE LOOKING FOR (Required)</h3><ul>\n<li>At least 5 years of experience in native iOS development.</li>\n<li>Strong proficiency in Swift and practical experience with SwiftUI and UIKit.</li>\n<li>Proven experience building and shipping consumer-grade iOS applications.</li>\n<li>Familiarity with Combine, push notifications and App Store deployment.</l",
+   "pubDate": 1793534662,
+   "expiryDate": 1797534083,
+   "applicationLink": "https://himalayas.app/companies/humanit-digital-consulting/jobs/senior-ios-engineer-swift-swiftui-portugal-full-remote?utm_source=api",
+   "guid": "https://himalayas.app/companies/humanit-digital-consulting/jobs/senior-ios-engineer-swift-swiftui-portugal-full-remote"
+  },
+  {
+   "title": "Implementation Consultant - Commercial (Remote or Onsite)",
+   "excerpt": "Job Title: Implementation Consultant - Commercial (Remote or Onsite) Job Location: Berlin, Germany Job Location Type: Remote Job Contract Type: Full-time Job Seniority Level: Veeva Systems is a mission-driven organization and pioneer in industry cloud, helping life sciences companies bring therapies to patients faster.",
+   "companyName": "Lifelancer",
+   "companySlug": "lifelancer",
+   "companyLogo": "https://cdn-images.himalayas.app/ztdsyzatuliky237a5zq922sir0k",
+   "employmentType": "Full Time",
+   "minSalary": 60000,
+   "maxSalary": 105000,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Mid-level"
+   ],
+   "currency": "EUR",
+   "locationRestrictions": [
+    "Germany"
+   ],
+   "timezoneRestrictions": [
+    1
+   ],
+   "categories": [
+    "Implementation-Consultant",
+    "Solutions-Consultant",
+    "CRM-Consultant",
+    "Technical-Consultant",
+    "Functional-Analyst"
+   ],
+   "parentCategories": [
+    "Customer Service",
+    "Sales",
+    "Developer"
+   ],
+   "description": "<p><b>Job Title: </b>Implementation Consultant - Commercial (Remote or Onsite)</p><p><b>Job Location: </b>Berlin, Germany</p><p><b>Job Location Type: </b>Remote</p><p><b>Job Contract Type: </b>Full-time</p><h3>Job Seniority Level: </h3><div>Veeva Systems is a mission-driven organization and pioneer in industry cloud, helping life sciences companies bring therapies to patients faster. As one of the fastest-growing SaaS companies in history, we surpassed $3B in revenue in our last fiscal year with extensive growth potential ahead.</div><div>At the heart of Veeva are our values: Do the Right Thing, Customer Success, Employee Success, and Speed. We're not just any public company – we made history in 2021 by becoming a public benefit corporation (PBC), legally bound to balancing the interests of customers, employees, society, and investors.</div><div>As a Work Anywhere company, we support your flexibility to work from home or in the office, so you can thrive in your ideal environment.</div><div>Join us in transforming the life sciences industry, committed to making a positive impact on its customers, employees, and communities.</div><h3>The Role</h3><div>\n<p>As a Consultant, you will play a pivotal role in the success of our commercial implementation projects of Vault CRM and connected products. You'll work directly with top pharma organizations, designing and building solutions that meet our customers' needs. </p>\n<h3>What makes us different:</h3>\n<ul class=\"my-4\"><ul>\n<li>High Trust, Ownership &amp; Autonomy: Passion and effort directly lead to opportunities and real ownership from the start</li>\n<li>Collaboration without competition: peers root for each other’s success, leadership is entirely accessible, and we tackle complex problems with a strict \"no-ego\" approach</li>\n<li>Meaningful Industry Impact: know your work makes a difference, by helping life sciences companies operate more efficiently and effectively</li>\n</ul></ul>\n<p>The role is ideally based in the area ",
+   "pubDate": 1794021365,
+   "expiryDate": 1799205363,
+   "applicationLink": "https://himalayas.app/companies/lifelancer/jobs/implementation-consultant-commercial-remote-or-onsite-6678540140?utm_source=api",
+   "guid": "https://himalayas.app/companies/lifelancer/jobs/implementation-consultant-commercial-remote-or-onsite-6678540140"
+  },
+  {
+   "title": "Staff Engineer (US only)",
+   "excerpt": "anstellungsdetailsPermanent contract, Full or Part-Time, Remote or Cologne / Darmstadt / Düsseldorf / Berlin info Who we areWe are the tech powerhouse behind Kaufland’s international online marketplaces and a company within the Schwarz Group.",
+   "companyName": "Kaufland e-commerce",
+   "companySlug": "kaufland-e-commerce",
+   "companyLogo": "https://cdn-images.himalayas.app/vbedrk758n0118kjx0t803mk5w0e",
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Mid-level"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "United States"
+   ],
+   "timezoneRestrictions": [
+    1
+   ],
+   "categories": [
+    "Engineering-Manager",
+    "Mobile-Engineering-Manager",
+    "Mobile-Engineering-Lead"
+   ],
+   "parentCategories": [
+    "Developer"
+   ],
+   "description": "<h3>anstellungsdetails</h3><p>Permanent contract, Full or Part-Time, Remote or Cologne / Darmstadt / Düsseldorf / Berlin</p><h3>info</h3><p></p><h3>Who we are</h3>We are the tech powerhouse behind Kaufland’s international online marketplaces and a company within the Schwarz Group. Driven by a start-up mentality and working on an equal footing within flat hierarchies, we develop the best marketplace solutions for our customers, sellers and partners. #FromEuropeForEurope<br><br>Day by day, our Tech &amp; Product Team of about 400 experts pursues the goal of creating the best possible customer shopping experience for our online marketplace. Through innovative technical developments, they not only create an outstanding shopping experience but also lay the foundation for an optimal selling experience for our sellers. Learn more about our division, areas, and cross-functional teams here!<p></p><h3>aufgaben</h3><p></p><h3>Your tasks – this is what awaits you in detail</h3>Building, developing and enabling high performing teams who build awesome products is the main responsibility for our Engineering Managers. It’s the entry position in our Engineering Management career path and reports to a Head of Product Engineering.<br><br>As an Engineering Manager joining our team, you will initially focus on hands-on technical tasks like an individual contributor allowing you to gain a deep understanding of our mobile infrastructure and systems so that you know the code inside and out before adding managerial responsibilities to your plate. This approach enables you to understand the technical challenges your team encounters deeply, setting you and the team up for future wins.<ul>\n<li>You have found your passion in software development, but you enjoy building the right team, removing roadblocks, helping others, creating transparency, and alignment even more than being an individual contributor</li>\n<li>Based on your experience, you will start by leading the engineers of one mobile pro",
+   "pubDate": 1794473443,
+   "expiryDate": 1799657442,
+   "applicationLink": "https://himalayas.app/companies/kaufland-e-commerce/jobs/engineering-manager-all-genders-mobile-engineering?utm_source=api",
+   "guid": "https://himalayas.app/companies/kaufland-e-commerce/jobs/engineering-manager-all-genders-mobile-engineering-us"
+  }
+ ]
+}

@@ -125,8 +125,11 @@ in Python only and costs nothing; Claude is only called for the listings you pic
   remote-only sources are skipped.
 - The whole form (titles, requirements, sources) is kept **per CV** and restored when you
   come back.
-- Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy and Remote OK (off by
-  default, mostly US jobs). A source that fails is reported and skipped.
+- Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy, Himalayas, the monthly
+  Hacker News "Who is hiring?" thread, and Remote OK (off by default, mostly US jobs). Hacker
+  News posts are free text; the app reads their first line (company, role, place) and keeps
+  the ones in Germany or remote and open to Germany. A source that fails is reported and
+  skipped.
 - Each listing gets a score from 0 to 100 from skills from your CV found in the listing,
   title fit (against your CV's titles and the titles you searched for), **meaning** and freshness. Meaning comes from a local embedding model in the
   image (German and English, no API calls): it compares your CV with each listing, so a fit

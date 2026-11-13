@@ -7,9 +7,9 @@ import httpx
 import pytest
 
 from mappe.search.models import SearchQuery
-from mappe.search.sources import SOURCES
+from mappe.search.sources import SOURCES, hn
 from mappe.search.sources.base import SAMPLES_DIR, SourceOptions, clear_cache
-from mappe.search.text import html_to_text, parse_date, parse_salary_text
+from mappe.search.text import fix_mojibake, html_to_text, parse_date, parse_salary_text
 
 
 def sample(key):
@@ -63,6 +63,82 @@ def test_remote_sources_only_keep_jobs_open_to_germany():
     full_stack = remotive["Full-Stack Developer"]
     assert (full_stack.salary_min, full_stack.salary_max) == (3500, 5000)
     assert (full_stack.salary_currency, full_stack.salary_period) == ("USD", "month")
+
+
+def test_himalayas_keeps_jobs_open_to_germany():
+    hits = parse("himalayas")
+    assert len(hits) == len(sample("himalayas")["jobs"]) - 1  # the US-only job is dropped
+    assert all(h.remote == "remote" and "<" not in h.description for h in hits)
+    assert "Staff Engineer (US only)" not in {h.title for h in hits}
+    assert {h.location for h in hits} == {"Germany", "Germany + 51 more countries", "Anywhere"}
+    assert all(h.external_id.count("/jobs/") == 1 and isinstance(h.posted_at, date) for h in hits)
+    paid = {(h.salary_min, h.salary_currency, h.salary_period) for h in hits if h.salary_min}
+    assert paid == {(2400, "EUR", "month"), (60000, "EUR", "year")}
+
+
+def test_hn_reads_the_first_line_of_each_post():
+    hits = {h.company: h for h in parse("hn")}
+    assert len(hits) == 15  # job seeker, US-only remote, onsite abroad and deleted are dropped
+    assert not {"GovStar", "Curiosity", "Sparcle"} & set(hits)
+
+    mesmer = hits["Mesmer"]
+    assert (mesmer.title, mesmer.location, mesmer.remote) == (
+        "Founding Engineer",
+        "Berlin | ONSITE",
+        "onsite",
+    )
+    assert (mesmer.salary_min, mesmer.salary_max, mesmer.salary_currency) == (100000, 140000, "EUR")
+    assert mesmer.url == mesmer.view_url == "https://news.ycombinator.com/item?id=50340449"
+    assert "\n\n" in mesmer.description and "<p>" not in mesmer.description
+
+    assert hits["ICEYE"].remote == "hybrid"
+    assert hits["Baserow"].remote == "remote"
+    assert hits["Better Stack"].title == "Open roles at Better Stack"  # no role in the line
+    assert all(h.posted_at == date(2026, 11, 2) for h in [mesmer, hits["River"]])
+
+
+@pytest.mark.parametrize(
+    ("head", "kept", "mode"),
+    [
+        ("Acme | Backend Engineer | REMOTE", True, "remote"),  # no restriction stated
+        ("Acme | Backend Engineer | REMOTE (US)", False, None),
+        ("Acme | Backend Engineer | Remote (U.S. only)", False, None),
+        ("Acme | Backend Engineer | Hamburg | ONSITE (part remote)", True, "hybrid"),
+        ("Acme | Backend Engineer | Paris | ONSITE", False, None),
+        ("Acme | Backend Engineer | Hamburg", True, None),
+        ("Acme | Backend Engineer", False, None),  # not the header format
+        ("Location: Berlin | Remote: yes | Willing to relocate", False, None),  # a job seeker
+    ],
+)
+def test_hn_location_rules(head, kept, mode):
+    hit = hn.parse_post({"id": 7, "text": f"{head}<p>We build things.", "created_at": "2026-11-02"})
+    assert (hit is not None) == kept
+    if hit:
+        assert hit.remote == mode and hit.title == "Backend Engineer" and hit.company == "Acme"
+
+
+def test_hn_ignores_numbers_that_are_not_salaries():
+    hit = hn.parse_post(
+        {"id": 7, "text": "Acme | Engineer | REMOTE (EU) | 30k users | 0.5% equity"}
+    )
+    assert hit and hit.salary_min is None and hit.salary_currency is None
+
+
+def test_remoteok_text_is_repaired():
+    [hit] = SOURCES["remoteok"].parse(
+        [
+            {
+                "id": 1,
+                "url": "https://remoteok.com/1",
+                "position": "Engineer \u00e2\u0080\u0094 Core",
+                "location": "M\u00c3\u00bcnchen, Germany",
+                "company": "Acme",
+            }
+        ]
+    )
+    assert (hit.title, hit.location) == ("Engineer \u2014 Core", "München, Germany")
+    assert fix_mojibake("Zürich €") == "Zürich €" and fix_mojibake(None) == ""
+    assert fix_mojibake("â\x80 €") == "â\x80 €"  # not repairable: left as it is
 
 
 @pytest.mark.parametrize("key", list(SOURCES))
@@ -124,6 +200,8 @@ def test_html_to_text_keeps_structure():
         ("$3.5k–$5k/month", (3500, 5000, "USD", "month")),
         ("60.000 – 75.000 €", (60000, 75000, "EUR", "year")),
         ("€70k", (70000, 70000, "EUR", "year")),
+        ("€100–140k + 0.5–1% equity", (100000, 140000, "EUR", "year")),
+        ("$23-34/hr", (23, 34, "USD", "hour")),
         ("", (None, None, None, None)),
         ("competitive", (None, None, None, None)),
     ],
@@ -135,6 +213,7 @@ def test_salary_text(text, expected):
 def test_dates():
     assert parse_date("2026-11-02T09:42:28.340") == date(2026, 11, 2)
     assert parse_date(1793742325) == date(2026, 11, 3)
+    assert parse_date("1793742325") == date(2026, 11, 3)
     assert parse_date("soon") is None
 
 
@@ -144,3 +223,52 @@ def test_ba_titles_that_say_remote_are_remote():
     job.pop("homeofficemoeglich", None)
     (parsed,) = SOURCES["ba"].parse({"ergebnisliste": [job]})
     assert parsed.remote == "remote"
+
+
+async def test_himalayas_searches_germany_one_title_at_a_time():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"jobs": []})
+
+    titles = [f"Title {i}" for i in range(8)]
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        await SOURCES["himalayas"].fetch(client, SearchQuery(titles=titles), SourceOptions())
+    assert [r.url.params["q"] for r in seen] == titles[:5]
+    assert all(r.url.params["country"] == "DE" for r in seen)
+
+
+async def test_hn_fetches_the_newest_hiring_thread_once():
+    clear_cache()
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if request.url.path.endswith("/search_by_date"):
+            return httpx.Response(
+                200,
+                json={
+                    "hits": [
+                        {
+                            "objectID": "2",
+                            "title": "Ask HN: Who wants to be hired? (November 2026)",
+                        },
+                        {"objectID": "1", "title": "Ask HN: Who is hiring? (November 2026)"},
+                    ]
+                },
+            )
+        return httpx.Response(200, json={"id": 1, "children": []})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        for _ in range(2):
+            payloads = await SOURCES["hn"].fetch(client, SearchQuery(titles=["x"]), SourceOptions())
+    assert payloads == [{"id": 1, "children": []}]
+    assert seen == ["/api/v1/search_by_date", "/api/v1/items/1"]
+
+    clear_cache()
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"hits": []}))
+    ) as client:
+        assert await SOURCES["hn"].fetch(client, SearchQuery(titles=["x"]), SourceOptions()) == []
+    clear_cache()

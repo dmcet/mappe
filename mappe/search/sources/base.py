@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -62,17 +61,6 @@ async def cached(key: str, minutes: int, load: Callable[[], Awaitable[Any]]) -> 
 
 def clear_cache() -> None:
     _cache.clear()
-
-
-_OPEN_TO_GERMANY = re.compile(
-    r"worldwide|anywhere|global|europe|\beu\b|emea|germany|deutschland|dach|\bcet\b|\bcest\b",
-    re.I,
-)
-
-
-def open_to_germany(location: str | None) -> bool:
-    """For remote listings: no restriction stated, or one that includes Germany."""
-    return not (location or "").strip() or bool(_OPEN_TO_GERMANY.search(location or ""))
 
 
 def positive(value: Any) -> int | None:

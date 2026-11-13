@@ -210,11 +210,12 @@ def test_dedupe_merges_across_sources_and_keeps_the_longest_text():
 def test_onsite_jobs_outside_the_search_area_are_hidden():
     berlin = hit("Backend Engineer", "Python", location="Berlin, Germany")
     paris = hit("Backend Engineer 2", "Python", location="Paris")
-    remote = hit("Backend Engineer 3", "Python", location="London", remote="remote")
+    remote = hit("Backend Engineer 3", "Python", location="Remote, Europe", remote="remote")
     potsdam = hit("Backend Engineer 4", "Python", location="Potsdam", source="ba")
+    zurich = hit("Backend Engineer 5", "Python", location="Zürich", remote="remote")
 
     def hidden(**kw):
-        ranked = rank([berlin, paris, remote, potsdam], CV, [], today=TODAY, **kw)
+        ranked = rank([berlin, paris, remote, potsdam, zurich], CV, [], today=TODAY, **kw)
         return {r.hit.title: r.hidden for r in ranked}
 
     # Searched around Berlin: Bundesagentur's radius search already found Potsdam.
@@ -223,6 +224,7 @@ def test_onsite_jobs_outside_the_search_area_are_hidden():
         "Backend Engineer 2": "elsewhere",
         "Backend Engineer 3": None,
         "Backend Engineer 4": None,
+        "Backend Engineer 5": "elsewhere",  # remote, but tied to another country
     }
     # No cities: only jobs abroad are hidden.
     assert hidden()["Backend Engineer 2"] == "elsewhere"

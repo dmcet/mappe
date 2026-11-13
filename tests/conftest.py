@@ -141,6 +141,8 @@ HOSTS = {
     "remotive.com": "remotive",
     "jobicy.com": "jobicy",
     "remoteok.com": "remoteok",
+    "himalayas.app": "himalayas",
+    "hn.algolia.com": "hn",
 }
 
 
@@ -163,6 +165,8 @@ def job_apis(monkeypatch):
         payload = json.loads((SAMPLES_DIR / f"{key}.json").read_text(encoding="utf-8"))
         if key == "arbeitnow":
             payload["links"] = {"next": None}
+        if request.url.path.endswith("/search_by_date"):  # HN: find the thread first
+            payload = {"hits": [{"objectID": str(payload["id"]), "title": payload["title"]}]}
         return httpx.Response(200, json=payload)
 
     apis.handler = handler
