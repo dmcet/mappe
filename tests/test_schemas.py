@@ -11,7 +11,7 @@ import pytest
 from anthropic.lib._parse._transform import transform_schema
 from pydantic import TypeAdapter
 
-from mappe.domain.author import AuthorCV, AuthorLetter
+from mappe.domain.author import AuthorCV, AuthorCVDraft, AuthorLetter
 from mappe.domain.extraction import ExtractedCV
 from mappe.domain.listing import ExtractedListing
 from mappe.domain.match import MatchResult
@@ -25,6 +25,7 @@ from mappe.domain.review import ClaimsResult, RecruiterResult
         ExtractedListing,
         MatchResult,
         AuthorCV,
+        AuthorCVDraft,
         AuthorLetter,
         ClaimsResult,
         RecruiterResult,

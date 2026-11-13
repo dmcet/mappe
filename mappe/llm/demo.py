@@ -11,10 +11,12 @@ from pydantic import BaseModel
 from mappe.domain.author import (
     AuthorBullet,
     AuthorCV,
+    AuthorCVDraft,
     AuthorLetter,
     LetterParagraph,
     SkillGroup,
     Title,
+    full_draft,
 )
 from mappe.domain.extraction import (
     ExtractedCertification,
@@ -317,8 +319,9 @@ def demo_response(step: str, output: type[BaseModel]) -> BaseModel:
         return demo_listing()
     if step == "match" and output is MatchResult:
         return demo_match()
-    if step == "author_cv" and output is AuthorCV:
-        return demo_author_cv()
+    if step == "author_cv" and output is AuthorCVDraft:
+        # Also fine for a rework: re-adding unchanged bullets does nothing.
+        return full_draft(demo_author_cv())
     if step == "author_letter" and output is AuthorLetter:
         return demo_author_letter()
     if step == "claims_check" and output is ClaimsResult:

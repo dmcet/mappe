@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 from mappe.config import DEFAULT_CONFIG_PATH, load_settings
 from mappe.db import Usage as UsageRow
 from mappe.db import init_engine
-from mappe.domain.author import AuthorCV, AuthorLetter
+from mappe.domain.author import AuthorCVDraft, AuthorLetter, full_draft
 from mappe.domain.extraction import ExtractedCV
 from mappe.domain.listing import ExtractedListing
 from mappe.domain.match import MatchResult
@@ -156,7 +156,7 @@ def test_get_client_builds_one_sdk_client(monkeypatch):
         ("suggest_roles", RoleSuggestions, demo.demo_roles),
         ("parse_listing", ExtractedListing, demo.demo_listing),
         ("match", MatchResult, demo.demo_match),
-        ("author_cv", AuthorCV, demo.demo_author_cv),
+        ("author_cv", AuthorCVDraft, lambda: full_draft(demo.demo_author_cv())),
         ("author_letter", AuthorLetter, demo.demo_author_letter),
         ("claims_check", ClaimsResult, demo.demo_claims),
         ("recruiter", RecruiterResult, demo.demo_recruiter),
