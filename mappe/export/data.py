@@ -49,6 +49,7 @@ STATUS_LABELS = {
 REQUIREMENT_KINDS = {
     "salary_min": "Minimum salary",
     "max_onsite_days": "Max. onsite days",
+    "remote": "Fully remote",
     "location": "Cities",
     "benefit": "Benefit",
     "other": "Other",

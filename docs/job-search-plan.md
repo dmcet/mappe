@@ -5,8 +5,14 @@ user picks into applications. Status: phases 1 and 2 implemented; from phase 3 s
 semantic ranking (scheduled searches are not built).
 
 **Changes during implementation:**
-- Query chips are a plain "one title per line" field; places and remote-only come from the
-  requirements form, so there is one place to enter cities.
+- Titles are chips (the CV's titles, on by default, plus the user's own); places and remote
+  come from the requirements form, so there is one place to enter cities. Each city has its
+  own radius (`"Nürnberg (30 km), Fürth (10 km)"` in the `location` requirement; without one,
+  `radius_km`). A `remote: "no"` requirement excludes fully remote jobs; as a must-have it also
+  skips the remote-only sources.
+- The search form is stored per CV (`cv.search_prefs`, migration 0007): searched and
+  switched-off titles, requirements, switched-off wishes and sources. CV titles that are in
+  neither list (new after a CV edit) are searched.
 - `RunCreate` is unchanged: `POST /api/searches/{id}/apply` creates the runs itself (URL plus
   text when the source has the full listing).
 - New filter "outside your area": onsite/hybrid hits from sources that can't search by place

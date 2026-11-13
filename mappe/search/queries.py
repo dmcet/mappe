@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from mappe.checks.requirements import parse_places
 from mappe.checks.skills import STUDENT_ROLES
 from mappe.domain.models import ParsedCV, Requirement
 from mappe.domain.roles import SuggestedRole
@@ -234,12 +235,21 @@ def filter_roles(cv: ParsedCV, roles: list[SuggestedRole]) -> list[dict]:
     return kept
 
 
-def places_from(requirements: list[Requirement]) -> list[str]:
-    places = []
+def places_from(requirements: list[Requirement]) -> dict[str, int | None]:
+    """The cities to search, each with its own radius (None = the configured default)."""
+    places: dict[str, int | None] = {}
     for req in requirements:
         if req.kind == "location":
-            places += [c.strip() for c in req.value.split(",") if c.strip()]
-    return list(dict.fromkeys(places))
+            for name, km in parse_places(req.value):
+                places.setdefault(name, km)
+    return places
+
+
+def no_remote(requirements: list[Requirement]) -> bool:
+    """Fully remote jobs are excluded as a must-have: remote-only sources are skipped."""
+    return any(
+        r.kind == "remote" and r.must_have and r.value.strip().lower() == "no" for r in requirements
+    )
 
 
 def remote_only(requirements: list[Requirement]) -> bool:

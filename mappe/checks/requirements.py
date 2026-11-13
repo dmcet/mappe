@@ -33,6 +33,8 @@ def check_requirements(
             results.append(_salary(req, listing))
         elif req.kind == "max_onsite_days":
             results.append(_onsite(req, listing))
+        elif req.kind == "remote":
+            results.append(_remote(req, listing))
         elif req.kind == "location":
             results.append(_location(req, listing))
     return results
@@ -89,6 +91,16 @@ def _onsite(req: Requirement, listing: ParsedListing) -> RequirementResult:
     return _result(req, "unknown", "Work mode not stated")
 
 
+def _remote(req: Requirement, listing: ParsedListing) -> RequirementResult:
+    if req.value.strip().lower() != "no":
+        return _result(req, "passed", "Remote is fine")
+    if listing.remote == "remote":
+        return _result(req, "failed", "Fully remote")
+    if listing.remote in ("hybrid", "onsite"):
+        return _result(req, "passed", f"{listing.remote.capitalize()} position")
+    return _result(req, "unknown", "Work mode not stated")
+
+
 # English and other exonyms of German cities -> the normalised German name.
 _CITY_ALIASES = {
     "nuremberg": "nuernberg",
@@ -108,12 +120,27 @@ def normalize_place(text: str) -> str:
     return text
 
 
+_RADIUS = re.compile(r"^(.*?)\s*\(\s*(\d+)\s*km\s*\)$", re.I)
+
+
+def parse_places(value: str) -> list[tuple[str, int | None]]:
+    """'Nürnberg (30 km), Fürth' -> [("Nürnberg", 30), ("Fürth", None)]."""
+    places = []
+    for part in value.split(","):
+        part = part.strip()
+        if match := _RADIUS.match(part):
+            places.append((match[1].strip(), int(match[2])))
+        elif part:
+            places.append((part, None))
+    return [(name, km) for name, km in places if name]
+
+
 def _location(req: Requirement, listing: ParsedListing) -> RequirementResult:
     if listing.remote == "remote":
         return _result(req, "passed", "Fully remote")
     if not listing.location:
         return _result(req, "unknown", "No location stated")
-    wanted = [normalize_place(c) for c in req.value.split(",") if c.strip()]
+    wanted = [normalize_place(name) for name, _ in parse_places(req.value)]
     where = normalize_place(listing.location)
     for city in wanted:
         if re.search(rf"\b{re.escape(city)}\b", where):

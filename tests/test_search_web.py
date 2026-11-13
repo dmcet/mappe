@@ -29,6 +29,36 @@ def test_suggestions(client):
     assert sources["adzuna"]["missing_env"] == ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"]
 
 
+def test_form_is_kept_per_cv(client):
+    cv_id = confirmed_cv(client)
+    url = f"/api/search/suggestions?cv_id={cv_id}"
+    assert client.get(url).json()["prefs"] is None
+    prefs = {
+        "titles": ["Backend Engineer", "Platform Engineer"],
+        "titles_off": ["Python Developer"],
+        "requirements": [{"kind": "location", "value": "Berlin (10 km)", "must_have": True}],
+        "requirements_off": [{"kind": "other", "value": "Dog-friendly", "must_have": False}],
+        "sources": ["ba"],
+    }
+    resp = client.put(f"/api/search/prefs/{cv_id}", json=prefs)
+    assert resp.status_code == 200, resp.text
+    assert client.get(url).json()["prefs"] == prefs
+    assert client.put("/api/search/prefs/999", json=prefs).status_code == 404
+
+
+def test_remote_only_sources_are_skipped_when_remote_is_excluded(client, job_apis):
+    cv_id = confirmed_cv(client)
+    data = search(
+        client,
+        cv_id,
+        titles=["Softwareentwickler"],
+        requirements=[{"kind": "remote", "value": "no", "must_have": True}],
+        sources=["ba", "remotive"],
+    )
+    assert data["sources"]["remotive"]["error"] == "skipped: remote not wanted"
+    assert not any(r.url.host == "remotive.com" for r in job_apis.requests)
+
+
 def test_search_ranks_reports_sources_and_survives_a_failing_one(client, job_apis):
     cv_id = confirmed_cv(client)
     job_apis.fail = {"jobicy"}

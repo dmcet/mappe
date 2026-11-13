@@ -31,6 +31,8 @@ class CV(SQLModel, table=True):
     roles_status: str | None = None  # None | "suggesting" | "done" | "failed"
     roles: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     roles_error: str | None = None
+    # The job search form for this CV as the user left it (web/search.py: SearchPrefs).
+    search_prefs: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 

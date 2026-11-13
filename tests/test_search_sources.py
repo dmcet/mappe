@@ -89,13 +89,16 @@ async def test_ba_fetch_sends_key_and_combines_titles_and_places():
         return httpx.Response(200, json=sample("ba"))
 
     query = SearchQuery(
-        titles=["Softwareentwickler", "Backend Developer"], places=["Berlin", "Hamburg"]
+        titles=["Softwareentwickler", "Backend Developer"],
+        places=["Berlin", "Hamburg"],
+        radii={"Berlin": 10},
     )
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
         payloads = await SOURCES["ba"].fetch(client, query, SourceOptions())
     assert len(payloads) == 4
     assert all(r.headers["X-API-Key"] == "jobboerse-jobsuche" for r in seen)
     assert seen[0].url.params["was"] == "Softwareentwickler"
+    assert seen[0].url.params["umkreis"] == "10"
     assert seen[1].url.params["wo"] == "Hamburg" and seen[1].url.params["umkreis"] == "30"
 
 

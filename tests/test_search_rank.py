@@ -8,7 +8,13 @@ from mappe.domain.extraction import to_parsed_cv
 from mappe.domain.models import Requirement
 from mappe.search.dedupe import dedupe
 from mappe.search.models import JobHit
-from mappe.search.queries import clean_title, places_from, remote_only, suggest_titles
+from mappe.search.queries import (
+    clean_title,
+    no_remote,
+    places_from,
+    remote_only,
+    suggest_titles,
+)
 from mappe.search.queries import title_variants as variants
 from mappe.search.rank import rank
 from tests.conftest import make_extracted
@@ -95,8 +101,12 @@ def test_places_and_remote_from_requirements():
         Requirement(kind="location", value="Berlin, Hamburg"),
         Requirement(kind="max_onsite_days", value="0", must_have=False),
     ]
-    assert places_from(reqs) == ["Berlin", "Hamburg"]
+    assert places_from(reqs) == {"Berlin": None, "Hamburg": None}
     assert not remote_only(reqs)
+    radius = [Requirement(kind="location", value="Nürnberg (50 km), Fürth ( 10 KM ), Berlin")]
+    assert places_from(radius) == {"Nürnberg": 50, "Fürth": 10, "Berlin": None}
+    assert not no_remote([Requirement(kind="remote", value="no")])  # nice-to-have only
+    assert no_remote([Requirement(kind="remote", value="no", must_have=True)])
     assert remote_only([Requirement(kind="max_onsite_days", value="0", must_have=True)])
 
 

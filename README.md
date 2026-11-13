@@ -101,10 +101,13 @@ used.
 - Choose the CV.
 - Enter one or more job listing URLs (one per line; each becomes its own application),
   or paste the listing text.
-- Set your **requirements**: minimum salary (EUR/year), maximum onsite days (0 = remote),
-  acceptable cities, and free-text must-haves and nice-to-haves (e.g. "EGYM Wellpass").
-  Mark a requirement as **must-have** to stop early if the listing clearly contradicts it;
-  if the listing doesn't mention it, it never fails. The form remembers your last entries.
+- Set your **requirements**: minimum salary (slider, 30k–200k EUR/year), onsite days per
+  week (slider, 0 = remote only) and whether fully remote jobs are fine, cities with a radius
+  each, and free-text must-haves and nice-to-haves (e.g. "EGYM Wellpass"): type one, then
+  click **Must-have** or **Nice-to-have**. Each becomes a chip; click it to switch it off,
+  click its tag to switch between must and nice. Mark salary, work mode or cities as
+  **must-have** to stop early if the listing clearly contradicts it; if the listing doesn't
+  mention it, it never fails. The form remembers your last entries.
 - **Start**.
 
 ### Or: find jobs
@@ -113,11 +116,15 @@ used.
 in Python only and costs nothing; Claude is only called for the listings you pick.
 
 - Choose the CV. Job titles are suggested from your headline and recent roles, with German
-  and English variants ("Backend Engineer", "Backend-Entwickler"); edit them freely.
-  The other roles suggested for your CV are listed below as chips: they are only searched
-  when you click one (it adds the title in both languages; click again to remove it).
-- The requirements are the same as for an application. Cities are searched with a radius
-  (`radius_km`); a must-have hides listings that clearly contradict it.
+  and English variants ("Backend Engineer", "Backend-Entwickler"), as chips: click one to
+  leave it out, or add your own. The other roles suggested for your CV are chips too, off
+  by default; hover one to see why it fits, click it to search for it (in both languages).
+- The requirements are the same as for an application. Bundesagentur and Adzuna search
+  within each city's radius; the other sources only match the city names. A must-have hides
+  listings that clearly contradict it. With fully remote jobs excluded as a must-have, the
+  remote-only sources are skipped.
+- The whole form (titles, requirements, sources) is kept **per CV** and restored when you
+  come back.
 - Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy, Remote OK (off by default,
   mostly US jobs) and Adzuna (needs a free key, see [Configuration](#configuration)). A source
   that fails is reported and skipped.

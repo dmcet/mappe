@@ -32,7 +32,7 @@ async def fetch(client: httpx.AsyncClient, query: SearchQuery, opts: SourceOptio
                 **keys,
                 what=title,
                 where=place,
-                distance=query.radius_km if place else None,
+                distance=query.radius(place) if place else None,
                 max_days_old=query.max_age_days,
                 results_per_page=min(query.limit, 50),
             )
