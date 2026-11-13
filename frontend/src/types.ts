@@ -384,7 +384,6 @@ export interface SearchSource {
   home: string;
   remote_only: boolean;
   default: boolean;
-  missing_env: string[];
 }
 
 export interface SourceStatus {

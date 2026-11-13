@@ -21,7 +21,7 @@ from mappe.search.dedupe import dedupe
 from mappe.search.models import JobHit, SearchQuery
 from mappe.search.queries import no_remote, places_from, remote_only
 from mappe.search.rank import rank
-from mappe.search.sources import SOURCES, missing_env
+from mappe.search.sources import SOURCES
 from mappe.search.sources.base import Source, SourceOptions
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,6 @@ def available_sources(settings: Settings) -> list[dict]:
             "home": s.home,
             "remote_only": s.remote_only,
             "default": s.key in settings.search.sources,
-            "missing_env": [] if settings.demo else missing_env(s),
         }
         for s in SOURCES.values()
     ]
@@ -126,11 +125,8 @@ async def collect(
     statuses: dict[str, SourceStatus] = {}
     runnable = []
     for source in (SOURCES[k] for k in keys if k in SOURCES):
-        missing = [] if settings.demo else missing_env(source)
         if source.remote_only and query.no_remote:
             statuses[source.key] = SourceStatus(source.label, error="skipped: remote not wanted")
-        elif missing:
-            statuses[source.key] = SourceStatus(source.label, error=f"needs {', '.join(missing)}")
         else:
             runnable.append(source)
     progress = {

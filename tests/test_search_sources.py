@@ -65,13 +65,6 @@ def test_remote_sources_only_keep_jobs_open_to_germany():
     assert (full_stack.salary_currency, full_stack.salary_period) == ("USD", "month")
 
 
-def test_adzuna_ignores_predicted_salaries_and_strips_markup():
-    first, second = parse("adzuna")
-    assert first.title == "Backend Developer (m/w/d) Python"
-    assert (first.salary_min, first.salary_max, first.salary_currency) == (65000, 80000, "EUR")
-    assert second.salary_min is None  # Adzuna's estimate, not the employer's
-
-
 @pytest.mark.parametrize("key", list(SOURCES))
 def test_parsers_survive_empty_and_broken_payloads(key):
     assert SOURCES[key].parse({}) == []

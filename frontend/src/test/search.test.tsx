@@ -241,9 +241,9 @@ describe("role suggestions", () => {
 
 describe("title chips and saved form", () => {
   const sources: SearchSource[] = [
-    { key: "ba", label: "BA", home: "", remote_only: false, default: true, missing_env: [] },
-    { key: "remotive", label: "Remotive", home: "", remote_only: true, default: true, missing_env: [] },
-    { key: "adzuna", label: "Adzuna", home: "", remote_only: false, default: true, missing_env: ["X"] },
+    { key: "ba", label: "BA", home: "", remote_only: false, default: true },
+    { key: "remotive", label: "Remotive", home: "", remote_only: true, default: true },
+    { key: "remoteok", label: "Remote OK", home: "", remote_only: true, default: false },
   ];
   const base = { titles: ["Backend Engineer", "Python Developer"], roles: [], roles_status: null, sources };
 
@@ -272,16 +272,16 @@ describe("title chips and saved form", () => {
     const last = [{ kind: "location" as const, value: "Berlin", must_have: false }];
     const fresh = initialForm({ ...base, prefs: null }, last);
     expect(fresh.titles).toEqual(base.titles);
-    expect([...fresh.chosen]).toEqual(["ba", "remotive"]);
+    expect([...fresh.chosen]).toEqual(["ba", "remotive"]); // the defaults
     expect(fresh.reqs.places).toEqual([{ name: "Berlin", km: 30 }]);
 
-    const prefs = toPrefs({ ...fresh, titles: ["Backend Engineer", "SRE"], titlesOff: ["Python Developer"], chosen: new Set(["ba", "adzuna"]) });
-    expect(prefs.sources).toEqual(["adzuna", "ba"]);
+    const prefs = toPrefs({ ...fresh, titles: ["Backend Engineer", "SRE"], titlesOff: ["Python Developer"], chosen: new Set(["remoteok", "ba", "gone"]) });
+    expect(prefs.sources).toEqual(["ba", "gone", "remoteok"]);
     const back = initialForm({ ...base, titles: [...base.titles, "Tech Lead"], prefs }, []);
-    // A title the CV gained since is searched; switched-off ones stay off; unusable sources drop.
+    // A title the CV gained since is searched; switched-off ones stay off; removed sources drop.
     expect(back.titles).toEqual(["Backend Engineer", "SRE", "Tech Lead"]);
     expect(back.titlesOff).toEqual(["Python Developer"]);
-    expect([...back.chosen]).toEqual(["ba"]);
+    expect([...back.chosen]).toEqual(["ba", "remoteok"]);
     expect(back.reqs.places).toEqual([{ name: "Berlin", km: 30 }]);
   });
 });

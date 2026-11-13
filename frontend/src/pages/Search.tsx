@@ -496,7 +496,7 @@ interface FormState {
 
 /** The form for a CV: its saved prefs, or the CV's titles and the last used requirements. */
 export function initialForm(s: Suggestions, lastReqs: Requirement[]): FormState {
-  const available = new Set(s.sources.filter((x) => !x.missing_env.length).map((x) => x.key));
+  const available = new Set(s.sources.map((x) => x.key));
   const defaults = s.sources.filter((x) => x.default && available.has(x.key)).map((x) => x.key);
   const p = s.prefs;
   if (!p) {
@@ -644,7 +644,7 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
             <RequirementsEditor value={form.reqs} onChange={(reqs) => update({ reqs })} />
             <p className="hint">
               {form.reqs.places.length
-                ? "Bundesagentur and Adzuna search within each city's radius; other sources match the city names."
+                ? "Bundesagentur searches within each city's radius; the other sources match the city names."
                 : "No cities: all of Germany is searched (jobs abroad are hidden). Add cities to search near you."}{" "}
               A must-have hides listings that clearly contradict it; hidden listings stay one click
               away.
@@ -656,7 +656,6 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
                   <input
                     type="checkbox"
                     checked={form.chosen.has(s.key)}
-                    disabled={s.missing_env.length > 0}
                     onChange={() => {
                       const next = new Set(form.chosen);
                       if (next.has(s.key)) next.delete(s.key);
@@ -666,9 +665,6 @@ function SearchForm({ onSearched }: { onSearched: (s: SearchDetail) => void }) {
                   />
                   {s.label}
                   {s.remote_only && <span className="muted">remote{noRemote && ", skipped"}</span>}
-                  {s.missing_env.length > 0 && (
-                    <span className="muted check__note">needs {s.missing_env.join(", ")}</span>
-                  )}
                 </label>
               ))}
             </fieldset>

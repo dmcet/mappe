@@ -126,9 +126,8 @@ def client(tmp_path, monkeypatch, fake_llm, fake_embedder):
     from mappe.web.app import app
 
     monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
-    # Independent of the shell: no demo mode, no optional job source keys.
-    for name in ("APP_DEMO", "ADZUNA_APP_ID", "ADZUNA_APP_KEY"):
-        monkeypatch.delenv(name, raising=False)
+    # Independent of the shell: no demo mode.
+    monkeypatch.delenv("APP_DEMO", raising=False)
     get_settings.cache_clear()
 
     with TestClient(app) as c:
@@ -142,7 +141,6 @@ HOSTS = {
     "remotive.com": "remotive",
     "jobicy.com": "jobicy",
     "remoteok.com": "remoteok",
-    "api.adzuna.com": "adzuna",
 }
 
 

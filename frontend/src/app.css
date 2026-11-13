@@ -162,8 +162,6 @@ textarea { resize: vertical; font-size: 0.92rem; line-height: 1.5; }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--navy-mid); box-shadow: 0 0 0 3px rgba(var(--navy-rgb), 0.25); }
 label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--pui-fg); white-space: nowrap; }
 label.check input { width: auto; accent-color: var(--navy-mid); }
-label.check:has(.check__note) { flex-wrap: wrap; row-gap: 2px; }
-.check__note { white-space: normal; overflow-wrap: anywhere; font-size: 0.8rem; flex-basis: 100%; padding-left: 24px; }
 fieldset.requirements { border: 1px solid var(--pui-border); border-radius: var(--pui-radius); padding: 12px 14px; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 fieldset legend { padding: 0 6px; color: var(--pui-fg); font-weight: 600; }
 .req-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
@@ -225,6 +223,9 @@ button.danger, .pui-btn.danger { background: linear-gradient(180deg, #ef4444, #b
 .role-suggestions .chip__tip { right: 0; width: auto; max-width: none; }
 .chip-input { display: flex; gap: 6px; align-items: stretch; }
 .chip-input input { flex: 1; min-width: 0; padding: 7px 10px; }
+.chip-input--stack { flex-direction: column; }
+.chip-input__buttons { display: flex; gap: 6px; }
+.chip-input__buttons .chip-btn { flex: 1; padding: 7px 12px; }
 .chip-btn {
   font: inherit; font-size: 0.85rem; padding: 0 12px; border-radius: var(--pui-radius-sm); cursor: pointer; white-space: nowrap;
   color: var(--pui-fg); background: var(--pui-bg-soft); border: 1px solid var(--pui-border-bright);

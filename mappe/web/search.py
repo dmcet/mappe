@@ -254,8 +254,9 @@ async def run_saved(saved_id: int, session: SessionDep) -> dict:
     """Run a saved search again; "new" marks listings none of its earlier runs found."""
     saved = _saved(session, saved_id)
     requirements = [Requirement.model_validate(r) for r in saved.requirements]
+    sources = [k for k in saved.sources if k in SOURCES]  # sources removed since are dropped
     search = await _run(
-        session, saved.cv_id, saved.titles, requirements, saved.sources, saved_id=saved.id
+        session, saved.cv_id, saved.titles, requirements, sources, saved_id=saved.id
     )
     return search_detail(session, search)
 

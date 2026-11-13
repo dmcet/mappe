@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GERMAN_CITIES } from "../cities";
 import type { Requirement } from "../types";
 
 export interface Place {
@@ -144,6 +145,8 @@ function Places({ places, onChange }: { places: Place[]; onChange: (p: Place[]) 
       <div className="chip-input">
         <input
           aria-label="Add a city"
+          list="german-cities"
+          autoComplete="off"
           value={draft}
           placeholder="Add a city, e.g. Nürnberg"
           onChange={(e) => setDraft(e.target.value)}
@@ -157,6 +160,11 @@ function Places({ places, onChange }: { places: Place[]; onChange: (p: Place[]) 
         <button type="button" className="chip-btn" onClick={add} disabled={!draft.trim()}>
           Add city
         </button>
+        <datalist id="german-cities">
+          {GERMAN_CITIES.filter((c) => !places.some((p) => p.name.toLowerCase() === c.toLowerCase())).map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
       </div>
       {places.length > 0 && (
         <ul className="chips">
@@ -204,7 +212,7 @@ function Wishes({ wishes, onChange }: { wishes: Wish[]; onChange: (w: Wish[]) =>
   const set = (i: number, patch: Partial<Wish>) => onChange(wishes.map((w, j) => (j === i ? { ...w, ...patch } : w)));
   return (
     <div className="wishes">
-      <div className="chip-input">
+      <div className="chip-input chip-input--stack">
         <input
           aria-label="Add a must-have or nice-to-have"
           value={draft}
@@ -217,12 +225,14 @@ function Wishes({ wishes, onChange }: { wishes: Wish[]; onChange: (w: Wish[]) =>
             }
           }}
         />
-        <button type="button" className="chip-btn chip-btn--must" onClick={() => add(true)} disabled={!draft.trim()}>
-          Must-have
-        </button>
-        <button type="button" className="chip-btn" onClick={() => add(false)} disabled={!draft.trim()}>
-          Nice-to-have
-        </button>
+        <div className="chip-input__buttons">
+          <button type="button" className="chip-btn chip-btn--must" onClick={() => add(true)} disabled={!draft.trim()}>
+            Add as must-have
+          </button>
+          <button type="button" className="chip-btn" onClick={() => add(false)} disabled={!draft.trim()}>
+            Add as nice-to-have
+          </button>
+        </div>
       </div>
       {wishes.length > 0 && (
         <ul className="chips">

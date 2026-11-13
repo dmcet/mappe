@@ -80,7 +80,7 @@ describe("requirements form", () => {
 
     fireEvent.change(screen.getByLabelText("Add a must-have or nice-to-have"), { target: { value: "Car" } });
     again();
-    fireEvent.click(screen.getByRole("button", { name: "Must-have" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add as must-have" }));
     again();
     expect(value.wishes).toEqual([{ value: "Car", must: true, on: true }]);
     fireEvent.click(screen.getByRole("button", { name: "Car" }));

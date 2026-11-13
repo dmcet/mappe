@@ -103,8 +103,8 @@ used.
   or paste the listing text.
 - Set your **requirements**: minimum salary (slider, 30k–200k EUR/year), onsite days per
   week (slider, 0 = remote only) and whether fully remote jobs are fine, cities with a radius
-  each, and free-text must-haves and nice-to-haves (e.g. "EGYM Wellpass"): type one, then
-  click **Must-have** or **Nice-to-have**. Each becomes a chip; click it to switch it off,
+  each (the biggest German cities are suggested as you type), and free-text must-haves and nice-to-haves (e.g. "EGYM Wellpass"): type one, then
+  click **Add as must-have** or **Add as nice-to-have**. Each becomes a chip; click it to switch it off,
   click its tag to switch between must and nice. Mark salary, work mode or cities as
   **must-have** to stop early if the listing clearly contradicts it; if the listing doesn't
   mention it, it never fails. The form remembers your last entries.
@@ -119,15 +119,14 @@ in Python only and costs nothing; Claude is only called for the listings you pic
   and English variants ("Backend Engineer", "Backend-Entwickler"), as chips: click one to
   leave it out, or add your own. The other roles suggested for your CV are chips too, off
   by default; hover one to see why it fits, click it to search for it (in both languages).
-- The requirements are the same as for an application. Bundesagentur and Adzuna search
-  within each city's radius; the other sources only match the city names. A must-have hides
+- The requirements are the same as for an application. Bundesagentur searches within each
+  city's radius; the other sources only match the city names. A must-have hides
   listings that clearly contradict it. With fully remote jobs excluded as a must-have, the
   remote-only sources are skipped.
 - The whole form (titles, requirements, sources) is kept **per CV** and restored when you
   come back.
-- Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy, Remote OK (off by default,
-  mostly US jobs) and Adzuna (needs a free key, see [Configuration](#configuration)). A source
-  that fails is reported and skipped.
+- Sources: Bundesagentur für Arbeit, Arbeitnow, Remotive, Jobicy and Remote OK (off by
+  default, mostly US jobs). A source that fails is reported and skipped.
 - Each listing gets a score from 0 to 100 from skills from your CV found in the listing,
   title fit (against your CV's titles and the titles you searched for), **meaning** and freshness. Meaning comes from a local embedding model in the
   image (German and English, no API calls): it compares your CV with each listing, so a fit
@@ -271,7 +270,6 @@ Environment variables:
 | `APP_DEMO_DELAY` | seconds per sample "Claude call" in demo mode |
 | `APP_DATA_DIR` | data directory (default `/data` in the container) |
 | `APP_CONFIG` | path to an alternative `config.toml` |
-| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | optional: enables Adzuna in the job search ([free key](https://developer.adzuna.com/)) |
 
 ## Reset
 

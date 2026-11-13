@@ -36,7 +36,6 @@ class Source:
     remote_only: bool = False
     searches_places: bool = False  # filters by the search's cities itself (with a radius)
     full_text: bool = True  # hits carry the whole listing, so the pipeline needn't fetch it
-    needs: tuple[str, ...] = ()  # environment variables the source requires
 
     def sample(self) -> Any:
         return json.loads((SAMPLES_DIR / f"{self.key}.json").read_text(encoding="utf-8"))

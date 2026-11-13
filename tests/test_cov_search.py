@@ -6,7 +6,6 @@ from pathlib import Path
 
 import httpx
 import numpy as np
-import pytest
 
 from mappe.config import ReviewConfig, SearchConfig, Settings, StepLLMConfig
 from mappe.domain.extraction import to_parsed_cv
@@ -17,7 +16,7 @@ from mappe.search.dedupe import dedupe
 from mappe.search.models import JobHit, SearchQuery
 from mappe.search.queries import title_variants
 from mappe.search.rank import _freshness, cv_skills, rank, title_fit
-from mappe.search.sources import SOURCES, adzuna, ba
+from mappe.search.sources import SOURCES, ba
 from mappe.search.sources.base import Source, SourceOptions, clear_cache
 from mappe.search.text import html_to_text, parse_date, parse_salary_text
 from tests.conftest import make_extracted
@@ -220,40 +219,6 @@ async def test_semantic_ranking_with_a_working_model(monkeypatch):
 
 
 # --- sources ----------------------------------------------------------------------------
-
-
-async def test_adzuna_fetch_sends_keys_and_stops_at_the_request_limit(monkeypatch):
-    monkeypatch.setenv("ADZUNA_APP_ID", "id1")
-    monkeypatch.setenv("ADZUNA_APP_KEY", "key1")
-    seen = []
-
-    def handler(request):
-        seen.append(request)
-        return httpx.Response(200, json={"results": []})
-
-    titles = [f"Title {i}" for i in range(4)]
-    query = SearchQuery(titles=titles, places=["Berlin", "Hamburg"], limit=80)
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        payloads = await SOURCES["adzuna"].fetch(client, query, SourceOptions())
-    assert len(payloads) == adzuna.MAX_REQUESTS == len(seen)
-    params = seen[0].url.params
-    assert params["app_id"] == "id1" and params["app_key"] == "key1"
-    assert params["what"] == "Title 0" and params["where"] == "Berlin"
-    assert params["distance"] == "30" and params["results_per_page"] == "50"
-
-    seen.clear()
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        await SOURCES["adzuna"].fetch(client, SearchQuery(titles=["x"]), SourceOptions())
-    assert "where" not in seen[0].url.params and "distance" not in seen[0].url.params
-
-
-async def test_adzuna_fetch_raises_on_http_errors(monkeypatch):
-    monkeypatch.setenv("ADZUNA_APP_ID", "id1")
-    monkeypatch.setenv("ADZUNA_APP_KEY", "key1")
-    transport = httpx.MockTransport(lambda r: httpx.Response(401))
-    async with httpx.AsyncClient(transport=transport) as client:
-        with pytest.raises(httpx.HTTPStatusError):
-            await SOURCES["adzuna"].fetch(client, SearchQuery(titles=["x"]), SourceOptions())
 
 
 async def test_ba_fetch_stops_at_the_request_limit():
