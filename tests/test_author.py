@@ -152,9 +152,10 @@ async def test_review_loop_reworks_until_the_fact_check_passes(tmp_path, monkeyp
             "cover-letter.json",
         }
 
-    # The rework request contains the problem and the previous draft.
+    # The rework request contains the problem and the previous draft with item labels.
     rework = [c for c in fake_llm.calls if c["step"] == "author_cv"][1]["task"]
-    assert "60" in rework and "Previous CV draft (JSON)" in rework
+    assert "60" in rework and "Previous CV draft:" in rework
+    assert "B1 (pos1) [pos1.ach1]: Cut p99 latency by 60%" in rework
     # The letter was written once and reused, since it had no problems.
     assert len([c for c in fake_llm.calls if c["step"] == "author_letter"]) == 1
 

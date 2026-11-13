@@ -27,4 +27,10 @@ Skills: 3-5 groups with clear category names (e.g. "Languages & Frameworks", "Ar
 
 Additional experience (`extra`): only projects, publications or volunteering from the CV that matter for this listing, citing their fact IDs. Usually empty.
 
-When you rework a previous draft: fix every listed problem, keep everything else as it was.
+Output format: bullets and additional experience are lists of changes. In the first draft, every bullet is an `add` (with `item` and `after` empty), in final order.
+
+Reworks: the task shows the previous draft with labels (B1, B2, … for bullets, E1, … for additional experience). Fix every listed problem and keep everything else as it was. Return only what changes; everything you leave out stays:
+- `profile`: the new profile, or empty to keep it (then `profile_fact_ids` is empty too).
+- `titles`: only titles that change. `skill_groups`: empty to keep the skills section, otherwise the complete new section.
+- `replace` an item by its label (`item`, with the full new bullet), `delete` it by its label, or `add` a new bullet after the item named in `after` (empty `after`: first bullet of its position).
+- To move a bullet, `delete` it and `add` it again at the new place.

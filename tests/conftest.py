@@ -3,6 +3,7 @@ import json
 import httpx
 import pytest
 
+from mappe.domain.author import AuthorCV, BulletChange, apply_draft, full_draft
 from mappe.domain.extraction import ExtractedCV
 from mappe.llm.client import Usage
 from mappe.llm.demo import (
@@ -25,6 +26,29 @@ USAGE = Usage(
 )
 
 
+def as_draft(target: AuthorCV, previous: AuthorCV | None):
+    """``target`` as Claude's answer: a first draft, or a rework that replaces every item."""
+    draft = full_draft(target)
+    if previous is not None:
+
+        def deletes(prefix, items):
+            return [
+                BulletChange(
+                    action="delete",
+                    item=f"{prefix}{n}",
+                    after="",
+                    position_id="",
+                    text="",
+                    fact_ids=[],
+                )
+                for n in range(1, len(items) + 1)
+            ]
+
+        draft.bullets = deletes("B", previous.bullets) + draft.bullets
+        draft.extra = deletes("E", previous.extra) + draft.extra
+    return draft
+
+
 @pytest.fixture
 def fake_llm(monkeypatch):
     """Replace Claude with a canned extraction. Set ``fake_llm.result`` or ``.error``."""
@@ -33,6 +57,7 @@ def fake_llm(monkeypatch):
         result: ExtractedCV = make_extracted()
         error: Exception | None = None
         calls: list[dict] = []
+        last_cv: AuthorCV | None = None
 
         async def structured(self, settings, step, output, blocks, task, **kw):
             context = "\n".join(b.text for b in blocks)
@@ -44,6 +69,10 @@ def fake_llm(monkeypatch):
             result = self.results[step]
             if isinstance(result, list):  # a sequence of answers, e.g. draft 1, draft 2
                 result = result.pop(0)
+            if isinstance(result, AuthorCV):  # tests give the whole CV; Claude returns changes
+                rework = task.split("\n", 1)[-1].startswith("Rework your previous CV draft")
+                result = as_draft(result, self.last_cv if rework else None)
+                self.last_cv = apply_draft(self.last_cv if rework else None, result)
             return result, USAGE
 
     fake = Fake()

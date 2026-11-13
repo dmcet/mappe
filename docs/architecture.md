@@ -90,7 +90,8 @@ All steps default to `claude-opus-5-5`; effort is set explicitly per step (Opus 
 **API usage notes**
 - Structured outputs: `client.messages.parse()` with a Pydantic model (validated against the schema by the SDK); models stay flat (lists of strings, ≤ 2 levels).
 - Streaming for author calls (long outputs), using `.get_final_message()`.
-- Prompt caching: system prompt + source CV + listing form a stable prefix across the review loop; per-iteration feedback goes after the last cache breakpoint. Verify via `usage.cache_read_input_tokens`.
+- Prompt caching: system prompt + source CV + listing form a stable prefix across the review loop; per-iteration feedback goes after the last cache breakpoint. Verify via `usage.cache_read_input_tokens`. The output schema is part of the cached prefix, so first draft and reworks of a step share one schema.
+- CV reworks return only the changes (`AuthorCVDraft`: replace/delete/add bullets by label, empty fields keep the previous value); `apply_draft` merges them in Python and the fact check runs on the merged CV. Output tokens on Opus are the largest cost, and a full rewrite repeated every unchanged bullet.
 - Check `stop_reason` (`refusal`, `max_tokens`) before reading content; retries handled by the SDK (`max_retries`).
 - Usage per call is stored and aggregated per run; an optional per-run cost limit stops the loop and keeps the best version.
 

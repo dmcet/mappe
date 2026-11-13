@@ -1,7 +1,8 @@
 """AUTHORING: Claude writes the CV content (and the cover letter if chosen).
 
 The first draft is written from scratch; later drafts rework the previous one using the
-feedback of the review step (see review.py). A document without feedback is reused.
+feedback of the review step (see review.py). A document without feedback is reused. A CV
+rework returns only the changed items (AuthorCVDraft), merged in Python.
 """
 
 from __future__ import annotations
@@ -9,7 +10,13 @@ from __future__ import annotations
 import json
 
 from mappe.checks.skills import SkillAnalysis, SkillCoverage
-from mappe.domain.author import AuthorCV, AuthorLetter
+from mappe.domain.author import (
+    AuthorCV,
+    AuthorCVDraft,
+    AuthorLetter,
+    apply_draft,
+    render_for_rework,
+)
 from mappe.domain.match import MatchResult
 from mappe.domain.models import ParsedCV, ParsedListing
 from mappe.fetch.listing import detect_language
@@ -82,6 +89,18 @@ def _feedback(items: list[str], previous: dict, what: str) -> str:
     )
 
 
+def _cv_rework(items: list[str], previous: AuthorCV) -> str:
+    problems = "\n".join(f"- {v}" for v in items)
+    return (
+        "Rework your previous CV draft. Return only the changes (see 'Reworks' in the "
+        "instructions). Fix every one of these problems and keep everything else unchanged. "
+        "Items marked 'Recruiter:' are suggestions: apply them only as far as the CV facts "
+        "support them, and never add scope, adoption or impact the facts don't state. The "
+        f"fact and claims problems always take precedence.\n{problems}\n\n"
+        f"Previous CV draft:\n{render_for_rework(previous)}"
+    )
+
+
 @step(RunStatus.AUTHORING)
 async def author(ctx: StepContext) -> RunStatus:
     run = ctx.run
@@ -105,21 +124,25 @@ async def author(ctx: StepContext) -> RunStatus:
     total_cost = 0.0
 
     # CV: first draft, or rework when the last review found problems with it.
-    if last is None or cv_feedback(last):
-        task = f"{language}\nWrite the tailored CV content."
-        if last is not None:
-            task = f"{language}\n" + _feedback(cv_feedback(last), last["cv"], "CV draft")
-        doc, usage = await client.structured(
+    previous = AuthorCV.model_validate(last["cv"]) if last is not None else None
+    if previous is None or cv_feedback(last):
+        task = f"{language}\nWrite the tailored CV content (first draft)."
+        if previous is not None:
+            task = f"{language}\n" + _cv_rework(cv_feedback(last), previous)
+        # Same output schema for first draft and rework: the schema is part of the cached
+        # prefix, so reworks read the entry the first draft wrote.
+        draft, usage = await client.structured(
             ctx.settings,
             step="author_cv",
-            output=AuthorCV,
+            output=AuthorCVDraft,
             blocks=[*shared, instructions("author_cv"), step_context],
             task=task,
         )
+        doc = apply_draft(previous, draft)
         total_cost += cost_usd(ctx.settings.llm_for("author_cv").model, usage)
         ctx.emit("usage", f"author_cv (draft {iteration}) ≈ ${total_cost:.4f}", **usage.__dict__)
     else:
-        doc = AuthorCV.model_validate(last["cv"])
+        doc = previous
 
     letter = None
     if wants_letter:
