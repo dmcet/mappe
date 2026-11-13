@@ -19,12 +19,12 @@ max_mb = 5                # larger pages are not listings
 # Job search (no Claude calls). See docs/job-search-plan.md.
 [search]
 # Also available: "remoteok" (mostly US jobs).
-sources = ["ba", "arbeitnow", "remotive", "jobicy"]
+sources = ["ba", "arbeitnow", "remotive", "jobicy", "himalayas", "hn"]
 max_results_per_source = 100
 max_age_days = 30
 radius_km = 30
 timeout_seconds = 20
-cache_minutes = 60        # for sources without server-side search
+cache_minutes = 60        # for sources without server-side search (Arbeitnow, HN, Remote OK)
 list_pages = 3            # Arbeitnow: newest 3 x 300 jobs
 min_score = 30            # lower scores are hidden behind "show low matches"
 # Semantic ranking with a local model baked into the image (no API calls, no costs).

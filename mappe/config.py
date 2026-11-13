@@ -29,7 +29,7 @@ class ReviewConfig:
 
 @dataclass(frozen=True)
 class SearchConfig:
-    sources: tuple[str, ...] = ("ba", "arbeitnow", "remotive", "jobicy")
+    sources: tuple[str, ...] = ("ba", "arbeitnow", "remotive", "jobicy", "himalayas", "hn")
     max_results_per_source: int = 100
     max_age_days: int = 30
     radius_km: int = 30

@@ -6,6 +6,9 @@ semantic ranking (scheduled searches are not built).
 
 **Changes during implementation:**
 - Adzuna was removed (2026-11-13). Saved searches that still list it run without it.
+- Himalayas and Hacker News "Who is hiring?" were added (2026-11-13), both on by default.
+  Remote OK now repairs its double-encoded text ("MÃ¼nchen"). A review of 12 real searches
+  kept every source: each one led to an application or ranked in the top 20 (see §2).
 - Titles are chips (the CV's titles, on by default, plus the user's own); places and remote
   come from the requirements form, so there is one place to enter cities. Each city has its
   own radius (`"Nürnberg (30 km), Fürth (10 km)"` in the `location` requirement; without one,
@@ -19,7 +22,8 @@ semantic ranking (scheduled searches are not built).
 - New filter "outside your area": onsite/hybrid hits from sources that can't search by place
   (Arbeitnow, the remote boards) are hidden when their location isn't one of the searched
   cities, or, without cities, when it names a place abroad. Bundesagentur searches
-  around the cities itself (radius) and is exempt.
+  around the cities itself (radius) and is exempt. Remote hits are hidden too when their
+  location names only a place abroad ("Zürich"; "Europe" or "Germany" pass).
 - Bundesagentur's `homeofficemoeglich: false` is treated as *unknown*, not onsite: it's often
   just an unticked box, and unknown must never fail a must-have.
 - Hits from Bundesagentur use the employer's page (`externeURL`, ~1/3 of hits) as the
@@ -48,10 +52,25 @@ All sources were checked on 2026-11-03 unless marked *unverified*.
 | **Arbeitnow** | `GET arbeitnow.com/api/job-board-api?page=N`, no key | None: 300 newest jobs per page, filter locally | Title, company, HTML description, tags, `remote`, location, URL, `created_at` | Germany-focused tech jobs. Terms: "please do not abuse", link back. Updated hourly → cache. |
 | **Remotive** | `GET remotive.com/api/remote-jobs?search=&category=&limit=` | Server side (keyword, category) | Title, company, HTML description, tags, `candidate_required_location`, salary text | Remote only. Terms forbid republishing to other job sites; local personal use is fine. Keep the link to the original. |
 | **Jobicy** | `GET jobicy.com/api/v2/remote-jobs?geo=germany&tag=&count=` | Server side (`geo`, `tag`, `industry`) | Title, company, description, geo, salary when given | Remote only. Must credit Jobicy and link to the original URL. |
-| **Remote OK** | `GET remoteok.com/api` (needs a User-Agent) | None, filter locally | Title, company, tags, description, location, salary | Mostly US/worldwide, so it's mostly noise here. Must link back and name Remote OK. Disabled by default. |
+| **Remote OK** | `GET remoteok.com/api` (needs a User-Agent) | None, filter locally | Title, company, tags, description, location, salary | Mostly US/worldwide, so it's mostly noise here. Must link back and name Remote OK. Disabled by default. Some text is double-encoded UTF-8; repaired in parsing. |
+| **Himalayas** (checked 2026-11-13) | `GET himalayas.app/jobs/api/search?q=&country=DE&sort=recent`, no key | Server side (keyword, country); 20 per request, first 5 titles, one request at a time (bursts get HTTP 429) | Title, company, HTML description, countries it is open to, salary when given, categories | Remote only. Terms: don't pass the jobs on to other job sites; local personal use is fine. Link to the original. |
+| **Hacker News "Who is hiring?"** (checked 2026-11-13) | Algolia HN API: `GET hn.algolia.com/api/v1/search_by_date?tags=story,author_whoishiring`, then `GET .../items/<id>` (whole thread in one request), no key | None: one thread a month (~250 posts), cached, ranked locally | Free text. First line by convention `Company \| Role \| Place \| REMOTE/ONSITE \| Salary`, parsed with regexes; posts not in that format are skipped | Keeps posts in a German city, or remote without a non-German restriction. About 50 per month. Links to the HN comment. |
 
 Every result shows its source and links to the original listing, which covers the attribution
 terms above.
+
+**Source review (2026-11-13, 12 real searches, Nürnberg area, senior software roles):**
+
+| Source | Listings per search | Shown after filters | In top 20 (all searches) | Applied |
+|---|---|---|---|---|
+| Bundesagentur | 85–680 | ~95 % | 214 of 240 | 6 |
+| Arbeitnow | ~880 | ~3 % (most are outside the area) | 6 | 1 |
+| Jobicy | ~125 | ~30 % | 4 | 1 |
+| Remotive | ~10 | ~30 % | 11 | 0 |
+| Remote OK (on in 6 searches) | ~55 | ~25 % | 5 | 1 |
+
+Bundesagentur carries the search. The others add few but different listings (remote,
+startups) at no cost, and the filters hide their noise, so all are kept.
 
 ## 3. Flow
 
@@ -94,7 +113,7 @@ Sources with server-side search get `title` queries (BA: `was=<title>`, `wo=<cit
 
 ```python
 class JobHit(BaseModel):
-    source: str               # "ba" | "arbeitnow" | "remotive" | "jobicy" | "remoteok"
+    source: str               # "ba" | "arbeitnow" | "remotive" | "jobicy" | "himalayas" | "hn" | "remoteok"
     external_id: str          # BA referenznummer, Arbeitnow slug, ...
     url: str                  # original listing (BA: jobdetail URL or the employer's external URL)
     title: str
@@ -200,7 +219,7 @@ mappe/search/
   queries.py       # queries from ParsedCV, DE/EN title variants
   sources/
     base.py        # Source protocol: async search(queries, places, client) -> list[JobHit]
-    ba.py  arbeitnow.py  remotive.py  jobicy.py  remoteok.py
+    ba.py  arbeitnow.py  hn.py  remote.py (Remotive, Jobicy, Himalayas, Remote OK)
   dedupe.py
   rank.py          # filtering (reuses checks/requirements.py) + scoring
   service.py       # orchestrates one search, persists results
@@ -214,12 +233,12 @@ Config (`config.toml`):
 
 ```toml
 [search]
-sources = ["ba", "arbeitnow", "remotive", "jobicy"]
+sources = ["ba", "arbeitnow", "remotive", "jobicy", "himalayas", "hn"]
 max_results_per_source = 100
 max_age_days = 30
 radius_km = 30
 timeout_seconds = 15
-cache_minutes = 60            # for sources without server-side search (Arbeitnow, Remote OK)
+cache_minutes = 60            # for sources without server-side search (Arbeitnow, HN, Remote OK)
 ```
 
 ## 8. Tests
@@ -238,8 +257,8 @@ cache_minutes = 60            # for sources without server-side search (Arbeitno
 
 1. **Core:** models, BA + Arbeitnow adapters, queries, dedupe, filtering, ranking, migration,
    API, Search page, apply → runs. Covers most German listings.
-2. **More sources:** Remotive, Jobicy, Remote OK (off by default). Adzuna (needed a key) was
-   built and later removed.
+2. **More sources:** Remotive, Jobicy, Remote OK (off by default), later Himalayas and Hacker
+   News "Who is hiring?". Adzuna (needed a key) was built and later removed.
 3. **Later:** saved searches with "new since last time" (done), embeddings ranking (done, see
    below), SSE progress per source (done, via the activity registry), scheduled searches
    (open).

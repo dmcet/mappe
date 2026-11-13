@@ -23,6 +23,7 @@ from mappe.checks.requirements import (
 from mappe.checks.skills import SYNONYMS, normalize_skill, skill_variants
 from mappe.domain.models import ParsedCV, Requirement
 from mappe.search.models import JobHit
+from mappe.search.places import abroad, open_to_germany
 from mappe.search.queries import clean_title, suggest_titles, title_variants
 
 LEVEL_WEIGHT = {"advanced": 1.0, "intermediate": 0.7, "basic": 0.4, None: 0.7}
@@ -34,39 +35,6 @@ UNKNOWN_SKILL_FIT = 0.4  # listings without a description: skills can't be check
 # Short or everyday words: matched only as written in the CV ("Go", not "go").
 _CASE_SENSITIVE = {"go", "r", "c", "d", "rest", "swift", "spring", "flow", "compose", "dart"}
 CHECKED_KINDS = {"salary_min", "max_onsite_days", "remote", "location"}
-# Without places to search, onsite jobs are hidden when their location is abroad: it names
-# a German state or Germany -> domestic; else a foreign country, region or city -> abroad.
-_GERMANY = re.compile(
-    r"\b(germany|deutschland|bayern|bavaria|baden|württemberg|wuerttemberg|hessen|hesse|"
-    r"sachsen|saxony|thüringen|thuringia|brandenburg|mecklenburg|niedersachsen|"
-    r"lower saxony|nordrhein|westfalen|north rhine|rheinland|pfalz|saarland|schleswig|"
-    r"holstein|mittelfranken|oberfranken|unterfranken|oberbayern|niederbayern|schwaben)\b",
-    re.I,
-)
-_ABROAD = re.compile(
-    r"\b(netherlands|nederland|holland|gelderland|utrecht|brabant|limburg|overijssel|"
-    r"groningen|friesland|eindhoven|amsterdam|rotterdam|den haag|the hague|"
-    r"united kingdom|uk|england|scotland|wales|london|manchester|edinburgh|ireland|dublin|"
-    r"france|paris|lyon|spain|españa|barcelona|madrid|valencia|portugal|lisbon|lisboa|porto|"
-    r"italy|italia|milan|milano|rome|roma|poland|polska|warsaw|warszawa|krakow|kraków|"
-    r"wroclaw|wrocław|czech|prague|praha|brno|slovakia|hungary|budapest|romania|bucharest|"
-    r"bulgaria|sofia|croatia|serbia|greece|athens|cyprus|malta|"
-    r"switzerland|schweiz|suisse|zurich|zürich|bern|basel|geneva|genf|lausanne|luzern|"
-    r"lucerne|zug|winterthur|st\. gallen|"
-    r"austria|österreich|wien|vienna|graz|linz|salzburg|innsbruck|klagenfurt|"
-    r"steiermark|tirol|kärnten|vorarlberg|burgenland|oberösterreich|niederösterreich|"
-    r"belgium|belgique|brussels|bruxelles|antwerp|luxembourg|denmark|copenhagen|sweden|"
-    r"stockholm|norway|oslo|finland|helsinki|estonia|tallinn|latvia|riga|lithuania|vilnius|"
-    r"usa|united states|canada|toronto|mexico|brazil|india|bangalore|singapore|"
-    r"australia|israel|tel aviv|turkey|istanbul|dubai|uae)\b",
-    re.I,
-)
-
-
-def abroad(location: str) -> bool:
-    if _GERMANY.search(location):
-        return False
-    return bool(_ABROAD.search(location))
 
 
 @dataclass
@@ -173,9 +141,12 @@ def _freshness(hit: JobHit, today: date, max_age_days: int) -> float:
 
 
 def _elsewhere(hit: JobHit, places: list[str]) -> bool:
-    """An onsite or hybrid job outside the searched cities (or abroad, without cities)."""
-    if hit.remote == "remote" or not hit.location:
+    """An onsite or hybrid job outside the searched cities (or abroad, without cities), or a
+    remote job tied to another country ("Zürich", not "Europe")."""
+    if not hit.location:
         return False
+    if hit.remote == "remote":
+        return abroad(hit.location) and not open_to_germany(hit.location)
     where = normalize_place(hit.location)
     if re.search(r"\b(remote|homeoffice|home office)\b", where):
         return False

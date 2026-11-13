@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mappe.search.sources import arbeitnow, ba, remote
+from mappe.search.sources import arbeitnow, ba, hn, remote
 from mappe.search.sources.base import Source
 
 SOURCES: dict[str, Source] = {
@@ -12,6 +12,8 @@ SOURCES: dict[str, Source] = {
         arbeitnow.SOURCE,
         remote.REMOTIVE_SOURCE,
         remote.JOBICY_SOURCE,
+        remote.HIMALAYAS_SOURCE,
+        hn.SOURCE,
         remote.REMOTEOK_SOURCE,
     )
 }
